@@ -4,8 +4,10 @@ import {
   Settings, Plus, Save, Printer, ArrowRight, Search,
   ChevronDown, AlertCircle, FlaskConical,
   ShoppingCart, Users, Factory, Shield, Archive,
-  Download, Upload, Database, Copy, CheckCircle2, LayoutDashboard
+  Download, Upload, Database, Copy, CheckCircle2, LayoutDashboard,
+  Cloud, HardDrive
 } from 'lucide-react';
+import { useStorageMode } from './contexts/StorageModeContext';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
 import Insumos from './components/Insumos';
 import Dashboard from './components/Dashboard';
@@ -14,11 +16,13 @@ import Proporcao from './components/Proporcao';
 import Precificacao from './components/Precificacao';
 import Relatorios from './components/Relatorios';
 import Fornecedores from './components/Fornecedores';
+import Clientes from './components/Clientes';
 import Producao from './components/Producao';
 import Qualidade from './components/Qualidade';
 import Estoque from './components/Estoque';
 
 export default function App() {
+  const { mode, setMode, syncFromSupabase, isSyncing } = useStorageMode();
   const [activeMenu, setActiveMenu] = useState('dashboard');
 
   // Setup state
@@ -144,7 +148,23 @@ insert into public.ingredients (name, unit, cost_per_unit, produto_quimico, forn
   ('Rótulo Detergente', 'UN', 0.45, false, 'Cores Brasil')
 on conflict do nothing;
 
--- 11. Função para atualização automática de updated_at
+-- 11. Criar tabela de Clientes
+create table if not exists public.customers (
+  id uuid default uuid_generate_v4() primary key,
+  name text not null,
+  type text check (type in ('PF', 'PJ')),
+  document text, -- CPF ou CNPJ
+  email text,
+  phone text,
+  address text,
+  city text,
+  state text,
+  price_category text default 'Varejo',
+  notes text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
+
+-- 12. Função para atualização automática de updated_at
 create or replace function update_updated_at_column()
 returns trigger as $$
 begin
@@ -205,6 +225,17 @@ create table if not exists public.inventory_logs (
     navigator.clipboard.writeText(sqlScript);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
+  };
+
+  const handleModeToggle = () => {
+    if (mode === 'local') {
+      const confirmMsg = 'Atenção: Ao escolher a opção On-line (Supabase), certifique-se de que as tabelas e colunas necessárias (novas implementações) já foram criadas no Supabase.\n\nDeseja continuar?';
+      if (window.confirm(confirmMsg)) {
+        setMode('supabase');
+      }
+    } else {
+      setMode('local');
+    }
   };
 
   if (!isConfigured || showSetupManual) {
@@ -279,21 +310,66 @@ create table if not exists public.inventory_logs (
   }
 
   return (
-    <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+    <>
+      <style>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(255, 255, 255, 0.2);
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(255, 255, 255, 0.4);
+        }
+        .left-scrollbar {
+          direction: rtl;
+        }
+        .left-scrollbar > * {
+          direction: ltr;
+        }
+      `}</style>
+      <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
 
-      {/* Sidebar Navigation - Updated with user styles (#202eac background) */}
-      <aside className="w-64 bg-[#202eac] text-white flex flex-col shadow-xl z-10">
-        <div className="p-6 flex items-center gap-3 border-b border-white/10">
-          <div className="bg-white/20 p-2 rounded-lg text-white">
-            <FlaskConical className="w-6 h-6" />
+      {/* Sidebar Navigation - Fixed/Sticky */}
+      <aside className="w-64 bg-[#202eac] text-white flex flex-col shadow-xl z-20 sticky top-0 h-screen shrink-0">
+        <div className="p-6 flex flex-col gap-4 border-b border-white/10">
+          <div className="flex items-center gap-3">
+            <div className="bg-white/20 p-2 rounded-lg text-white">
+              <FlaskConical className="w-6 h-6" />
+            </div>
+            <span className="font-bold text-lg text-white tracking-tight">QuímicaSaaS</span>
           </div>
-          <span className="font-bold text-lg text-white tracking-tight">QuímicaSaaS</span>
-          <div className="ml-auto bg-emerald-500/20 text-emerald-300 text-[10px] px-2 py-0.5 rounded-full border border-emerald-500/30">
-            SYNC TEST
-          </div>
+          
+          <button 
+            onClick={handleModeToggle}
+            className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
+              mode === 'local' 
+                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30' 
+                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
+            }`}
+          >
+            {mode === 'local' ? (
+              <><HardDrive className="w-3.5 h-3.5" /> Salvar Local</>
+            ) : (
+              <><Cloud className="w-3.5 h-3.5" /> Salvar On-line</>
+            )}
+          </button>
+          
+          <button
+            onClick={syncFromSupabase}
+            disabled={isSyncing}
+            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white disabled:opacity-50"
+          >
+            <Database className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Sincronizando...' : 'Sincronizar On-line → Local'}
+          </button>
         </div>
 
-        <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto custom-scrollbar">
+        <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto custom-scrollbar left-scrollbar">
 
           {/* MCP Modules */}
           <div>
@@ -305,6 +381,7 @@ create table if not exists public.inventory_logs (
               <NavItem icon={<Calculator />} label="Proporção" active={activeMenu === 'proporcao'} onClick={() => setActiveMenu('proporcao')} />
               <NavItem icon={<DollarSign />} label="Precificação" active={activeMenu === 'precificacao'} onClick={() => setActiveMenu('precificacao')} />
               <NavItem icon={<Users />} label="Fornecedores" active={activeMenu === 'fornecedores'} onClick={() => setActiveMenu('fornecedores')} />
+              <NavItem icon={<Users />} label="Clientes" active={activeMenu === 'clientes'} onClick={() => setActiveMenu('clientes')} />
               <NavItem icon={<FileBarChart />} label="Relatórios" active={activeMenu === 'relatorios'} onClick={() => setActiveMenu('relatorios')} />
             </div>
           </div>
@@ -318,7 +395,7 @@ create table if not exists public.inventory_logs (
               <NavItem icon={<Shield />} label="Qualidade" active={activeMenu === 'qualidade'} onClick={() => setActiveMenu('qualidade')} />
               <NavItem icon={<ShoppingCart />} label="Compras" disabled />
               <NavItem icon={<DollarSign />} label="Vendas" disabled />
-              <NavItem icon={<Users />} label="Clientes" disabled />
+              {/* <NavItem icon={<Users />} label="Clientes" disabled /> -- Removed as it's now active */}
               <NavItem icon={<Users />} label="Usuários" disabled />
             </div>
           </div>
@@ -344,6 +421,8 @@ create table if not exists public.inventory_logs (
         {activeMenu === 'precificacao' && <Precificacao />}
 
         {activeMenu === 'fornecedores' && <Fornecedores />}
+
+        {activeMenu === 'clientes' && <Clientes />}
 
         {activeMenu === 'relatorios' && <Relatorios />}
 
@@ -461,7 +540,7 @@ create table if not exists public.inventory_logs (
         )}
 
         {/* Placeholder for other menus */}
-        {activeMenu !== 'dashboard' && activeMenu !== 'formulas' && activeMenu !== 'configuracoes' && activeMenu !== 'insumos' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && activeMenu !== 'relatorios' && (
+        {activeMenu !== 'dashboard' && activeMenu !== 'formulas' && activeMenu !== 'configuracoes' && activeMenu !== 'insumos' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && activeMenu !== 'relatorios' && activeMenu !== 'producao' && activeMenu !== 'fornecedores' && activeMenu !== 'estoque' && activeMenu !== 'qualidade' && activeMenu !== 'clientes' && (
           <div className="flex-1 flex items-center justify-center bg-slate-50">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 text-[#202eac] rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -475,6 +554,7 @@ create table if not exists public.inventory_logs (
 
       </main>
     </div>
+    </>
   );
 }
 

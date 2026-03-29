@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
-import { 
-  FileBarChart, 
-  AlertTriangle, 
-  TrendingUp, 
-  Package, 
-  Beaker, 
+import {
+  FileBarChart,
+  AlertTriangle,
+  TrendingUp,
+  Package,
+  Beaker,
   Calendar,
   ChevronRight,
   ArrowRight,
@@ -88,13 +88,13 @@ export default function Relatorios() {
     });
 
     const totalInventoryValue = ingredients.reduce((sum, i) => sum + (i.estoque_atual * i.cost_per_unit), 0);
-    
+
     const formulaCosts = formulas.map(f => {
       const cost = f.formula_ingredients.reduce((sum, item) => {
         let itemCost = 0;
         const variantData = Array.isArray(item.variants) ? item.variants[0] : item.variants;
         const ingredientData = Array.isArray(item.ingredients) ? item.ingredients[0] : item.ingredients;
-        
+
         const variantCost = variantData?.cost_per_unit;
         const ingredientCost = ingredientData?.cost_per_unit;
 
@@ -149,7 +149,7 @@ export default function Relatorios() {
 
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-6xl mx-auto space-y-8">
-          
+
           {/* Top Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
@@ -293,11 +293,11 @@ export default function Relatorios() {
                 </div>
                 <h4 className="font-bold text-slate-800">Saúde do Inventário</h4>
                 <p className="text-xs text-slate-500 mt-2 max-w-[240px]">
-                  {stats.lowStock.length > 0 
+                  {stats.lowStock.length > 0
                     ? `Você tem ${stats.lowStock.length} itens abaixo do estoque mínimo. Isso pode afetar a produção em breve.`
                     : "Seu estoque está saudável! Todos os itens estão acima do nível mínimo de segurança."}
                 </p>
-                <button 
+                <button
                   onClick={() => fetchData()}
                   className="mt-4 text-[#202eac] text-xs font-bold flex items-center gap-1 hover:underline"
                 >

@@ -107,7 +107,7 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
           formula_ingredients (
             quantity,
             ingredients (cost_per_unit),
-            variants (cost_per_unit)
+            variants:ingredient_variants (cost_per_unit)
           )
         `);
       
