@@ -987,7 +987,7 @@ export default function Insumos() {
                         {/* Estoque */}
                         <td className="py-3 px-4 text-center">
                           <div className={`font-bold ${isEstoqueBaixo ? 'text-red-500' : 'text-emerald-600'}`}>
-                            {estoqueAtual}
+                            {estoqueAtual.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
                           </div>
                           <div className="w-full h-1.5 bg-slate-200 rounded-full mt-1.5 overflow-hidden flex">
                             <div
@@ -1120,7 +1120,7 @@ export default function Insumos() {
                       <div className="flex items-center justify-between mb-1">
                         <p className="text-[10px] text-slate-500 font-medium">Estoque Atual</p>
                         <p className={`text-xs font-bold ${isEstoqueBaixo ? 'text-red-500' : 'text-emerald-600'}`}>
-                          {estoqueAtual} {ing.unit?.toUpperCase()}
+                          {estoqueAtual.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })} {ing.unit?.toUpperCase()}
                         </p>
                       </div>
                       <div className="w-full h-1.5 bg-slate-200 rounded-full overflow-hidden flex">

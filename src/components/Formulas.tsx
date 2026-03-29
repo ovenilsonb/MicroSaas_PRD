@@ -5,7 +5,7 @@ import { useStorageMode } from '../contexts/StorageModeContext';
 import {
   Plus, Minus, Search, Beaker, Package, ArrowLeft, X, Copy, Trash2,
   AlertTriangle, FileText, CheckCircle2, Save, LayoutGrid, List,
-  Info, Percent, DollarSign, ChevronRight, MoreVertical, ArrowDownAZ, ArrowUpZA, Pencil, Download, Upload
+  Info, Percent, DollarSign, ChevronRight, MoreVertical, ArrowDownAZ, ArrowUpZA, Pencil, Download, Upload, ShieldCheck
 } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 
@@ -65,6 +65,10 @@ interface Formula {
   updated_at: string;
   formula_ingredients?: FormulaIngredient[];
   groups?: { name: string };
+  ph_min?: string;
+  ph_max?: string;
+  viscosity_min?: string;
+  viscosity_max?: string;
 }
 
 export default function Formulas() {
@@ -603,6 +607,10 @@ export default function Formulas() {
           yield_amount: currentFormula.yield_amount || null,
           yield_unit: currentFormula.yield_unit || 'UN',
           batch_prefix: currentFormula.batch_prefix || null,
+          ph_min: currentFormula.ph_min || null,
+          ph_max: currentFormula.ph_max || null,
+          viscosity_min: currentFormula.viscosity_min || null,
+          viscosity_max: currentFormula.viscosity_max || null,
         };
 
         if (formulaId) {
@@ -641,6 +649,10 @@ export default function Formulas() {
           yield_amount: currentFormula.yield_amount || null,
           yield_unit: currentFormula.yield_unit || 'UN',
           batch_prefix: currentFormula.batch_prefix || null,
+          ph_min: currentFormula.ph_min || null,
+          ph_max: currentFormula.ph_max || null,
+          viscosity_min: currentFormula.viscosity_min || null,
+          viscosity_max: currentFormula.viscosity_max || null,
           formula_ingredients: currentIngredients, // Save nested for local simplicity
           groups: groups.find(g => g.id === currentFormula.group_id) ? { name: groups.find(g => g.id === currentFormula.group_id)!.name } : null,
           updated_at: new Date().toISOString()
@@ -698,6 +710,10 @@ export default function Formulas() {
           yield_amount: currentFormula.yield_amount || null,
           yield_unit: currentFormula.yield_unit || 'UN',
           batch_prefix: currentFormula.batch_prefix || null,
+          ph_min: currentFormula.ph_min || null,
+          ph_max: currentFormula.ph_max || null,
+          viscosity_min: currentFormula.viscosity_min || null,
+          viscosity_max: currentFormula.viscosity_max || null,
         };
 
         const { data, error } = await supabase.from('formulas').insert([formulaData]).select().single();
@@ -1083,6 +1099,55 @@ export default function Formulas() {
                     placeholder="Ex: LOT-AMC"
                   />
                 </div>
+
+                <div className="pt-2 border-t border-slate-100 mt-2">
+                  <h3 className="text-xs font-bold text-slate-800 flex items-center gap-2 mb-3">
+                    <ShieldCheck className="w-4 h-4 text-[#202eac]" /> Parâmetros de Qualidade (Alvo)
+                  </h3>
+                  <div className="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">pH (Mín - Máx)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={currentFormula.ph_min || ''}
+                          onChange={e => setCurrentFormula({ ...currentFormula, ph_min: e.target.value })}
+                          className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:bg-white"
+                          placeholder="Ex: 6.5"
+                        />
+                        <span className="text-slate-400">-</span>
+                        <input
+                          type="text"
+                          value={currentFormula.ph_max || ''}
+                          onChange={e => setCurrentFormula({ ...currentFormula, ph_max: e.target.value })}
+                          className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:bg-white"
+                          placeholder="Ex: 7.5"
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Viscosidade (Mín - Máx)</label>
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={currentFormula.viscosity_min || ''}
+                          onChange={e => setCurrentFormula({ ...currentFormula, viscosity_min: e.target.value })}
+                          className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:bg-white"
+                          placeholder="Mín cP"
+                        />
+                        <span className="text-slate-400">-</span>
+                        <input
+                          type="text"
+                          value={currentFormula.viscosity_max || ''}
+                          onChange={e => setCurrentFormula({ ...currentFormula, viscosity_max: e.target.value })}
+                          className="w-full px-2 py-1.5 bg-slate-50 border border-slate-300 rounded-lg text-sm focus:bg-white"
+                          placeholder="Máx cP"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
               </div>
             </div>
 
@@ -1630,7 +1695,7 @@ export default function Formulas() {
                       <div className="flex items-center gap-3 mt-3 text-xs">
                         <div className="flex items-center gap-1 text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
                           <Beaker className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="font-semibold">{formula.base_volume} L</span>
+                          <span className="font-semibold">{(formula.base_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L</span>
                         </div>
                         <div className="flex items-center gap-1 text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
                           <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
@@ -1778,7 +1843,7 @@ export default function Formulas() {
                           {formula.groups?.name || '-'}
                         </td>
                         <td className="py-4 px-6 text-slate-600 font-medium text-right">
-                          {formula.base_volume} L
+                          {(formula.base_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L
                         </td>
                         <td className="py-4 px-6 text-slate-500 font-mono text-xs text-right">
                           {formula.version}

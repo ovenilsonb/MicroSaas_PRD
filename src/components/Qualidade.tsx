@@ -5,7 +5,7 @@ import { generateId } from '../lib/id';
 import {
   ShieldCheck, FlaskConical, CheckCircle2, XCircle, AlertTriangle, FileText,
   Search, MessageSquare, Beaker, User, History, Save, Clock, Droplets,
-  Activity, FileSpreadsheet, Package
+  Activity, FileSpreadsheet, Package, Printer
 } from 'lucide-react';
 
 export default function Qualidade() {
@@ -67,7 +67,14 @@ export default function Qualidade() {
               batch_number: order.batch_number,
               planned_volume: order.planned_volume,
               formula_id: order.formula_id,
-              formulas: formula ? { name: formula.name, lm_code: formula.lm_code } : undefined
+              formulas: formula ? { 
+                name: formula.name, 
+                lm_code: formula.lm_code,
+                ph_min: formula.ph_min,
+                ph_max: formula.ph_max,
+                viscosity_min: formula.viscosity_min,
+                viscosity_max: formula.viscosity_max
+              } : undefined
             } : undefined
           };
         });
@@ -139,6 +146,8 @@ export default function Qualidade() {
         }
 
         // 3. Log Stock / Create Finished Goods
+        const localIngredients = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
+
         if (status === 'approved') {
           // Log de transação básica
           localLogs.push({
@@ -183,9 +192,25 @@ export default function Qualidade() {
                   created_at: new Date().toISOString()
                 });
               }
+
+              // BAIXA DE ESTOQUE (Embalagem/Rótulo) - Fase 1
+              if (pkg.quantity > 0) {
+                const ingIdx = localIngredients.findIndex((i: any) => i.id === pkg.packagingId);
+                if (ingIdx >= 0) {
+                  localIngredients[ingIdx].estoque_atual = (localIngredients[ingIdx].estoque_atual || 0) - pkg.quantity;
+                  localLogs.push({
+                    id: generateId(), ingredient_id: pkg.packagingId, variant_id: pkg.variantId || undefined,
+                    quantity: pkg.quantity, type: 'out', reference_id: selectedCheck.production_order_id,
+                    notes: `Consumo de Embalagem (Aprovação Lote: ${batchNumber})`,
+                    created_at: new Date().toISOString()
+                  });
+                }
+              }
+
             });
             localStorage.setItem('local_finished_goods', JSON.stringify(localFG));
             localStorage.setItem('local_finished_goods_logs', JSON.stringify(localFGLogs));
+            localStorage.setItem('local_ingredients', JSON.stringify(localIngredients));
           }
         } 
         else if (status === 'rejected') {
@@ -209,6 +234,128 @@ export default function Qualidade() {
       alert('Erro ao salvar laudo de qualidade.');
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handlePrint = (check: any) => {
+    const isApproved = check.status === 'approved';
+    const statusText = isApproved ? 'APROVADO' : 'REPROVADO';
+    const statusColor = isApproved ? '#059669' : '#dc2626';
+
+    const printHtml = `
+      <html>
+        <head>
+          <title>Certificado de Análise - Lote ${check.production_orders?.batch_number}</title>
+          <style>
+            body { font-family: 'Helvetica Neue', Arial, sans-serif; padding: 40px; color: #1e293b; background: white;}
+            .header { border-bottom: 2px solid #202eac; padding-bottom: 20px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: flex-end; }
+            .title { font-size: 24px; font-weight: 900; color: #202eac; margin: 0; text-transform: uppercase;}
+            .subtitle { font-size: 12px; color: #64748b; margin-top: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+            .status-badge { font-weight: 900; font-size: 24px; color: ${statusColor}; border: 4px solid ${statusColor}; padding: 10px 30px; border-radius: 8px; transform: rotate(-10deg); display: inline-block; margin-top: 20px;}
+            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
+            .info-item { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
+            .info-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 800; margin-bottom: 5px;}
+            .info-value { font-size: 16px; font-weight: 900; color: #0f172a;}
+            table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
+            th { text-align: left; padding: 12px; background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 800;}
+            td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #334155;}
+            .footer { margin-top: 50px; text-align: center; color: #94a3b8; font-size: 10px; border-top: 1px solid #e2e8f0; padding-top: 20px; text-transform: uppercase; font-weight: bold;}
+            .signature { margin-top: 60px; width: 250px; border-top: 1px solid #cbd5e1; text-align: center; padding-top: 10px; font-weight: 800; font-size: 14px;}
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div>
+              <h1 class="title">Certificado de Análise Técnica</h1>
+              <p class="subtitle">Microsaas-Planner / Relatório Oficial Qualidade</p>
+            </div>
+            <div style="text-align: right;">
+              <div class="info-label">Emissão</div>
+              <div class="info-value">${new Date().toLocaleDateString('pt-BR')}</div>
+            </div>
+          </div>
+          
+          <div class="info-grid">
+            <div class="info-item">
+              <div class="info-label">Fórmula Qualificada</div>
+              <div class="info-value">${check.production_orders?.formulas?.name || 'Não Especificado'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Lote Industrial</div>
+              <div class="info-value" style="font-family: monospace;">${check.production_orders?.batch_number || 'N/A'}</div>
+            </div>
+          </div>
+
+          <h3 style="color: #334155; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; font-size: 14px; text-transform: uppercase; margin-bottom: 20px;">Ensaios Físico-Químicos e Sensoriais</h3>
+          <table>
+            <thead>
+              <tr>
+                <th>Parâmetro de Controle</th>
+                <th>Especificação (Alvo)</th>
+                <th>Resultado Obtido</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><strong>Potencial Hidrogeniônico (pH)</strong></td>
+                <td>${check.production_orders?.formulas?.ph_min || '-'} a ${check.production_orders?.formulas?.ph_max || '-'}</td>
+                <td><strong style="font-size: 16px;">${check.ph_value || 'N/A'}</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Viscosidade Aparente (cP)</strong></td>
+                <td>${check.production_orders?.formulas?.viscosity_min || '-'} a ${check.production_orders?.formulas?.viscosity_max || '-'}</td>
+                <td><strong style="font-size: 16px;">${check.viscosity_value || 'N/A'}</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Aspecto Visual da Solução</strong></td>
+                <td>Característico</td>
+                <td><strong style="color: ${check.appearance_status === 'Conforme' ? '#059669' : '#dc2626'}">${check.appearance_status || '-'}</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Coloração (Visual)</strong></td>
+                <td>Característica</td>
+                <td><strong style="color: ${check.color_status === 'Conforme' ? '#059669' : '#dc2626'}">${check.color_status || '-'}</strong></td>
+              </tr>
+              <tr>
+                <td><strong>Análise Olfativa (Odor)</strong></td>
+                <td>Característica</td>
+                <td><strong style="color: ${check.odor_status === 'Conforme' ? '#059669' : '#dc2626'}">${check.odor_status || '-'}</strong></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <h3 style="color: #334155; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; font-size: 14px; text-transform: uppercase; margin-bottom: 15px;">Parecer Técnico e Desvios</h3>
+          <p style="background: #f8fafc; padding: 20px; border: 1px dashed #cbd5e1; border-radius: 8px; font-style: italic; color: #475569; font-size: 14px; line-height: 1.5;">
+            ${check.notes || 'Nenhuma ressalva, anomalia visual ou desvio quantitativo reportado durante processo.'}
+          </p>
+          
+          <div style="text-align: center; margin-top: 50px;">
+            <div class="status-badge">${statusText}</div>
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; margin-top: 60px;">
+            <div>
+              <div class="signature">${check.analyst_name || 'Responsável Técnico'}</div>
+              <div style="text-align: center; font-size: 10px; color: #94a3b8; font-weight: bold; margin-top: 4px; text-transform: uppercase;">Aprovação Registrada</div>
+            </div>
+          </div>
+
+          <div class="footer">
+            Sistema Integrado :: Este documento é um laudo técnico oficial assinado eletronicamente.<br/>Identificação Única (UUID): ${check.id}
+          </div>
+        </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank', 'width=800,height=900,menubar=no,toolbar=no,status=no');
+    if (printWindow) {
+      printWindow.document.write(printHtml);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 500);
     }
   };
 
@@ -341,20 +488,56 @@ export default function Qualidade() {
                     <div className="p-8 space-y-6">
                       <div className="grid grid-cols-2 gap-6">
                         <div className="space-y-2">
-                          <label className="block text-xs font-bold text-slate-500 uppercase">Valor de pH</label>
-                          <input type="number" step="0.1" value={ph} onChange={e => setPh(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#202eac]/20 outline-none font-bold text-lg"
-                            placeholder="ex: 7.0" />
+                          <div className="flex justify-between items-end mb-1">
+                            <label className="block text-xs font-bold text-slate-500 uppercase">Valor de pH</label>
+                            {(selectedCheck.production_orders?.formulas?.ph_min || selectedCheck.production_orders?.formulas?.ph_max) && (
+                              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                Alvo: {selectedCheck.production_orders?.formulas?.ph_min || '?'} - {selectedCheck.production_orders?.formulas?.ph_max || '?'}
+                              </span>
+                            )}
+                          </div>
+                          {(() => {
+                            const val = parseFloat(ph);
+                            const min = parseFloat(selectedCheck.production_orders?.formulas?.ph_min || '');
+                            const max = parseFloat(selectedCheck.production_orders?.formulas?.ph_max || '');
+                            const isOut = !isNaN(val) && ((!isNaN(min) && val < min) || (!isNaN(max) && val > max));
+                            return (
+                              <div className="relative">
+                                <input type="number" step="0.1" value={ph} onChange={e => setPh(e.target.value)}
+                                  className={`w-full px-4 py-3 bg-slate-50 border-2 ${isOut ? 'border-red-400 text-red-600 focus:ring-red-500/20' : 'border-slate-200 focus:ring-[#202eac]/20'} rounded-xl focus:ring-2 outline-none font-bold text-lg transition-colors`}
+                                  placeholder="ex: 7.0" />
+                                {isOut && <span className="absolute -bottom-5 left-1 text-[10px] font-bold text-red-500">(Fora da Especificação)</span>}
+                              </div>
+                            )
+                          })()}
                         </div>
                         <div className="space-y-2">
-                          <label className="block text-xs font-bold text-slate-500 uppercase">Viscosidade (cP)</label>
-                          <input type="number" value={viscosity} onChange={e => setViscosity(e.target.value)}
-                            className="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-[#202eac]/20 outline-none font-bold text-lg"
-                            placeholder="ex: 1200" />
+                          <div className="flex justify-between items-end mb-1">
+                            <label className="block text-xs font-bold text-slate-500 uppercase">Viscosidade (cP)</label>
+                            {(selectedCheck.production_orders?.formulas?.viscosity_min || selectedCheck.production_orders?.formulas?.viscosity_max) && (
+                              <span className="text-[10px] font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                                Alvo: {selectedCheck.production_orders?.formulas?.viscosity_min || '?'} - {selectedCheck.production_orders?.formulas?.viscosity_max || '?'} cP
+                              </span>
+                            )}
+                          </div>
+                          {(() => {
+                            const val = parseFloat(viscosity);
+                            const min = parseFloat(selectedCheck.production_orders?.formulas?.viscosity_min || '');
+                            const max = parseFloat(selectedCheck.production_orders?.formulas?.viscosity_max || '');
+                            const isOut = !isNaN(val) && ((!isNaN(min) && val < min) || (!isNaN(max) && val > max));
+                            return (
+                              <div className="relative">
+                                <input type="number" value={viscosity} onChange={e => setViscosity(e.target.value)}
+                                  className={`w-full px-4 py-3 bg-slate-50 border-2 ${isOut ? 'border-red-400 text-red-600 focus:ring-red-500/20' : 'border-slate-200 focus:ring-[#202eac]/20'} rounded-xl focus:ring-2 outline-none font-bold text-lg transition-colors`}
+                                  placeholder="ex: 1200" />
+                                {isOut && <span className="absolute -bottom-5 left-1 text-[10px] font-bold text-red-500">(Fora da Especificação)</span>}
+                              </div>
+                            )
+                          })()}
                         </div>
                       </div>
 
-                      <div className="space-y-4">
+                      <div className="space-y-4 mt-6 pt-4 border-t border-slate-100 pb-2">
                         <h3 className="text-sm font-bold text-slate-700 flex items-center gap-2"><CheckCircle2 className="w-4 h-4 text-[#202eac]" /> Avaliação Visual e Sensorial</h3>
                         <div className="grid grid-cols-3 gap-3">
                           {['Cor', 'Odor', 'Aspecto'].map((label, idx) => {
@@ -452,9 +635,19 @@ export default function Qualidade() {
                             </div>
                           )}
                         </div>
-                        <div className="mt-4 pt-3 border-t border-slate-100/50 flex items-center justify-between text-[10px] text-slate-400">
-                          <span className="flex items-center gap-1"><User className="w-3 h-3"/> {check.analyst_name || 'Desconhecido'}</span>
-                          <span>{new Date(check.created_at).toLocaleDateString()}</span>
+                        <div className="mt-4 pt-3 border-t border-slate-100/50 flex items-center justify-between">
+                          <div className="flex items-center gap-1 text-[10px] text-slate-400">
+                            <span className="flex items-center gap-1"><User className="w-3 h-3"/> {check.analyst_name || 'Desconhecido'}</span>
+                            <span className="ml-2 px-2 py-0.5 bg-slate-100 text-slate-500 rounded font-bold">{new Date(check.created_at).toLocaleDateString()}</span>
+                          </div>
+                          <button 
+                            onClick={() => handlePrint(check)}
+                            className="p-2 border border-blue-200 text-blue-600 hover:bg-blue-600 hover:text-white bg-blue-50 rounded-lg transition-colors group flex items-center gap-2"
+                            title="Imprimir Certificado de Análise / Laudo"
+                          >
+                            <Printer className="w-4 h-4" />
+                            <span className="text-[10px] font-black uppercase opacity-0 w-0 group-hover:opacity-100 group-hover:w-auto overflow-hidden transition-all delay-75">Laudo</span>
+                          </button>
                         </div>
                       </div>
                     );

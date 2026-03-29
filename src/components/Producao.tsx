@@ -1009,7 +1009,7 @@ export default function Producao() {
                             <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold text-slate-500 uppercase">Volume do Lote</span>
-                                <span className="text-sm font-black text-slate-800">{plannedVolume}L</span>
+                                <span className="text-sm font-black text-slate-800">{(parseFloat(plannedVolume) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}L</span>
                               </div>
                               <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
                                 <div
@@ -1186,7 +1186,7 @@ export default function Producao() {
                       <div className="w-14 h-14 bg-[#202eac]/10 text-[#202eac] rounded-2xl flex items-center justify-center"><Factory className="w-7 h-7" /></div>
                       <div>
                         <h2 className="text-xl font-black text-slate-800">OF: {selectedOrder.batch_number}</h2>
-                        <p className="text-sm text-slate-500">{formula?.name} • {formula?.version} • {selectedOrder.planned_volume}L</p>
+                        <p className="text-sm text-slate-500">{formula?.name} • {formula?.version} • {(selectedOrder.planned_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}L</p>
                         {selectedOrder.operatorName && <p className="text-xs text-slate-400 mt-1">Operador: {selectedOrder.operatorName} {selectedOrder.equipmentId ? `• ${selectedOrder.equipmentId}` : ''}</p>}
                       </div>
                     </div>
@@ -1380,7 +1380,7 @@ export default function Producao() {
                       </div>
                       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Volume Planejado</div>
-                        <div className="text-xl font-black text-slate-800">{selectedOrder.planned_volume}L</div>
+                        <div className="text-xl font-black text-slate-800">{(selectedOrder.planned_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}L</div>
                       </div>
                       <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Insumos</div>

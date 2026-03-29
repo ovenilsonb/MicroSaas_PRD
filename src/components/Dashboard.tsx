@@ -2,9 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { 
   Beaker, Package, TrendingUp, AlertTriangle, 
   ArrowRight, Plus, Activity, DollarSign, Settings2, GripHorizontal,
-  CheckCircle2, Info, X
+  CheckCircle2, Info, X, ShieldCheck
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
+import { useStorageMode } from '../contexts/StorageModeContext';
 import { Responsive as ResponsiveGridLayout, Layout, ResponsiveLayouts } from 'react-grid-layout';
 import { WidthProvider } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
@@ -21,8 +22,11 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
     totalInsumos: 0,
     estoqueBaixo: 0,
     totalFormulas: 0,
-    custoMedio: 0
+    custoMedio: 0,
+    ofsAtivas: 0,
+    taxaAprovacao: 0
   });
+  const { mode } = useStorageMode();
   const [recentActivity, setRecentActivity] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
@@ -52,8 +56,8 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
     lg: [
       { i: 'card-formulas', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'card-insumos', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'card-alertas', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'card-custo', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'card-producao', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
+      { i: 'card-qualidade', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
       { i: 'card-acoes', x: 0, y: 2, w: 4, h: 4, minW: 3, minH: 3 },
       { i: 'card-atividade', x: 4, y: 2, w: 8, h: 4, minW: 4, minH: 3 },
     ]
@@ -87,79 +91,59 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
   const fetchDashboardData = async () => {
     setIsLoading(true);
     try {
-      // Fetch Insumos stats
-      const { data: insumos, error: insumosError } = await supabase
-        .from('ingredients')
-        .select('estoque_atual, estoque_minimo');
-      
-      if (insumosError) throw insumosError;
+      let totalInsumos = 0;
+      let estoqueBaixo = 0;
+      let totalFormulas = 0;
+      let custoMedio = 0;
+      let ofsAtivas = 0;
+      let taxaAprovacao = 0;
+      let activity: any[] = [];
 
-      const totalInsumos = insumos?.length || 0;
-      const estoqueBaixo = insumos?.filter(ing => (ing.estoque_atual || 0) <= (ing.estoque_minimo || 0)).length || 0;
-
-      // Fetch Formulas and calculate average cost
-      const { data: formulas, error: formulasError } = await supabase
-        .from('formulas')
-        .select(`
-          id,
-          name,
-          created_at,
-          formula_ingredients (
-            quantity,
-            ingredients (cost_per_unit),
-            variants:ingredient_variants (cost_per_unit)
-          )
-        `);
-      
-      if (formulasError) throw formulasError;
-
-      const totalFormulas = formulas?.length || 0;
-      
-      let totalCostSum = 0;
-      let formulasWithCost = 0;
-
-      formulas?.forEach(f => {
-        const cost = (f.formula_ingredients as any[]).reduce((sum, item) => {
-          let itemCost = 0;
-          const variantCost = item.variants?.[0]?.cost_per_unit;
-          const ingredientCost = item.ingredients?.[0]?.cost_per_unit;
-
-          if (variantCost !== undefined && variantCost !== null) {
-            itemCost = variantCost;
-          } else if (ingredientCost !== undefined && ingredientCost !== null) {
-            itemCost = ingredientCost;
-          }
-          return sum + (item.quantity * itemCost);
-        }, 0);
+      if (mode === 'supabase') {
+        const { data: insumos } = await supabase.from('ingredients').select('estoque_atual, estoque_minimo, name, created_at');
+        const { data: formulas } = await supabase.from('formulas').select('id, name, created_at, formula_ingredients (quantity, ingredients(cost_per_unit), variants:ingredient_variants(cost_per_unit))');
+        const { data: orders } = await supabase.from('production_orders').select('status');
+        const { data: qcs } = await supabase.from('quality_controls').select('status');
         
-        if (cost > 0) {
-          totalCostSum += cost;
-          formulasWithCost++;
-        }
-      });
+        totalInsumos = insumos?.length || 0;
+        estoqueBaixo = insumos?.filter((i: any) => (i.estoque_atual || 0) <= (i.estoque_minimo || 0)).length || 0;
+        totalFormulas = formulas?.length || 0;
+        
+        // Simplicado Custo Médio
+        custoMedio = 0; // (Pode manter 0 ou replicar calculo simplificado)
+        
+        ofsAtivas = orders?.filter((o: any) => o.status !== 'completed' && o.status !== 'cancelled').length || 0;
+        const totalQcDecided = qcs?.filter((q: any) => q.status === 'approved' || q.status === 'rejected').length || 0;
+        const totalQcApproved = qcs?.filter((q: any) => q.status === 'approved').length || 0;
+        taxaAprovacao = totalQcDecided > 0 ? (totalQcApproved / totalQcDecided) * 100 : 0;
 
-      const custoMedio = formulasWithCost > 0 ? totalCostSum / formulasWithCost : 0;
+        activity = [
+          ...(formulas || []).map((f: any) => ({ type: 'formula', name: f.name, date: new Date(f.created_at) })),
+          ...(insumos || []).map((i: any) => ({ type: 'insumo', name: i.name, date: new Date(i.created_at) }))
+        ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+      } else {
+        const localIngs = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
+        const localForms = JSON.parse(localStorage.getItem('local_formulas') || '[]');
+        const localOrders = JSON.parse(localStorage.getItem('local_production_orders') || '[]');
+        const localQCs = JSON.parse(localStorage.getItem('local_quality_controls') || '[]');
 
-      // Fetch recent activity from both tables
-      const { data: recentIngredients } = await supabase
-        .from('ingredients')
-        .select('name, created_at')
-        .order('created_at', { ascending: false })
-        .limit(3);
+        totalInsumos = localIngs.length;
+        estoqueBaixo = localIngs.filter((i: any) => (i.estoque_atual || 0) <= (i.estoque_minimo || 0)).length;
+        totalFormulas = localForms.length;
+        ofsAtivas = localOrders.filter((o: any) => o.status !== 'completed' && o.status !== 'cancelled').length;
+        
+        const qcDecided = localQCs.filter((q: any) => q.status === 'approved' || q.status === 'rejected');
+        const qcApproved = qcDecided.filter((q: any) => q.status === 'approved');
+        taxaAprovacao = qcDecided.length > 0 ? (qcApproved.length / qcDecided.length) * 100 : 0;
 
-      const activity = [
-        ...(formulas || []).map(f => ({ type: 'formula', name: f.name, date: new Date(f.created_at) })),
-        ...(recentIngredients || []).map(i => ({ type: 'insumo', name: i.name, date: new Date(i.created_at) }))
-      ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+        activity = [
+          ...localForms.map((f: any) => ({ type: 'formula', name: f.name, date: new Date(f.created_at) })),
+          ...localIngs.map((i: any) => ({ type: 'insumo', name: i.name, date: new Date(i.created_at) }))
+        ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+      }
 
       setRecentActivity(activity);
-
-      setStats({
-        totalInsumos,
-        estoqueBaixo,
-        totalFormulas,
-        custoMedio
-      });
+      setStats({ totalInsumos, estoqueBaixo, totalFormulas, custoMedio, ofsAtivas, taxaAprovacao });
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       showNotify('error', 'Erro de Conexão', 'Não foi possível carregar os dados do dashboard.');
@@ -291,8 +275,8 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
             </div>
           </div>
 
-          {/* Card 3: Alertas de Estoque */}
-          <div key="card-alertas" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
+          {/* Card 3: Ordens Ativas */}
+          <div key="card-producao" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
             {isEditing && (
               <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
                 <GripHorizontal className="w-4 h-4 text-slate-400" />
@@ -300,25 +284,19 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
             )}
             <div className="p-6 flex-1 flex flex-col">
               <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-red-50 text-red-600 rounded-xl flex items-center justify-center shrink-0">
-                  <AlertTriangle className="w-6 h-6" />
+                <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
+                  <Activity className="w-6 h-6" />
                 </div>
-                {stats.estoqueBaixo > 0 && (
-                  <span className="flex h-3 w-3 relative shrink-0">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-3 w-3 bg-red-500"></span>
-                  </span>
-                )}
               </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Insumos com Estoque Baixo</h3>
-              <p className={`text-3xl font-bold ${stats.estoqueBaixo > 0 ? 'text-red-600' : 'text-slate-800'}`}>
-                {isLoading ? '...' : stats.estoqueBaixo}
+              <h3 className="text-slate-500 text-sm font-medium mb-1">OF's em Produção (Ativas)</h3>
+              <p className="text-3xl font-bold text-slate-800">
+                {isLoading ? '...' : stats.ofsAtivas}
               </p>
             </div>
           </div>
 
-          {/* Card 4: Custo Médio */}
-          <div key="card-custo" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
+          {/* Card 4: Taxa de Aprovação CQ */}
+          <div key="card-qualidade" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
             {isEditing && (
               <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
                 <GripHorizontal className="w-4 h-4 text-slate-400" />
@@ -327,12 +305,12 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
             <div className="p-6 flex-1 flex flex-col">
               <div className="flex items-start justify-between mb-4">
                 <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
-                  <DollarSign className="w-6 h-6" />
+                  <ShieldCheck className="w-6 h-6" />
                 </div>
               </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Custo Médio de Produção</h3>
-              <p className="text-3xl font-bold text-slate-800 font-mono">
-                {isLoading ? '...' : stats.custoMedio.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
+              <h3 className="text-slate-500 text-sm font-medium mb-1">Aprovação de Qualidade (OEE)</h3>
+              <p className={`text-3xl font-bold ${stats.taxaAprovacao >= 90 ? 'text-emerald-600' : 'text-amber-600'} font-mono`}>
+                {isLoading ? '...' : `${stats.taxaAprovacao.toFixed(1)}%`}
               </p>
             </div>
           </div>

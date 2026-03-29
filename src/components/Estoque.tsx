@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useStorageMode } from '../contexts/StorageModeContext';
+import { generateId } from '../lib/id';
 import {
   Archive, ArrowUpRight, ArrowDownLeft, History, Search, Filter,
   Package, AlertTriangle, ClipboardList, RefreshCw, TrendingDown, TrendingUp, Box, Layers, Pencil
@@ -115,7 +116,7 @@ export default function Estoque() {
       if (diff !== 0) {
         localFG[fgIndex].stock_quantity = newQty;
         localFGLogs.push({
-          id: crypto.randomUUID(),
+          id: generateId(),
           finished_good_id: fgId,
           quantity: Math.abs(diff),
           type: diff > 0 ? 'in' : 'out',

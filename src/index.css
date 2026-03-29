@@ -11,3 +11,31 @@
     -moz-appearance: textfield;
   }
 }
+
+@layer utilities {
+  @keyframes slide-in-right {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+  }
+
+  @keyframes progress {
+    from { width: 100%; }
+    to { width: 0%; }
+  }
+
+  .animate-in {
+    animation-duration: 300ms;
+    animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+    animation-fill-mode: forwards;
+  }
+
+  .slide-in-from-right {
+    animation-name: slide-in-right;
+  }
+
+  .animate-progress {
+    animation-name: progress;
+    animation-timing-function: linear;
+    animation-fill-mode: forwards;
+  }
+}

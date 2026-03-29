@@ -105,6 +105,27 @@ const categoryColors: Record<string, { bg: string; text: string }> = {
   Produtos: { bg: 'bg-slate-100', text: 'text-slate-700' },
 };
 
+const compareVersions = (v1: string, v2: string) => {
+  if (!v1) return -1;
+  if (!v2) return 1;
+  const parse = (v: string) => v.toLowerCase().replace(/[^\d.]/g, '').split('.').map(Number);
+  const p1 = parse(v1);
+  const p2 = parse(v2);
+  for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+    const num1 = p1[i] || 0;
+    const num2 = p2[i] || 0;
+    if (num1 !== num2) return num1 - num2;
+  }
+  return 0;
+};
+
+const getBaseFormulaName = (name: string): string => {
+  return name.toLowerCase()
+    .replace(/\s*-\s*[vV]?\d+(?:\.\d+)?.*$/i, '')
+    .replace(/\s*v\d+(?:\.\d+)?.*$/i, '')
+    .trim();
+};
+
 // ─── Component ───────────────────────────────────────────────
 
 export default function Precificacao() {
@@ -389,20 +410,56 @@ export default function Precificacao() {
 
   const formatCapacity = (cap: number) => cap >= 1 ? `${cap}L` : `${cap * 1000}ml`;
 
+  // Color scheme per capacity for visual differentiation
+  const capacityColors: Record<number, { bg: string; text: string; border: string }> = {
+    0.5: { bg: 'bg-sky-50', text: 'text-sky-700', border: 'border-sky-200' },
+    1: { bg: 'bg-emerald-50', text: 'text-emerald-700', border: 'border-emerald-200' },
+    2: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
+    5: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
+  };
+  const getCapColor = (cap: number) => capacityColors[cap] || { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' };
+
+  // Count how many volumes are priced for a formula
+  const getVolumePricingStatus = (formulaId: string) => {
+    const total = uniqueCapacities.length;
+    const priced = uniqueCapacities.filter(cap => {
+      const entry = savedPricing.find(e => e.formulaId === formulaId && e.capacityKey === String(cap));
+      return entry && entry.varejoPrice > 0;
+    }).length;
+    return { total, priced };
+  };
+
   // ─── Filtered List ──────────────────────────────────────────
 
+  // Consolidate formulas keeping only the newest active version for each base name
+  const consolidatedFormulas = useMemo(() => {
+    const latestVersions: Record<string, Formula> = {};
+    formulas.forEach(f => {
+      if (f.status?.toLowerCase().startsWith('ativ') || f.status?.toLowerCase() === 'active') {
+        const baseName = getBaseFormulaName(f.name);
+        const existing = latestVersions[baseName];
+        if (!existing || compareVersions(f.version, existing.version) > 0) {
+          latestVersions[baseName] = f;
+        } else if (compareVersions(f.version, existing.version) === 0) {
+          if (f.id > existing.id) latestVersions[baseName] = f;
+        }
+      }
+    });
+    return Object.values(latestVersions);
+  }, [formulas]);
+
   const filteredFormulas = useMemo(() =>
-    formulas.filter(f =>
-      (f.status?.toLowerCase().startsWith('ativ') || f.status?.toLowerCase() === 'active') && (
+    consolidatedFormulas.filter(f =>
+      (
         f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         f.lm_code?.toLowerCase().includes(searchTerm.toLowerCase())
       )
     ).sort((a, b) => a.name.localeCompare(b.name)),
-    [formulas, searchTerm]);
+    [consolidatedFormulas, searchTerm]);
 
   // Statistics for summary cards
   const stats = useMemo(() => {
-    const active = formulas.filter(f => f.status?.toLowerCase().startsWith('ativ') || f.status?.toLowerCase() === 'active');
+    const active = consolidatedFormulas;
     const priced = active.filter(f => getFormulaStatus(f.id) === 'Precificado');
     const pending = active.length - priced.length;
 
@@ -564,21 +621,29 @@ export default function Precificacao() {
         </header>
 
         <div className="flex-1 overflow-auto">
-          {/* Volume Tabs */}
+          {/* Volume Tabs with saved indicators */}
           <div className="px-8 pt-6 pb-2 flex items-center gap-3 flex-wrap">
             <span className="text-sm font-bold text-slate-600 mr-2">Volume:</span>
-            {uniqueCapacities.map(cap => (
-              <button
-                key={cap}
-                onClick={() => switchCapacity(cap)}
-                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${selectedCapacity === cap
-                  ? 'bg-[#202eac] text-white shadow-lg shadow-blue-200 scale-105'
-                  : 'bg-white text-slate-600 border border-slate-200 hover:border-[#202eac] hover:text-[#202eac]'
-                  }`}
-              >
-                {formatCapacity(cap)}
-              </button>
-            ))}
+            {uniqueCapacities.map(cap => {
+              const isSaved = savedPricing.some(e => e.formulaId === selectedFormula.id && e.capacityKey === String(cap) && e.varejoPrice > 0);
+              const capColor = getCapColor(cap);
+              return (
+                <button
+                  key={cap}
+                  onClick={() => switchCapacity(cap)}
+                  className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedCapacity === cap
+                    ? 'bg-[#202eac] text-white shadow-lg shadow-blue-200 scale-105'
+                    : `bg-white text-slate-600 border ${capColor.border} hover:border-[#202eac] hover:text-[#202eac]`
+                    }`}
+                >
+                  {formatCapacity(cap)}
+                  {isSaved
+                    ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+                    : <AlertTriangle className="w-3.5 h-3.5 text-amber-400" />
+                  }
+                </button>
+              );
+            })}
           </div>
 
           <div className="p-8 pt-4">
@@ -931,14 +996,12 @@ export default function Precificacao() {
               </p>
             </div>
           ) : viewMode === 'grid' ? (
-            /* ═══ GRID / CARD VIEW ═══ */
+            /* ═══ GRID / CARD VIEW — Mini-tabela por volume ═══ */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredFormulas.map(formula => {
                 const cat = getFormulaCategory(formula.name);
                 const catColor = categoryColors[cat] || categoryColors.Produtos;
-                const status = getFormulaStatus(formula.id);
-                const cost = calcIngredientCost(formula);
-                const prices = getFormulaPrices(formula.id);
+                const volStatus = getVolumePricingStatus(formula.id);
 
                 return (
                   <button
@@ -951,71 +1014,64 @@ export default function Precificacao() {
                       <span className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${catColor.bg} ${catColor.text}`}>
                         {cat}
                       </span>
-                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${status === 'Precificado' ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'
-                        }`}>
-                        {status}
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-md ${volStatus.priced === volStatus.total && volStatus.total > 0 ? 'bg-emerald-50 text-emerald-600' : volStatus.priced > 0 ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
+                        {volStatus.priced}/{volStatus.total} volumes
                       </span>
                     </div>
 
                     {/* Formula name and code */}
-                    <h3 className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors text-sm">
+                    <h3 className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors text-base flex flex-wrap items-center gap-2">
                       {formula.name}
+                      <span className="text-[10px] bg-[#202eac] text-white px-1.5 py-0.5 rounded font-black border border-blue-100/50 shadow-sm shrink-0">V{(formula.version || '1').replace(/^v/i, '')}</span>
                     </h3>
-                    <p className="text-[11px] text-slate-400 font-mono mt-0.5">{formula.lm_code || 'S/C'}</p>
+                    <p className="text-xs text-slate-400 font-mono mt-0.5">{formula.lm_code || 'S/C'}</p>
 
-                    {/* Pricing summary */}
-                    <div className="mt-4 space-y-1.5">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className="text-slate-500">Custo/Un:</span>
-                        <span className="font-bold text-slate-800">{fmt(cost)}</span>
+                    {/* Mini pricing table per volume */}
+                    <div className="mt-4 space-y-0 rounded-xl overflow-hidden border border-slate-100">
+                      {/* Header */}
+                      <div className="grid grid-cols-4 gap-0 text-[9px] font-black text-slate-400 uppercase tracking-wider bg-slate-50 px-3 py-2 border-b border-slate-100">
+                        <div>Volume</div>
+                        <div className="text-right">Varejo</div>
+                        <div className="text-right">Atacado</div>
+                        <div className="text-right">Fardo</div>
                       </div>
-                      {prices ? (
-                        <>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500">Varejo:</span>
-                            <span className="font-bold text-emerald-600">{fmt(prices.varejoPrice)}</span>
+                      {/* Rows per capacity */}
+                      {uniqueCapacities.map(cap => {
+                        const entry = savedPricing.find(e => e.formulaId === formula.id && e.capacityKey === String(cap));
+                        const hasPricing = entry && entry.varejoPrice > 0;
+                        const cc = getCapColor(cap);
+                        return (
+                          <div key={cap} className={`grid grid-cols-4 gap-0 text-[11px] px-3 py-2 border-b border-slate-50 last:border-b-0 ${cc.bg}`}>
+                            <div className={`font-black ${cc.text}`}>{formatCapacity(cap)}</div>
+                            {hasPricing ? (
+                              <>
+                                <div className="text-right font-bold text-emerald-600">{fmt(entry!.varejoPrice)}</div>
+                                <div className="text-right font-bold text-amber-600">{fmt(entry!.atacadoPrice)}</div>
+                                <div className="text-right font-bold text-purple-600">{fmt(entry!.fardoPrice)}</div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="text-right flex items-center justify-end"><AlertTriangle className="w-3 h-3 text-amber-400" /></div>
+                                <div className="text-right flex items-center justify-end"><AlertTriangle className="w-3 h-3 text-amber-400" /></div>
+                                <div className="text-right flex items-center justify-end"><AlertTriangle className="w-3 h-3 text-amber-400" /></div>
+                              </>
+                            )}
                           </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500">Atacado:</span>
-                            <span className="font-bold text-amber-600">{fmt(prices.atacadoPrice)}</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500">Fardo ({prices.fardoQty}un):</span>
-                            <span className="font-bold text-purple-600">{fmt(prices.fardoPrice * prices.fardoQty)}</span>
-                          </div>
-                        </>
-                      ) : (
-                        <>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500">Varejo:</span>
-                            <span className="text-slate-300">—</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500">Atacado:</span>
-                            <span className="text-slate-300">—</span>
-                          </div>
-                          <div className="flex items-center justify-between text-xs">
-                            <span className="text-slate-500">Fardo:</span>
-                            <span className="text-slate-300">—</span>
-                          </div>
-                        </>
-                      )}
+                        );
+                      })}
                     </div>
                   </button>
                 );
               })}
             </div>
           ) : (
-            /* ═══ LIST / TABLE VIEW ═══ */
+            /* ═══ LIST / TABLE VIEW — with volume breakdown ═══ */
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-slate-100 bg-slate-50">
                     <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Produto</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">Custo/Un</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">Varejo</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">Atacado</th>
-                    <th className="px-4 py-3.5 text-right text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fardo</th>
+                    <th className="px-4 py-3.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Volumes</th>
                     <th className="px-4 py-3.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
                   </tr>
                 </thead>
@@ -1023,9 +1079,7 @@ export default function Precificacao() {
                   {filteredFormulas.map(formula => {
                     const cat = getFormulaCategory(formula.name);
                     const catColor = categoryColors[cat] || categoryColors.Produtos;
-                    const status = getFormulaStatus(formula.id);
-                    const cost = calcIngredientCost(formula);
-                    const prices = getFormulaPrices(formula.id);
+                    const volStatus = getVolumePricingStatus(formula.id);
 
                     return (
                       <tr
@@ -1034,30 +1088,36 @@ export default function Precificacao() {
                         className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer group"
                       >
                         <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div>
-                              <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors">{formula.name}</div>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <span className="text-[10px] text-slate-400 font-mono">{formula.lm_code || 'S/C'}</span>
-                                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${catColor.bg} ${catColor.text}`}>{cat}</span>
-                              </div>
+                          <div>
+                            <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors text-sm">{formula.name}</div>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <span className="text-xs text-slate-400 font-mono">{formula.lm_code || 'S/C'}</span>
+                              <span className="text-[10px] bg-[#202eac] text-white px-1.5 py-0.5 rounded font-black border border-blue-100/50 shadow-sm shrink-0">V{(formula.version || '1').replace(/^v/i, '')}</span>
+                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${catColor.bg} ${catColor.text}`}>{cat}</span>
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-4 text-right font-mono font-bold text-slate-700">{fmt(cost)}</td>
-                        <td className="px-4 py-4 text-right font-mono font-bold text-emerald-600">
-                          {prices?.varejoPrice ? fmt(prices.varejoPrice) : <span className="text-slate-300">—</span>}
-                        </td>
-                        <td className="px-4 py-4 text-right font-mono font-bold text-amber-600">
-                          {prices?.atacadoPrice ? fmt(prices.atacadoPrice) : <span className="text-slate-300">—</span>}
-                        </td>
-                        <td className="px-4 py-4 text-right font-mono font-bold text-purple-600">
-                          {prices ? fmt(prices.fardoPrice * prices.fardoQty) : <span className="text-slate-300">—</span>}
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
+                            {uniqueCapacities.map(cap => {
+                              const entry = savedPricing.find(e => e.formulaId === formula.id && e.capacityKey === String(cap));
+                              const hasPricing = entry && entry.varejoPrice > 0;
+                              const cc = getCapColor(cap);
+                              return (
+                                <span key={cap} className={`text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 ${cc.bg} ${cc.text} border ${cc.border}`}>
+                                  {formatCapacity(cap)}
+                                  {hasPricing
+                                    ? <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                    : <AlertTriangle className="w-3 h-3 text-amber-400" />
+                                  }
+                                </span>
+                              );
+                            })}
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <span className={`text-[11px] font-bold ${status === 'Precificado' ? 'text-blue-600' : 'text-amber-600'
-                            }`}>
-                            {status}
+                          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${volStatus.priced === volStatus.total && volStatus.total > 0 ? 'bg-emerald-50 text-emerald-600' : volStatus.priced > 0 ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
+                            {volStatus.priced}/{volStatus.total}
                           </span>
                         </td>
                       </tr>
