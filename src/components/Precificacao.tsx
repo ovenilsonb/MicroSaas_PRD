@@ -9,6 +9,7 @@ import {
   LayoutGrid, List, Plus, Minus, Save, RotateCcw
 } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
+import { useToast } from './dashboard/Toast';
 
 // ─── Interfaces ──────────────────────────────────────────────
 
@@ -129,6 +130,7 @@ const getBaseFormulaName = (name: string): string => {
 // ─── Component ───────────────────────────────────────────────
 
 export default function Precificacao() {
+  const { showToast } = useToast();
   const { mode } = useStorageMode();
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [packagingOptions, setPackagingOptions] = useState<PackagingOption[]>([]);
@@ -155,15 +157,7 @@ export default function Precificacao() {
     } catch { return []; }
   });
 
-  // Notifications
-  const [notification, setNotification] = useState<{
-    show: boolean; type: 'success' | 'error' | 'info'; title: string; message: string;
-  }>({ show: false, type: 'info', title: '', message: '' });
 
-  const showNotify = (type: 'success' | 'error' | 'info', title: string, message: string) => {
-    setNotification({ show: true, type, title, message });
-    if (type !== 'error') setTimeout(() => setNotification(p => ({ ...p, show: false })), 4000);
-  };
 
   // ─── Data Fetching ──────────────────────────────────────────
 
@@ -185,7 +179,7 @@ export default function Precificacao() {
       }
     } catch (error) {
       console.error('Erro ao buscar fórmulas:', error);
-      showNotify('error', 'Erro', 'Não foi possível carregar as fórmulas.');
+      showToast('error', 'Erro', 'Não foi possível carregar as fórmulas.');
     } finally {
       setIsLoading(false);
     }
@@ -324,12 +318,12 @@ export default function Precificacao() {
       localStorage.setItem('precificacao_entries', JSON.stringify(next));
       return next;
     });
-    showNotify('success', 'Salvo!', `Preços para ${formatCapacity(selectedCapacity)} atualizados com sucesso.`);
+    showToast('success', 'Salvo!', `Preços para ${formatCapacity(selectedCapacity)} atualizados com sucesso.`);
   };
 
   const discardChanges = () => {
     if (selectedFormula) loadPricingForCapacity(selectedFormula.id, selectedCapacity);
-    showNotify('info', 'Descartado', 'As alterações foram revertidas.');
+    showToast('info', 'Descartado', 'As alterações foram revertidas.');
   };
 
   // ─── Calculations for Detail View ──────────────────────────
@@ -386,8 +380,8 @@ export default function Precificacao() {
     try {
       const filename = getBackupFilename('Precificacao');
       exportToJson(filename, savedPricing);
-      showNotify('success', 'Exportação Concluída', `Backup "${filename}" gerado.`);
-    } catch { showNotify('error', 'Erro', 'Falha na exportação.'); }
+      showToast('success', 'Exportação Concluída', `Backup "${filename}" gerado.`);
+    } catch { showToast('error', 'Erro', 'Falha na exportação.'); }
   };
 
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -398,10 +392,10 @@ export default function Precificacao() {
       if (Array.isArray(data)) {
         setSavedPricing(data);
         localStorage.setItem('precificacao_entries', JSON.stringify(data));
-        showNotify('success', 'Importação Concluída', `${data.length} preços importados.`);
+        showToast('success', 'Importação Concluída', `${data.length} preços importados.`);
       }
     } catch (err: any) {
-      showNotify('error', 'Erro', err.message || 'Falha na importação.');
+      showToast('error', 'Erro', err.message || 'Falha na importação.');
     }
     if (e.target) e.target.value = '';
   };
@@ -468,15 +462,19 @@ export default function Precificacao() {
     let pricedCount = 0;
     priced.forEach(f => {
       const p = getFormulaPrices(f.id);
-      if (p) {
-        // Simple average for summary - in a real app we'd calc real margin based on current costs
-        totalMargem += 30; // Placeholder for avg target
+      if (p && p.varejoPrice > 0) {
+        // Calculate real margin: (price - cost) / price * 100
+        // Note: This uses ingredient cost only, not including packaging
+        const custoBase = calcIngredientCost(f);
+        const margem = custoBase > 0 ? ((p.varejoPrice - custoBase) / p.varejoPrice) * 100 : 0;
+        totalMargem += Math.max(0, margem);
         pricedCount++;
       }
     });
 
-    return { total: active.length, priced: pricedCount, pending, avgMargin: 32.5 };
-  }, [formulas, getFormulaStatus, getFormulaPrices]);
+    const avgMargin = pricedCount > 0 ? totalMargem / pricedCount : 0;
+    return { total: active.length, priced: pricedCount, pending, avgMargin };
+  }, [formulas, getFormulaStatus, getFormulaPrices, calcIngredientCost]);
 
   // ─── Donut Chart SVG ───────────────────────────────────────
 
@@ -565,34 +563,6 @@ export default function Precificacao() {
     </div>
   );
 
-  // ─────────────────────────────────────────────────────────────
-  // NOTIFICATION TOAST (shared)
-  // ─────────────────────────────────────────────────────────────
-
-  const NotificationToast = () => notification.show ? (
-    <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-right-full duration-300">
-      <div className={`flex items-start gap-4 p-4 rounded-2xl shadow-2xl border min-w-[320px] ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
-        notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
-          'bg-blue-50 border-blue-200 text-blue-800'
-        }`}>
-        <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
-          notification.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'
-          }`}>
-          {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> :
-            notification.type === 'error' ? <AlertTriangle className="w-5 h-5" /> :
-              <Info className="w-5 h-5" />}
-        </div>
-        <div className="flex-1">
-          <h4 className="font-bold text-sm">{notification.title}</h4>
-          <p className="text-xs mt-1 opacity-90">{notification.message}</p>
-        </div>
-        <button onClick={() => setNotification(p => ({ ...p, show: false }))} className="p-1 hover:bg-black/5 rounded-lg transition-colors">
-          <X className="w-4 h-4" />
-        </button>
-      </div>
-    </div>
-  ) : null;
-
   // ═══════════════════════════════════════════════════════════
   // RENDER: DETAIL VIEW (opened when formula is selected)
   // ═══════════════════════════════════════════════════════════
@@ -600,7 +570,6 @@ export default function Precificacao() {
   if (selectedFormula && detailCalc) {
     return (
       <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
-        <NotificationToast />
 
         {/* Header */}
         <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
@@ -899,8 +868,6 @@ export default function Precificacao() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
-      <NotificationToast />
-
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
         <div>

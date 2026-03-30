@@ -15,7 +15,8 @@ const StorageModeContext = createContext<StorageModeContextType | undefined>(und
 export function StorageModeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<StorageMode>(() => {
     const savedMode = localStorage.getItem('storageMode') as StorageMode | null;
-    return savedMode || 'supabase';
+    // Default to 'local' - Supabase code is isolated but ready for future use
+    return savedMode || 'local';
   });
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -51,6 +52,22 @@ export function StorageModeProvider({ children }: { children: React.ReactNode })
       // 4. Fetch Suppliers
       const { data: suppliers } = await supabase.from('suppliers').select('*');
       if (suppliers) localStorage.setItem('local_suppliers', JSON.stringify(suppliers));
+
+      // 5. Fetch Clients
+      const { data: clients } = await supabase.from('clients').select('*');
+      if (clients) localStorage.setItem('local_clients', JSON.stringify(clients));
+
+      // 6. Fetch Production Orders
+      const { data: productionOrders } = await supabase.from('production_orders').select('*');
+      if (productionOrders) localStorage.setItem('local_production_orders', JSON.stringify(productionOrders));
+
+      // 7. Fetch Quality Controls
+      const { data: qualityControls } = await supabase.from('quality_controls').select('*');
+      if (qualityControls) localStorage.setItem('local_quality_controls', JSON.stringify(qualityControls));
+
+      // 8. Fetch Inventory Logs
+      const { data: inventoryLogs } = await supabase.from('inventory_logs').select('*');
+      if (inventoryLogs) localStorage.setItem('local_inventory_logs', JSON.stringify(inventoryLogs));
 
       alert('Sincronização concluída! Os dados do Supabase foram copiados para o seu armazenamento local.');
       window.location.reload(); // Reload to refresh all components

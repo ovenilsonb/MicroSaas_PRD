@@ -4,6 +4,7 @@ import { useStorageMode } from '../contexts/StorageModeContext';
 import { Plus, Trash2, Search, X, Package, Beaker, TestTubes, Component, ArrowRightLeft, Box, AlertCircle, Copy, AlertTriangle, List, LayoutGrid, ArrowDownAZ, ArrowUpZA, CheckCircle2, Info, MoreVertical, TrendingUp, DollarSign, Pencil, Download, Upload } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { generateId } from '../lib/id';
+import { useToast } from './dashboard/Toast';
 
 interface Variant {
   id?: string;
@@ -37,6 +38,7 @@ interface Ingredient {
 }
 
 export default function Insumos() {
+  const { showToast } = useToast();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
   const { mode } = useStorageMode();
@@ -59,25 +61,6 @@ export default function Insumos() {
   const [activeTab, setActiveTab] = useState<'geral' | 'tecnicas' | 'estoque' | 'uso'>('geral');
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string; name: string; formulas: any[]; isLoading: boolean }>({ isOpen: false, id: '', name: '', formulas: [], isLoading: false });
 
-  // Notification State
-  const [notification, setNotification] = useState<{
-    show: boolean;
-    type: 'success' | 'error' | 'info';
-    title: string;
-    message: string;
-  }>({
-    show: false,
-    type: 'info',
-    title: '',
-    message: ''
-  });
-
-  const showNotify = (type: 'success' | 'error' | 'info', title: string, message: string) => {
-    setNotification({ show: true, type, title, message });
-    if (type !== 'error') {
-      setTimeout(() => setNotification(prev => ({ ...prev, show: false })), 5000);
-    }
-  };
   const [usageFormulas, setUsageFormulas] = useState<any[]>([]);
   const [isLoadingUsage, setIsLoadingUsage] = useState(false);
 
@@ -93,9 +76,9 @@ export default function Insumos() {
     try {
       const filename = getBackupFilename('Insumos');
       exportToJson(filename, ingredients);
-      showNotify('success', 'Exportação Concluída', `O backup "${filename}" foi gerado com sucesso.`);
+      showToast('success', 'Exportação Concluída', `O backup "${filename}" foi gerado com sucesso.`);
     } catch (err) {
-      showNotify('error', 'Erro na Exportação', 'Não foi possível gerar o arquivo de backup.');
+      showToast('error', 'Erro na Exportação', 'Não foi possível gerar o arquivo de backup.');
     }
   };
 
@@ -112,7 +95,7 @@ export default function Insumos() {
       // If in Supabase mode, we should ideally upsert to the database
       // For now, let's update the local state and handle persistence based on mode
       if (mode === 'supabase') {
-        showNotify('info', 'Importando...', 'Sincronizando dados com o Supabase...');
+        showToast('info', 'Importando...', 'Sincronizando dados com o Supabase...');
 
         // This is a simplified import for Supabase, bulk upsert would be better
         for (const item of data) {
@@ -140,9 +123,9 @@ export default function Insumos() {
         setIngredients(newData);
       }
 
-      showNotify('success', 'Importação Concluída', `${data.length} insumos foram processados.`);
+      showToast('success', 'Importação Concluída', `${data.length} insumos foram processados.`);
     } catch (err: any) {
-      showNotify('error', 'Erro na Importação', err.message || 'Falha ao importar arquivo.');
+      showToast('error', 'Erro na Importação', err.message || 'Falha ao importar arquivo.');
     } finally {
       if (e.target) e.target.value = '';
     }
@@ -228,6 +211,7 @@ export default function Insumos() {
           .order('name');
 
         if (error) throw error;
+        setIngredients(data || []);
       } else {
         // Fetch from Local Storage
         let localIngredients = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
@@ -273,7 +257,7 @@ export default function Insumos() {
       }
     } catch (error) {
       console.error('Erro ao buscar insumos:', error);
-      showNotify('error', 'Erro de Carregamento', 'Não foi possível carregar a lista de insumos.');
+      showToast('error', 'Erro de Carregamento', 'Não foi possível carregar a lista de insumos.');
     } finally {
       setIsLoading(false);
     }
@@ -405,7 +389,7 @@ export default function Insumos() {
 
     // Se não tem variantes, o custo é obrigatório
     if (!formData.tem_variantes && (isNaN(cost) || cost <= 0)) {
-      showNotify('info', 'Dados Inválidos', 'O valor unitário é obrigatório para insumos sem variantes.');
+      showToast('info', 'Dados Inválidos', 'O valor unitário é obrigatório para insumos sem variantes.');
       return;
     }
 
@@ -493,10 +477,10 @@ export default function Insumos() {
 
       handleCloseModal();
       fetchIngredients();
-      showNotify('success', 'Sucesso!', editingId ? 'Insumo atualizado com sucesso.' : 'Insumo cadastrado com sucesso.');
+      showToast('success', 'Sucesso!', editingId ? 'Insumo atualizado com sucesso.' : 'Insumo cadastrado com sucesso.');
     } catch (error) {
       console.error('Erro ao salvar insumo:', error);
-      showNotify('error', 'Erro ao Salvar', 'Não foi possível salvar o insumo.');
+      showToast('error', 'Erro ao Salvar', 'Não foi possível salvar o insumo.');
     }
   };
 
@@ -604,11 +588,11 @@ export default function Insumos() {
 
       setDeleteModal({ isOpen: false, id: '', name: '', formulas: [], isLoading: false });
       fetchIngredients();
-      showNotify('success', 'Excluído', 'O insumo foi removido com sucesso.');
+      showToast('success', 'Excluído', 'O insumo foi removido com sucesso.');
     } catch (error) {
       console.error('Erro ao excluir insumo:', error);
       setDeleteModal({ isOpen: false, id: '', name: '', formulas: [], isLoading: false });
-      showNotify('error', 'Erro ao Excluir', 'Não foi possível excluir o insumo.');
+      showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o insumo.');
     }
   };
 
@@ -669,35 +653,6 @@ export default function Insumos() {
 
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
-      {/* Notifications / Toasts */}
-      {notification.show && (
-        <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-right-full duration-300">
-          <div className={`flex items-start gap-4 p-4 rounded-2xl shadow-2xl border min-w-[320px] ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
-              notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
-                'bg-blue-50 border-blue-200 text-blue-800'
-            }`}>
-            <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
-                notification.type === 'error' ? 'bg-red-100 text-red-600' :
-                  'bg-blue-100 text-blue-600'
-              }`}>
-              {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> :
-                notification.type === 'error' ? <AlertTriangle className="w-5 h-5" /> :
-                  <Info className="w-5 h-5" />}
-            </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-sm">{notification.title}</h4>
-              <p className="text-xs mt-1 opacity-90">{notification.message}</p>
-            </div>
-            <button
-              onClick={() => setNotification(prev => ({ ...prev, show: false }))}
-              className="p-1 hover:bg-black/5 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
         <div>
@@ -1594,7 +1549,7 @@ export default function Insumos() {
                         </div>
                         <div className="text-right">
                           <p className="text-xs font-medium text-slate-500 mb-1">Estoque Mínimo: {formData.estoque_minimo || '0'} {formData.unit?.toUpperCase()}</p>
-                          {parseFloat(formData.estoque_atual) <= parseFloat(formData.estoque_minimo) && (
+                          {parseFloat(String(formData.estoque_atual || '0').replace(/\./g, '').replace(',', '.')) <= parseFloat(String(formData.estoque_minimo || '0').replace(/\./g, '').replace(',', '.')) && (
                             <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-red-100 text-red-700 text-xs font-bold">
                               <AlertCircle className="w-3 h-3" />
                               Estoque Baixo

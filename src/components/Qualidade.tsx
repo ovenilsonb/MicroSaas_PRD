@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useStorageMode } from '../contexts/StorageModeContext';
 import { generateId } from '../lib/id';
+import { useToast } from './dashboard/Toast';
 import {
   ShieldCheck, FlaskConical, CheckCircle2, XCircle, AlertTriangle, FileText,
   Search, MessageSquare, Beaker, User, History, Save, Clock, Droplets,
@@ -9,6 +10,7 @@ import {
 } from 'lucide-react';
 
 export default function Qualidade() {
+  const { showToast } = useToast();
   const { mode } = useStorageMode();
   const [activeTab, setActiveTab] = useState<'pending' | 'history'>('pending');
   const [checks, setChecks] = useState<any[]>([]);
@@ -231,7 +233,7 @@ export default function Qualidade() {
       setSelectedCheck(null);
     } catch (err) {
       console.error('Erro ao processar laudo:', err);
-      alert('Erro ao salvar laudo de qualidade.');
+      showToast('error', 'Erro ao Salvar', 'Não foi possível salvar o laudo de qualidade.');
     } finally {
       setIsSaving(false);
     }

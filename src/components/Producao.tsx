@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useStorageMode } from '../contexts/StorageModeContext';
+import { useToast } from './dashboard/Toast';
 import {
   Factory, Plus, Search, Beaker, Calendar, Hash, ChevronRight, ArrowLeft,
   CheckCircle2, Clock, AlertCircle, Play, ClipboardList, ShieldCheck,
@@ -219,6 +220,7 @@ const PROCESS_FLOW: { status: OrderStatus; label: string; icon: React.ReactNode;
 // ─── Component ───────────────────────────────────────────────
 
 export default function Producao() {
+  const { showToast } = useToast();
   const { mode } = useStorageMode();
   const [orders, setOrders] = useState<ProductionOrder[]>([]);
   const [formulas, setFormulas] = useState<Formula[]>([]);
@@ -226,9 +228,6 @@ export default function Producao() {
   const [viewMode, setViewMode] = useState<'list' | 'create' | 'details'>('list');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedOrder, setSelectedOrder] = useState<ProductionOrder | null>(null);
-  const [notification, setNotification] = useState<{
-    show: boolean; type: 'success' | 'error' | 'info'; title: string; message: string;
-  }>({ show: false, type: 'info', title: '', message: '' });
 
   // Create Form State
   const [targetFormulaId, setTargetFormulaId] = useState('');
@@ -242,11 +241,6 @@ export default function Producao() {
   const [packagingOptions, setPackagingOptions] = useState<PackagingOption[]>([]);
   const [packagingQty, setPackagingQty] = useState<Record<string, number>>({});
   const [showPackagingSection, setShowPackagingSection] = useState(false);
-
-  const showNotify = useCallback((type: 'success' | 'error' | 'info', title: string, message: string) => {
-    setNotification({ show: true, type, title, message });
-    if (type !== 'error') setTimeout(() => setNotification(p => ({ ...p, show: false })), 4000);
-  }, []);
 
   // ─── Data Fetching ──────────────────────────────────────────
 
@@ -398,7 +392,7 @@ export default function Producao() {
     e.preventDefault();
     if (!targetFormulaId || !batchNumber) return;
     if (!plannedVolume) {
-      showNotify('error', 'Volume Necessário', 'Por favor, informe o volume do lote para prosseguir.');
+      showToast('error', 'Volume Necessário', 'Por favor, informe o volume do lote para prosseguir.');
       return;
     }
 
@@ -453,10 +447,10 @@ export default function Producao() {
       setOrders(updated);
       saveOrdersLocal(updated);
       setViewMode('list');
-      showNotify('success', 'OF Criada', `Lote ${batchNumber} criado com sucesso.`);
+      showToast('success', 'OF Criada', `Lote ${batchNumber} criado com sucesso.`);
     } catch (err) {
       console.error('Erro ao criar ordem:', err);
-      showNotify('error', 'Erro', 'Não foi possível criar a ordem de fabricação.');
+      showToast('error', 'Erro', 'Não foi possível criar a ordem de fabricação.');
     } finally {
       setIsSaving(false);
     }
@@ -489,7 +483,7 @@ export default function Producao() {
         if (newStatus === 'weighing') {
           const scaled = getScaledIngredients(order);
           for (const item of scaled) {
-            // 1. Create Log
+            // Create Log (trigger will handle stock deduction automatically)
             await supabase.from('inventory_logs').insert([{
               ingredient_id: item.ingredient_id,
               variant_id: item.variant_id,
@@ -498,14 +492,6 @@ export default function Producao() {
               reference_id: order.id,
               notes: `Consumo automático (OF: ${order.batch_number})`
             }]);
-
-            // 2. Update Ingredient Stock
-            const { data: ing } = await supabase.from('ingredients').select('estoque_atual').eq('id', item.ingredient_id).single();
-            if (ing) {
-              await supabase.from('ingredients').update({
-                estoque_atual: (ing.estoque_atual || 0) - item.scaledQty
-              }).eq('id', item.ingredient_id);
-            }
           }
         }
 
@@ -561,10 +547,10 @@ export default function Producao() {
       setOrders(updated);
       saveOrdersLocal(updated);
       setSelectedOrder(prev => prev?.id === order.id ? { ...prev, ...updateData } : prev);
-      showNotify('success', 'Status Atualizado', `OF ${order.batch_number} agora está em: ${getStatusConfig(newStatus).label}`);
+      showToast('success', 'Status Atualizado', `OF ${order.batch_number} agora está em: ${getStatusConfig(newStatus).label}`);
     } catch (err) {
       console.error('Erro ao atualizar status:', err);
-      showNotify('error', 'Erro', 'Não foi possível atualizar o status e processar integrações.');
+      showToast('error', 'Erro', 'Não foi possível atualizar o status e processar integrações.');
     }
   };
 
@@ -610,7 +596,7 @@ export default function Producao() {
       setOrders(updated);
       saveOrdersLocal(updated);
       if (selectedOrder?.id === id) { setSelectedOrder(null); setViewMode('list'); }
-      showNotify('success', 'Excluída', 'Ordem de fabricação excluída.');
+      showToast('success', 'Excluída', 'Ordem de fabricação excluída.');
     } catch (err) {
       console.error('Erro ao excluir:', err);
     }
@@ -713,22 +699,6 @@ export default function Producao() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
-      {/* Notification */}
-      {notification.show && (
-        <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-right-full duration-300">
-          <div className={`flex items-start gap-4 p-4 rounded-2xl shadow-2xl border min-w-[320px] ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' : notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' : 'bg-blue-50 border-blue-200 text-blue-800'}`}>
-            <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-emerald-100 text-emerald-600' : notification.type === 'error' ? 'bg-red-100 text-red-600' : 'bg-blue-100 text-blue-600'}`}>
-              {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : notification.type === 'error' ? <AlertTriangle className="w-5 h-5" /> : <Info className="w-5 h-5" />}
-            </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-sm">{notification.title}</h4>
-              <p className="text-xs mt-1 opacity-90">{notification.message}</p>
-            </div>
-            <button onClick={() => setNotification(p => ({ ...p, show: false }))} className="p-1 hover:bg-black/5 rounded-lg"><X className="w-4 h-4" /></button>
-          </div>
-        </div>
-      )}
-
       {/* Header */}
       <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
         <div>

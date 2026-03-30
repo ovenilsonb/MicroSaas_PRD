@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { useStorageMode } from '../contexts/StorageModeContext';
 import { generateId } from '../lib/id';
+import { useToast } from './dashboard/Toast';
 import {
   Archive, ArrowUpRight, ArrowDownLeft, History, Search, Filter,
   Package, AlertTriangle, ClipboardList, RefreshCw, TrendingDown, TrendingUp, Box, Layers, Pencil
@@ -51,6 +52,7 @@ interface FinishedGoodLog {
 }
 
 export default function Estoque() {
+  const { showToast } = useToast();
   const { mode } = useStorageMode();
   const [activeTab, setActiveTab] = useState<'finished' | 'raw'>('finished');
 
@@ -82,7 +84,43 @@ export default function Estoque() {
   async function fetchFinishedGoods() {
     try {
       if (mode === 'supabase') {
-        // Implementação futura
+        // Fetch finished goods from inventory_logs (type 'in' with 'finished_good' prefix in notes)
+        const { data: logs, error } = await supabase
+          .from('inventory_logs')
+          .select('*')
+          .or('type.eq.finished_good_in,type.eq.finished_good_out')
+          .order('created_at', { ascending: false });
+
+        if (error && error.code !== '42P01') {
+          console.error('Erro ao buscar finished goods:', error);
+        }
+
+        // Group logs by finished_good_id to build finished goods inventory
+        const fgMap = new Map<string, any>();
+        const fgLogs: any[] = [];
+
+        if (logs) {
+          logs.forEach((log: any) => {
+            const fgId = log.reference_id;
+            if (!fgId) return;
+
+            fgLogs.push({
+              ...log,
+              finished_good_id: fgId
+            });
+
+            const current = fgMap.get(fgId) || { id: fgId, stock_quantity: 0, name: log.notes?.replace('Entrada PA: ', '').replace('Saída PA: ', '') || 'Produto Acabado' };
+            if (log.type === 'finished_good_in') {
+              current.stock_quantity += log.quantity;
+            } else if (log.type === 'finished_good_out') {
+              current.stock_quantity -= log.quantity;
+            }
+            fgMap.set(fgId, current);
+          });
+        }
+
+        setFinishedGoods(Array.from(fgMap.values()));
+        setFgLogs(fgLogs);
       } else {
         const localFG = JSON.parse(localStorage.getItem('local_finished_goods') || '[]');
         const localFGLogs = JSON.parse(localStorage.getItem('local_finished_goods_logs') || '[]');
@@ -103,7 +141,7 @@ export default function Estoque() {
     const qtyStr = prompt('Informe a nova quantidade física em estoque (ajuste rápido):');
     if (qtyStr === null || qtyStr.trim() === '') return;
     const newQty = parseInt(qtyStr, 10);
-    if (isNaN(newQty) || newQty < 0) return alert('Quantidade inválida.');
+    if (isNaN(newQty) || newQty < 0) return showToast('error', 'Quantidade Inválida', 'Por favor, insira uma quantidade válida.');
 
     const localFG = JSON.parse(localStorage.getItem('local_finished_goods') || '[]');
     const localFGLogs = JSON.parse(localStorage.getItem('local_finished_goods_logs') || '[]');

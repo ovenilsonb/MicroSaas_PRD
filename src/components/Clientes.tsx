@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useStorageMode } from '../contexts/StorageModeContext';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { generateId } from '../lib/id';
+import { useToast } from './dashboard/Toast';
 
 interface Client {
   id: string;
@@ -19,31 +20,12 @@ interface Client {
 }
 
 export default function Clientes() {
+  const { showToast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const { mode } = useStorageMode();
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-
-  // Notification State
-  const [notification, setNotification] = useState<{
-    show: boolean;
-    type: 'success' | 'error' | 'info';
-    title: string;
-    message: string;
-  }>({
-    show: false,
-    type: 'info',
-    title: '',
-    message: ''
-  });
-
-  const showNotify = (type: 'success' | 'error' | 'info', title: string, message: string) => {
-    setNotification({ show: true, type, title, message });
-    if (type !== 'error') {
-      setTimeout(() => setNotification(prev => ({ ...prev, show: false })), 5000);
-    }
-  };
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -86,7 +68,7 @@ export default function Clientes() {
       }
     } catch (err) {
       console.error('Erro ao buscar clientes:', err);
-      showNotify('error', 'Erro', 'Falha ao carregar clientes.');
+      showToast('error', 'Erro', 'Falha ao carregar clientes.');
     } finally {
       setIsLoading(false);
     }
@@ -128,7 +110,7 @@ export default function Clientes() {
     e.preventDefault();
 
     if (!formData.name) {
-      showNotify('error', 'Erro', 'O nome do cliente é obrigatório.');
+      showToast('error', 'Erro', 'O nome do cliente é obrigatório.');
       return;
     }
 
@@ -141,14 +123,14 @@ export default function Clientes() {
             .eq('id', editingId);
 
           if (error) throw error;
-          showNotify('success', 'Sucesso', 'Cliente atualizado com sucesso.');
+          showToast('success', 'Sucesso', 'Cliente atualizado com sucesso.');
         } else {
           const { error } = await supabase
             .from('clients')
             .insert([formData]);
 
           if (error) throw error;
-          showNotify('success', 'Sucesso', 'Cliente cadastrado com sucesso.');
+          showToast('success', 'Sucesso', 'Cliente cadastrado com sucesso.');
         }
       } else {
         const localData = JSON.parse(localStorage.getItem('local_clients') || '[]');
@@ -157,7 +139,7 @@ export default function Clientes() {
           if (index >= 0) {
             localData[index] = { ...formData, id: editingId, updated_at: new Date().toISOString() };
             localStorage.setItem('local_clients', JSON.stringify(localData));
-            showNotify('success', 'Sucesso', 'Cliente atualizado localmente.');
+            showToast('success', 'Sucesso', 'Cliente atualizado localmente.');
           }
         } else {
           const newClient = {
@@ -167,7 +149,7 @@ export default function Clientes() {
           };
           localData.push(newClient);
           localStorage.setItem('local_clients', JSON.stringify(localData));
-          showNotify('success', 'Sucesso', 'Cliente cadastrado localmente.');
+          showToast('success', 'Sucesso', 'Cliente cadastrado localmente.');
         }
       }
 
@@ -175,7 +157,7 @@ export default function Clientes() {
       fetchClients();
     } catch (err: any) {
       console.error('Erro ao salvar cliente:', err);
-      showNotify('error', 'Erro ao Salvar', 'Não foi possível salvar os dados do cliente.');
+      showToast('error', 'Erro ao Salvar', 'Não foi possível salvar os dados do cliente.');
     }
   };
 
@@ -190,17 +172,17 @@ export default function Clientes() {
           .eq('id', id);
 
         if (error) throw error;
-        showNotify('success', 'Sucesso', 'Cliente excluído com sucesso.');
+        showToast('success', 'Sucesso', 'Cliente excluído com sucesso.');
       } else {
         const localData = JSON.parse(localStorage.getItem('local_clients') || '[]');
         const newData = localData.filter((c: any) => c.id !== id);
         localStorage.setItem('local_clients', JSON.stringify(newData));
-        showNotify('success', 'Sucesso', 'Cliente excluído localmente.');
+        showToast('success', 'Sucesso', 'Cliente excluído localmente.');
       }
       fetchClients();
     } catch (err) {
       console.error('Erro ao excluir cliente:', err);
-      showNotify('error', 'Erro ao Excluir', 'Não foi possível excluir o cliente.');
+      showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o cliente.');
     }
   };
 
@@ -208,9 +190,9 @@ export default function Clientes() {
     try {
       const filename = getBackupFilename('Clientes');
       exportToJson(filename, clients);
-      showNotify('success', 'Exportação Concluída', `O backup "${filename}" foi gerado com sucesso.`);
+      showToast('success', 'Exportação Concluída', `O backup "${filename}" foi gerado com sucesso.`);
     } catch (err) {
-      showNotify('error', 'Erro na Exportação', 'Não foi possível gerar o arquivo de backup.');
+      showToast('error', 'Erro na Exportação', 'Não foi possível gerar o arquivo de backup.');
     }
   };
 
@@ -225,7 +207,7 @@ export default function Clientes() {
       }
 
       if (mode === 'supabase') {
-        showNotify('info', 'Importando...', 'Sincronizando dados com o Supabase...');
+        showToast('info', 'Importando...', 'Sincronizando dados com o Supabase...');
         for (const item of data) {
           const { error } = await supabase.from('clients').upsert(item);
           if (error) console.error(`Erro ao importar ${item.name}:`, error);
@@ -248,9 +230,9 @@ export default function Clientes() {
         setClients(newData);
       }
 
-      showNotify('success', 'Importação Concluída', `${data.length} clientes foram processados.`);
+      showToast('success', 'Importação Concluída', `${data.length} clientes foram processados.`);
     } catch (err: any) {
-      showNotify('error', 'Erro na Importação', err.message || 'Falha ao importar arquivo.');
+      showToast('error', 'Erro na Importação', err.message || 'Falha ao importar arquivo.');
     } finally {
       if (e.target) e.target.value = '';
     }
@@ -302,31 +284,6 @@ export default function Clientes() {
           </div>
         </div>
       </header>
-
-      {/* Notification Banner */}
-      {notification.show && (
-        <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[100] animate-in fade-in slide-in-from-top-4 duration-300">
-          <div className={`flex items-center gap-3 px-6 py-3 rounded-2xl shadow-xl border ${
-            notification.type === 'success' ? 'bg-emerald-50 border-emerald-100 text-emerald-800' :
-            notification.type === 'error' ? 'bg-rose-50 border-rose-100 text-rose-800' :
-            'bg-blue-50 border-blue-100 text-blue-800'
-          }`}>
-            {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5 text-emerald-500" /> :
-             notification.type === 'error' ? <AlertCircle className="w-5 h-5 text-rose-500" /> :
-             <Info className="w-5 h-5 text-blue-500" />}
-            <div>
-              <p className="font-bold text-sm">{notification.title}</p>
-              <p className="text-xs opacity-90">{notification.message}</p>
-            </div>
-            <button 
-              onClick={() => setNotification(prev => ({ ...prev, show: false }))}
-              className="ml-4 p-1 hover:bg-black/5 rounded-full transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
 
       <div className="flex-1 overflow-auto p-8 bg-slate-50/50">
         <div className="max-w-6xl mx-auto space-y-6">

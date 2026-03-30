@@ -1,5 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
+import { useStorageMode } from '../contexts/StorageModeContext';
+import { generateId } from '../lib/id';
+import { useToast } from './dashboard/Toast';
 import {
   Search,
   Plus,
@@ -33,6 +36,8 @@ interface Supplier {
 }
 
 export default function Fornecedores() {
+  const { showToast } = useToast();
+  const { mode } = useStorageMode();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,21 +64,27 @@ export default function Fornecedores() {
   async function fetchSuppliers() {
     try {
       setIsLoading(true);
-      const { data, error } = await supabase
-        .from('suppliers')
-        .select('*')
-        .order('name');
+      if (mode === 'supabase') {
+        const { data, error } = await supabase
+          .from('suppliers')
+          .select('*')
+          .order('name');
 
-      if (error) {
-        if (error.code === '42P01') {
-          setSuppliers([]);
-          return;
+        if (error) {
+          if (error.code === '42P01') {
+            setSuppliers([]);
+            return;
+          }
+          throw error;
         }
-        throw error;
+        setSuppliers(data || []);
+      } else {
+        const local = localStorage.getItem('local_suppliers');
+        setSuppliers(local ? JSON.parse(local) : []);
       }
-      setSuppliers(data || []);
     } catch (err) {
       console.error('Erro ao buscar fornecedores:', err);
+      showToast('error', 'Erro', 'Falha ao carregar fornecedores.');
     } finally {
       setIsLoading(false);
     }
@@ -115,31 +126,48 @@ export default function Fornecedores() {
     e.preventDefault();
 
     if (!formData.name) {
-      alert('O nome do fornecedor é obrigatório.');
+      showToast('error', 'Campo Obrigatório', 'O nome do fornecedor é obrigatório.');
       return;
     }
 
     try {
-      if (editingId) {
-        const { error } = await supabase
-          .from('suppliers')
-          .update(formData)
-          .eq('id', editingId);
+      if (mode === 'supabase') {
+        if (editingId) {
+          const { error } = await supabase
+            .from('suppliers')
+            .update(formData)
+            .eq('id', editingId);
 
-        if (error) throw error;
+          if (error) throw error;
+        } else {
+          const { error } = await supabase
+            .from('suppliers')
+            .insert([formData]);
+
+          if (error) throw error;
+        }
       } else {
-        const { error } = await supabase
-          .from('suppliers')
-          .insert([formData]);
-
-        if (error) throw error;
+        const local = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
+        if (editingId) {
+          const idx = local.findIndex((s: Supplier) => s.id === editingId);
+          if (idx >= 0) {
+            local[idx] = { ...local[idx], ...formData };
+          }
+        } else {
+          local.push({
+            id: generateId(),
+            ...formData,
+            created_at: new Date().toISOString()
+          } as Supplier);
+        }
+        localStorage.setItem('local_suppliers', JSON.stringify(local));
       }
 
       handleCloseModal();
       fetchSuppliers();
     } catch (err: any) {
       console.error('Erro ao salvar fornecedor:', err);
-      alert('Não foi possível salvar o fornecedor.');
+      showToast('error', 'Erro ao Salvar', 'Não foi possível salvar o fornecedor.');
     }
   };
 
@@ -147,16 +175,22 @@ export default function Fornecedores() {
     if (!window.confirm(`Tem certeza que deseja excluir o fornecedor ${name}?`)) return;
 
     try {
-      const { error } = await supabase
-        .from('suppliers')
-        .delete()
-        .eq('id', id);
+      if (mode === 'supabase') {
+        const { error } = await supabase
+          .from('suppliers')
+          .delete()
+          .eq('id', id);
 
-      if (error) throw error;
+        if (error) throw error;
+      } else {
+        const local = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
+        const filtered = local.filter((s: Supplier) => s.id !== id);
+        localStorage.setItem('local_suppliers', JSON.stringify(filtered));
+      }
       fetchSuppliers();
     } catch (err) {
       console.error('Erro ao excluir fornecedor:', err);
-      alert('Não foi possível excluir o fornecedor.');
+      showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o fornecedor.');
     }
   };
 
@@ -164,9 +198,9 @@ export default function Fornecedores() {
     try {
       const filename = getBackupFilename('Fornecedores');
       exportToJson(filename, suppliers);
-      alert('Exportação concluída com sucesso!');
+      showToast('success', 'Exportação Concluída', 'O backup foi gerado com sucesso.');
     } catch (err) {
-      alert('Erro na exportação.');
+      showToast('error', 'Erro na Exportação', 'Não foi possível gerar o arquivo de backup.');
     }
   };
 
@@ -179,15 +213,33 @@ export default function Fornecedores() {
       if (!Array.isArray(data)) throw new Error('Dados inválidos.');
 
       if (window.confirm(`Deseja importar ${data.length} fornecedores?`)) {
-        for (const item of data) {
-          const { id, created_at, ...cleanData } = item;
-          await supabase.from('suppliers').upsert([cleanData]);
+        if (mode === 'supabase') {
+          for (const item of data) {
+            const { id, created_at, ...cleanData } = item;
+            await supabase.from('suppliers').upsert([cleanData]);
+          }
+        } else {
+          const local = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
+          for (const item of data) {
+            const { id, created_at, ...cleanData } = item;
+            const existingIdx = local.findIndex((s: Supplier) => s.id === id);
+            if (existingIdx >= 0) {
+              local[existingIdx] = { ...local[existingIdx], ...cleanData };
+            } else {
+              local.push({
+                id: generateId(),
+                ...cleanData,
+                created_at: new Date().toISOString()
+              } as Supplier);
+            }
+          }
+          localStorage.setItem('local_suppliers', JSON.stringify(local));
         }
         fetchSuppliers();
-        alert('Importação concluída!');
+        showToast('success', 'Importação Concluída', `${data.length} fornecedores foram processados.`);
       }
     } catch (err) {
-      alert('Erro na importação.');
+      showToast('error', 'Erro na Importação', 'Falha ao importar arquivo.');
     }
     e.target.value = '';
   };

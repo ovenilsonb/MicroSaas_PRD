@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense, lazy } from 'react';
 import {
   Beaker, Calculator, DollarSign, Package, FileBarChart,
   Settings, Plus, Save, Printer, ArrowRight, Search,
@@ -9,17 +9,30 @@ import {
 } from 'lucide-react';
 import { useStorageMode } from './contexts/StorageModeContext';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
-import Insumos from './components/Insumos';
-import Dashboard from './components/Dashboard';
-import Formulas from './components/Formulas';
-import Proporcao from './components/Proporcao';
-import Precificacao from './components/Precificacao';
-import Relatorios from './components/Relatorios';
-import Fornecedores from './components/Fornecedores';
-import Clientes from './components/Clientes';
-import Producao from './components/Producao';
-import Qualidade from './components/Qualidade';
-import Estoque from './components/Estoque';
+import { ToastProvider } from './components/dashboard/Toast';
+
+const Dashboard = lazy(() => import('./components/Dashboard'));
+const Insumos = lazy(() => import('./components/Insumos'));
+const Formulas = lazy(() => import('./components/Formulas'));
+const Proporcao = lazy(() => import('./components/Proporcao'));
+const Precificacao = lazy(() => import('./components/Precificacao'));
+const Relatorios = lazy(() => import('./components/Relatorios'));
+const Fornecedores = lazy(() => import('./components/Fornecedores'));
+const Clientes = lazy(() => import('./components/Clientes'));
+const Producao = lazy(() => import('./components/Producao'));
+const Qualidade = lazy(() => import('./components/Qualidade'));
+const Estoque = lazy(() => import('./components/Estoque'));
+
+function LoadingFallback() {
+  return (
+    <div className="flex-1 flex items-center justify-center bg-slate-50">
+      <div className="text-center">
+        <div className="w-12 h-12 border-4 border-[#202eac] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-slate-500 font-medium">Carregando módulo...</p>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   const { mode, setMode, syncFromSupabase, isSyncing } = useStorageMode();
@@ -310,7 +323,7 @@ create table if not exists public.inventory_logs (
   }
 
   return (
-    <>
+    <ToastProvider>
       <style>{`
         .custom-scrollbar::-webkit-scrollbar {
           width: 4px;
@@ -409,28 +422,29 @@ create table if not exists public.inventory_logs (
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden">
+        <Suspense fallback={<LoadingFallback />}>
+          {activeMenu === 'dashboard' && <Dashboard setActiveMenu={setActiveMenu} />}
 
-        {activeMenu === 'dashboard' && <Dashboard setActiveMenu={setActiveMenu} />}
+          {activeMenu === 'insumos' && <Insumos />}
 
-        {activeMenu === 'insumos' && <Insumos />}
+          {activeMenu === 'formulas' && <Formulas />}
 
-        {activeMenu === 'formulas' && <Formulas />}
+          {activeMenu === 'proporcao' && <Proporcao />}
 
-        {activeMenu === 'proporcao' && <Proporcao />}
+          {activeMenu === 'precificacao' && <Precificacao />}
 
-        {activeMenu === 'precificacao' && <Precificacao />}
+          {activeMenu === 'fornecedores' && <Fornecedores />}
 
-        {activeMenu === 'fornecedores' && <Fornecedores />}
+          {activeMenu === 'clientes' && <Clientes />}
 
-        {activeMenu === 'clientes' && <Clientes />}
+          {activeMenu === 'relatorios' && <Relatorios />}
 
-        {activeMenu === 'relatorios' && <Relatorios />}
+          {activeMenu === 'producao' && <Producao />}
 
-        {activeMenu === 'producao' && <Producao />}
+          {activeMenu === 'qualidade' && <Qualidade />}
 
-        {activeMenu === 'qualidade' && <Qualidade />}
-
-        {activeMenu === 'estoque' && <Estoque />}
+          {activeMenu === 'estoque' && <Estoque />}
+        </Suspense>
 
         {/* Settings View */}
         {activeMenu === 'configuracoes' && (
@@ -554,7 +568,7 @@ create table if not exists public.inventory_logs (
 
       </main>
     </div>
-    </>
+    </ToastProvider>
   );
 }
 

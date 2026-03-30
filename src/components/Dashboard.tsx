@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Beaker, Package, TrendingUp, AlertTriangle, 
-  ArrowRight, Plus, Activity, DollarSign, Settings2, GripHorizontal,
-  CheckCircle2, Info, X, ShieldCheck
-} from 'lucide-react';
-import { supabase } from '../lib/supabase';
-import { useStorageMode } from '../contexts/StorageModeContext';
+import React, { useState, useEffect, useMemo } from 'react';
+import { Activity, Settings2 } from 'lucide-react';
 import { Responsive as ResponsiveGridLayout, Layout, ResponsiveLayouts } from 'react-grid-layout';
 import { WidthProvider } from 'react-grid-layout/legacy';
 import 'react-grid-layout/css/styles.css';
 import 'react-resizable/css/styles.css';
+
+import { useDashboardData } from '../hooks/useDashboardData';
+import { useToast } from './dashboard/Toast';
+import StatsGrid from './dashboard/StatsGrid';
+import QuickActions from './dashboard/QuickActions';
+import RecentActivity from './dashboard/RecentActivity';
 
 const Responsive = WidthProvider(ResponsiveGridLayout);
 
@@ -17,55 +17,20 @@ const BREAKPOINTS = { lg: 1200, md: 996, sm: 768, xs: 480, xxs: 0 };
 const COLS = { lg: 12, md: 10, sm: 6, xs: 4, xxs: 2 };
 const MARGIN: [number, number] = [24, 24];
 
+const defaultLayouts: ResponsiveLayouts = {
+  lg: [
+    { i: 'stats-row', x: 0, y: 0, w: 12, h: 3, minW: 4, minH: 3 },
+    { i: 'card-acoes', x: 0, y: 3, w: 4, h: 5, minW: 3, minH: 4 },
+    { i: 'card-atividade', x: 4, y: 3, w: 8, h: 5, minW: 4, minH: 4 },
+  ]
+};
+
 export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: string) => void }) {
-  const [stats, setStats] = useState({
-    totalInsumos: 0,
-    estoqueBaixo: 0,
-    totalFormulas: 0,
-    custoMedio: 0,
-    ofsAtivas: 0,
-    taxaAprovacao: 0
-  });
-  const { mode } = useStorageMode();
-  const [recentActivity, setRecentActivity] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const { stats, recentActivity, isLoading, error } = useDashboardData();
+  const { showToast } = useToast();
   const [isEditing, setIsEditing] = useState(false);
-
-  // Notification State
-  const [notification, setNotification] = useState<{
-    show: boolean;
-    type: 'success' | 'error' | 'info';
-    title: string;
-    message: string;
-  }>({
-    show: false,
-    type: 'info',
-    title: '',
-    message: ''
-  });
-
-  const showNotify = (type: 'success' | 'error' | 'info', title: string, message: string) => {
-    setNotification({ show: true, type, title, message });
-    if (type !== 'error') {
-      setTimeout(() => setNotification(prev => ({ ...prev, show: false })), 5000);
-    }
-  };
-  
-  // Default layout for the dashboard
-  const defaultLayouts: ResponsiveLayouts = {
-    lg: [
-      { i: 'card-formulas', x: 0, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'card-insumos', x: 3, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'card-producao', x: 6, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'card-qualidade', x: 9, y: 0, w: 3, h: 2, minW: 2, minH: 2 },
-      { i: 'card-acoes', x: 0, y: 2, w: 4, h: 4, minW: 3, minH: 3 },
-      { i: 'card-atividade', x: 4, y: 2, w: 8, h: 4, minW: 4, minH: 3 },
-    ]
-  };
-  
   const [layouts, setLayouts] = useState<ResponsiveLayouts>(defaultLayouts);
 
-  // Load saved layout from localStorage on mount
   useEffect(() => {
     const savedLayout = localStorage.getItem('dashboardLayouts');
     if (savedLayout) {
@@ -75,116 +40,35 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
         console.error('Failed to parse saved layout', e);
       }
     }
-    fetchDashboardData();
   }, []);
 
-  const dragConfig = React.useMemo(() => ({ enabled: isEditing, handle: '.drag-handle' }), [isEditing]);
-  const resizeConfig = React.useMemo(() => ({ enabled: isEditing }), [isEditing]);
+  useEffect(() => {
+    if (error) {
+      showToast('error', 'Erro de Conexão', error);
+    }
+  }, [error, showToast]);
 
-  const onLayoutChange = (layout: Layout, allLayouts: ResponsiveLayouts) => {
+  const dragConfig = useMemo(() => ({ enabled: isEditing, handle: '.drag-handle' }), [isEditing]);
+  const resizeConfig = useMemo(() => ({ enabled: isEditing }), [isEditing]);
+
+  const onLayoutChange = (_layout: Layout, allLayouts: ResponsiveLayouts) => {
     setLayouts(allLayouts);
     if (isEditing) {
       localStorage.setItem('dashboardLayouts', JSON.stringify(allLayouts));
     }
   };
 
-  const fetchDashboardData = async () => {
-    setIsLoading(true);
-    try {
-      let totalInsumos = 0;
-      let estoqueBaixo = 0;
-      let totalFormulas = 0;
-      let custoMedio = 0;
-      let ofsAtivas = 0;
-      let taxaAprovacao = 0;
-      let activity: any[] = [];
+  const handleAction = (action: string) => {
+    setActiveMenu(action);
+  };
 
-      if (mode === 'supabase') {
-        const { data: insumos } = await supabase.from('ingredients').select('estoque_atual, estoque_minimo, name, created_at');
-        const { data: formulas } = await supabase.from('formulas').select('id, name, created_at, formula_ingredients (quantity, ingredients(cost_per_unit), variants:ingredient_variants(cost_per_unit))');
-        const { data: orders } = await supabase.from('production_orders').select('status');
-        const { data: qcs } = await supabase.from('quality_controls').select('status');
-        
-        totalInsumos = insumos?.length || 0;
-        estoqueBaixo = insumos?.filter((i: any) => (i.estoque_atual || 0) <= (i.estoque_minimo || 0)).length || 0;
-        totalFormulas = formulas?.length || 0;
-        
-        // Simplicado Custo Médio
-        custoMedio = 0; // (Pode manter 0 ou replicar calculo simplificado)
-        
-        ofsAtivas = orders?.filter((o: any) => o.status !== 'completed' && o.status !== 'cancelled').length || 0;
-        const totalQcDecided = qcs?.filter((q: any) => q.status === 'approved' || q.status === 'rejected').length || 0;
-        const totalQcApproved = qcs?.filter((q: any) => q.status === 'approved').length || 0;
-        taxaAprovacao = totalQcDecided > 0 ? (totalQcApproved / totalQcDecided) * 100 : 0;
-
-        activity = [
-          ...(formulas || []).map((f: any) => ({ type: 'formula', name: f.name, date: new Date(f.created_at) })),
-          ...(insumos || []).map((i: any) => ({ type: 'insumo', name: i.name, date: new Date(i.created_at) }))
-        ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
-      } else {
-        const localIngs = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
-        const localForms = JSON.parse(localStorage.getItem('local_formulas') || '[]');
-        const localOrders = JSON.parse(localStorage.getItem('local_production_orders') || '[]');
-        const localQCs = JSON.parse(localStorage.getItem('local_quality_controls') || '[]');
-
-        totalInsumos = localIngs.length;
-        estoqueBaixo = localIngs.filter((i: any) => (i.estoque_atual || 0) <= (i.estoque_minimo || 0)).length;
-        totalFormulas = localForms.length;
-        ofsAtivas = localOrders.filter((o: any) => o.status !== 'completed' && o.status !== 'cancelled').length;
-        
-        const qcDecided = localQCs.filter((q: any) => q.status === 'approved' || q.status === 'rejected');
-        const qcApproved = qcDecided.filter((q: any) => q.status === 'approved');
-        taxaAprovacao = qcDecided.length > 0 ? (qcApproved.length / qcDecided.length) * 100 : 0;
-
-        activity = [
-          ...localForms.map((f: any) => ({ type: 'formula', name: f.name, date: new Date(f.created_at) })),
-          ...localIngs.map((i: any) => ({ type: 'insumo', name: i.name, date: new Date(i.created_at) }))
-        ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
-      }
-
-      setRecentActivity(activity);
-      setStats({ totalInsumos, estoqueBaixo, totalFormulas, custoMedio, ofsAtivas, taxaAprovacao });
-    } catch (error) {
-      console.error('Error fetching dashboard data:', error);
-      showNotify('error', 'Erro de Conexão', 'Não foi possível carregar os dados do dashboard.');
-    } finally {
-      setIsLoading(false);
-    }
+  const resetLayout = () => {
+    setLayouts(defaultLayouts);
+    localStorage.removeItem('dashboardLayouts');
   };
 
   return (
     <div className="flex-1 overflow-auto bg-slate-50 relative">
-      {/* Notifications / Toasts */}
-      {notification.show && (
-        <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-right-full duration-300">
-          <div className={`flex items-start gap-4 p-4 rounded-2xl shadow-2xl border min-w-[320px] ${
-            notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
-            notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
-            'bg-blue-50 border-blue-200 text-blue-800'
-          }`}>
-            <div className={`p-2 rounded-xl ${
-              notification.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
-              notification.type === 'error' ? 'bg-red-100 text-red-600' :
-              'bg-blue-100 text-blue-600'
-            }`}>
-              {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> : 
-               notification.type === 'error' ? <AlertTriangle className="w-5 h-5" /> : 
-               <Info className="w-5 h-5" />}
-            </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-sm">{notification.title}</h4>
-              <p className="text-xs mt-1 opacity-90">{notification.message}</p>
-            </div>
-            <button 
-              onClick={() => setNotification(prev => ({ ...prev, show: false }))}
-              className="p-1 hover:bg-black/5 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       <header className="bg-white border-b border-slate-200 px-8 py-6 flex justify-between items-center">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
@@ -213,10 +97,7 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
               <strong>Modo de Edição:</strong> Arraste os cards pelo ícone superior ou redimensione pelos cantos inferiores. Suas alterações são salvas automaticamente.
             </p>
             <button 
-              onClick={() => {
-                setLayouts(defaultLayouts);
-                localStorage.removeItem('dashboardLayouts');
-              }}
+              onClick={resetLayout}
               className="text-sm font-medium text-blue-700 hover:text-blue-900 underline"
             >
               Restaurar Layout Padrão
@@ -235,176 +116,27 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
           resizeConfig={resizeConfig}
           margin={MARGIN}
         >
-          {/* Card 1: Fórmulas */}
-          <div key="card-formulas" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
-            {isEditing && (
-              <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
-                <GripHorizontal className="w-4 h-4 text-slate-400" />
-              </div>
-            )}
-            <div className="p-6 flex-1 flex flex-col">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-blue-50 text-[#202eac] rounded-xl flex items-center justify-center shrink-0">
-                  <Beaker className="w-6 h-6" />
-                </div>
-              </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Total de Fórmulas</h3>
-              <p className="text-3xl font-bold text-slate-800">
-                {isLoading ? '...' : stats.totalFormulas}
-              </p>
-            </div>
+          <div key="stats-row">
+            <StatsGrid 
+              stats={stats} 
+              isLoading={isLoading} 
+              isEditing={isEditing}
+            />
           </div>
 
-          {/* Card 2: Insumos */}
-          <div key="card-insumos" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
-            {isEditing && (
-              <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
-                <GripHorizontal className="w-4 h-4 text-slate-400" />
-              </div>
-            )}
-            <div className="p-6 flex-1 flex flex-col">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center shrink-0">
-                  <Package className="w-6 h-6" />
-                </div>
-              </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Insumos Cadastrados</h3>
-              <p className="text-3xl font-bold text-slate-800">
-                {isLoading ? '...' : stats.totalInsumos}
-              </p>
-            </div>
+          <div key="card-acoes">
+            <QuickActions 
+              onAction={handleAction}
+              isEditing={isEditing}
+            />
           </div>
 
-          {/* Card 3: Ordens Ativas */}
-          <div key="card-producao" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
-            {isEditing && (
-              <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
-                <GripHorizontal className="w-4 h-4 text-slate-400" />
-              </div>
-            )}
-            <div className="p-6 flex-1 flex flex-col">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
-                  <Activity className="w-6 h-6" />
-                </div>
-              </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">OF's em Produção (Ativas)</h3>
-              <p className="text-3xl font-bold text-slate-800">
-                {isLoading ? '...' : stats.ofsAtivas}
-              </p>
-            </div>
-          </div>
-
-          {/* Card 4: Taxa de Aprovação CQ */}
-          <div key="card-qualidade" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
-            {isEditing && (
-              <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
-                <GripHorizontal className="w-4 h-4 text-slate-400" />
-              </div>
-            )}
-            <div className="p-6 flex-1 flex flex-col">
-              <div className="flex items-start justify-between mb-4">
-                <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
-                  <ShieldCheck className="w-6 h-6" />
-                </div>
-              </div>
-              <h3 className="text-slate-500 text-sm font-medium mb-1">Aprovação de Qualidade (OEE)</h3>
-              <p className={`text-3xl font-bold ${stats.taxaAprovacao >= 90 ? 'text-emerald-600' : 'text-amber-600'} font-mono`}>
-                {isLoading ? '...' : `${stats.taxaAprovacao.toFixed(1)}%`}
-              </p>
-            </div>
-          </div>
-
-          {/* Quick Actions */}
-          <div key="card-acoes" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
-            {isEditing && (
-              <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
-                <GripHorizontal className="w-4 h-4 text-slate-400" />
-              </div>
-            )}
-            <div className="p-6 flex-1 flex flex-col overflow-y-auto custom-scrollbar">
-              <h2 className="text-lg font-bold text-slate-800 mb-4 shrink-0">Ações Rápidas</h2>
-              <div className="space-y-4">
-                <button 
-                  onClick={() => setActiveMenu('formulas')}
-                  className="w-full bg-white border border-slate-200 hover:border-[#202eac] hover:shadow-md transition-all rounded-xl p-4 flex items-center justify-between group/btn"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-blue-50 text-[#202eac] rounded-lg flex items-center justify-center group-hover/btn:bg-[#202eac] group-hover/btn:text-white transition-colors shrink-0">
-                      <Plus className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <h4 className="font-bold text-slate-800">Nova Fórmula</h4>
-                      <p className="text-xs text-slate-500">Criar nova composição</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-slate-300 group-hover/btn:text-[#202eac] transition-colors shrink-0" />
-                </button>
-
-                <button 
-                  onClick={() => setActiveMenu('insumos')}
-                  className="w-full bg-white border border-slate-200 hover:border-[#202eac] hover:shadow-md transition-all rounded-xl p-4 flex items-center justify-between group/btn"
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center group-hover/btn:bg-indigo-600 group-hover/btn:text-white transition-colors shrink-0">
-                      <Package className="w-5 h-5" />
-                    </div>
-                    <div className="text-left">
-                      <h4 className="font-bold text-slate-800">Gerenciar Insumos</h4>
-                      <p className="text-xs text-slate-500">Ver estoque e preços</p>
-                    </div>
-                  </div>
-                  <ArrowRight className="w-5 h-5 text-slate-300 group-hover/btn:text-indigo-600 transition-colors shrink-0" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Recent Activity */}
-          <div key="card-atividade" className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group">
-            {isEditing && (
-              <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
-                <GripHorizontal className="w-4 h-4 text-slate-400" />
-              </div>
-            )}
-            <div className="p-6 flex-1 flex flex-col overflow-y-auto custom-scrollbar">
-              <div className="flex items-center justify-between mb-6 shrink-0">
-                <h2 className="text-lg font-bold text-slate-800">Atividade Recente</h2>
-                <button className="text-sm font-medium text-[#202eac] hover:text-blue-800 transition-colors">
-                  Ver tudo
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                {isLoading ? (
-                  <div className="py-8 text-center text-slate-400 text-sm italic">Carregando atividade...</div>
-                ) : recentActivity.length === 0 ? (
-                  <div className="py-8 text-center text-slate-400 text-sm italic">Nenhuma atividade recente.</div>
-                ) : (
-                  recentActivity.map((act, idx) => (
-                    <div key={idx} className="flex gap-4">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                        act.type === 'formula' ? 'bg-blue-50' : 'bg-emerald-50'
-                      }`}>
-                        {act.type === 'formula' ? (
-                          <Beaker className="w-5 h-5 text-[#202eac]" />
-                        ) : (
-                          <Package className="w-5 h-5 text-emerald-600" />
-                        )}
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-800">
-                          {act.type === 'formula' ? 'Fórmula' : 'Insumo'} <strong className="font-semibold">{act.name}</strong> foi {act.type === 'formula' ? 'cadastrada' : 'adicionado'}.
-                        </p>
-                        <p className="text-xs text-slate-500 mt-1">
-                          {act.date.toLocaleDateString('pt-BR')} às {act.date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
-                        </p>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+          <div key="card-atividade">
+            <RecentActivity 
+              activities={recentActivity}
+              isLoading={isLoading}
+              isEditing={isEditing}
+            />
           </div>
         </Responsive>
       </div>

@@ -8,6 +8,7 @@ import {
   Info, Percent, DollarSign, ChevronRight, MoreVertical, ArrowDownAZ, ArrowUpZA, Pencil, Download, Upload, ShieldCheck
 } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
+import { useToast } from './dashboard/Toast';
 
 interface Group {
   id: string;
@@ -72,6 +73,7 @@ interface Formula {
 }
 
 export default function Formulas() {
+  const { showToast } = useToast();
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
@@ -110,9 +112,9 @@ export default function Formulas() {
     try {
       const filename = getBackupFilename('Formulas');
       exportToJson(filename, formulas);
-      showNotify('success', 'Exportação Concluída', `O backup "${filename}" foi gerado com sucesso.`);
+      showToast('success', 'Exportação Concluída', `O backup "${filename}" foi gerado com sucesso.`);
     } catch (err) {
-      showNotify('error', 'Erro na Exportação', 'Não foi possível gerar o arquivo de backup.');
+      showToast('error', 'Erro na Exportação', 'Não foi possível gerar o arquivo de backup.');
     }
   };
 
@@ -130,7 +132,7 @@ export default function Formulas() {
       if (!window.confirm(confirmMsg)) return;
 
       if (mode === 'supabase') {
-        showNotify('info', 'Importando...', 'Sincronizando dados com o Supabase...');
+        showToast('info', 'Importando...', 'Sincronizando dados com o Supabase...');
         for (const item of data) {
           // Remove nested objects before upserting the main formula
           const { formula_ingredients, groups, ...cleanFormula } = item;
@@ -157,9 +159,9 @@ export default function Formulas() {
         setFormulas(newData);
       }
 
-      showNotify('success', 'Importação Concluída', `${data.length} fórmulas foram processadas.`);
+      showToast('success', 'Importação Concluída', `${data.length} fórmulas foram processadas.`);
     } catch (err: any) {
-      showNotify('error', 'Erro na Importação', err.message || 'Falha ao importar arquivo.');
+      showToast('error', 'Erro na Importação', err.message || 'Falha ao importar arquivo.');
     } finally {
       if (e.target) e.target.value = '';
     }
@@ -191,26 +193,6 @@ export default function Formulas() {
   const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
   const [groupName, setGroupName] = useState('');
   const [isSavingGroup, setIsSavingGroup] = useState(false);
-
-  // Notification State
-  const [notification, setNotification] = useState<{
-    show: boolean;
-    type: 'success' | 'error' | 'info';
-    title: string;
-    message: string;
-  }>({
-    show: false,
-    type: 'info',
-    title: '',
-    message: ''
-  });
-
-  const showNotify = (type: 'success' | 'error' | 'info', title: string, message: string) => {
-    setNotification({ show: true, type, title, message });
-    if (type !== 'error') {
-      setTimeout(() => setNotification(prev => ({ ...prev, show: false })), 5000);
-    }
-  };
 
   useEffect(() => {
     if (currentFormula && viewMode === 'editor') {
@@ -302,7 +284,7 @@ export default function Formulas() {
 
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
-      showNotify('error', 'Erro de Conexão', 'Não foi possível carregar os dados.');
+      showToast('error', 'Erro de Conexão', 'Não foi possível carregar os dados.');
     } finally {
       setIsLoading(false);
     }
@@ -409,10 +391,10 @@ export default function Formulas() {
       await fetchGroups();
       setGroupName('');
       setEditingGroupId(null);
-      showNotify('success', 'Sucesso', 'Grupo salvo com sucesso.');
+      showToast('success', 'Sucesso', 'Grupo salvo com sucesso.');
     } catch (error) {
       console.error('Erro ao salvar grupo:', error);
-      showNotify('error', 'Erro ao Salvar', 'Não foi possível salvar o grupo.');
+      showToast('error', 'Erro ao Salvar', 'Não foi possível salvar o grupo.');
     } finally {
       setIsSavingGroup(false);
     }
@@ -431,10 +413,10 @@ export default function Formulas() {
         localStorage.setItem('local_groups', JSON.stringify(filtered));
       }
       await fetchGroups();
-      showNotify('success', 'Excluído', 'Grupo removido com sucesso.');
+      showToast('success', 'Excluído', 'Grupo removido com sucesso.');
     } catch (error) {
       console.error('Erro ao excluir grupo:', error);
-      showNotify('error', 'Erro ao Excluir', 'Não foi possível excluir o grupo.');
+      showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o grupo.');
     }
   };
 
@@ -554,7 +536,7 @@ export default function Formulas() {
         quantity: qtyNumber
       };
       setCurrentIngredients(updated);
-      showNotify('success', 'Insumo atualizado', 'A quantidade do insumo foi atualizada com sucesso.');
+      showToast('success', 'Insumo atualizado', 'A quantidade do insumo foi atualizada com sucesso.');
     } else {
       // Add new
       setCurrentIngredients([...currentIngredients, {
@@ -587,7 +569,7 @@ export default function Formulas() {
 
   const handleSaveFormula = async () => {
     if (!currentFormula?.name || !currentFormula?.base_volume) {
-      showNotify('info', 'Campos Obrigatórios', 'Preencha o nome e o volume base da fórmula.');
+      showToast('info', 'Campos Obrigatórios', 'Preencha o nome e o volume base da fórmula.');
       return;
     }
 
@@ -671,10 +653,10 @@ export default function Formulas() {
 
       await fetchData();
       handleCloseEditor();
-      showNotify('success', 'Fórmula Salva', 'Os dados da fórmula foram salvos com sucesso.');
+      showToast('success', 'Fórmula Salva', 'Os dados da fórmula foram salvos com sucesso.');
     } catch (error: any) {
       console.error('Erro ao salvar:', error);
-      showNotify('error', 'Erro ao Salvar', 'Não foi possível salvar a fórmula.');
+      showToast('error', 'Erro ao Salvar', 'Não foi possível salvar a fórmula.');
     } finally {
       setIsSaving(false);
     }
@@ -750,10 +732,10 @@ export default function Formulas() {
 
       await fetchData();
       handleCloseEditor();
-      showNotify('success', 'Nova Versão Salva', `A versão ${newVersion} da fórmula foi criada.`);
+      showToast('success', 'Nova Versão Salva', `A versão ${newVersion} da fórmula foi criada.`);
     } catch (error: any) {
       console.error('Erro ao salvar nova versão:', error);
-      showNotify('error', 'Erro ao Salvar', 'Não foi possível criar a nova versão.');
+      showToast('error', 'Erro ao Salvar', 'Não foi possível criar a nova versão.');
     } finally {
       setIsSaving(false);
     }
@@ -775,10 +757,10 @@ export default function Formulas() {
       }
       setDeleteModal({ isOpen: false, id: '', name: '' });
       await fetchData();
-      showNotify('success', 'Excluído', 'A fórmula foi removida com sucesso.');
+      showToast('success', 'Excluído', 'A fórmula foi removida com sucesso.');
     } catch (error) {
       console.error('Erro ao excluir:', error);
-      showNotify('error', 'Erro ao Excluir', 'Não foi possível excluir a fórmula.');
+      showToast('error', 'Erro ao Excluir', 'Não foi possível excluir a fórmula.');
     }
   };
 
@@ -1917,35 +1899,6 @@ export default function Formulas() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 relative">
-      {/* Notifications / Toasts */}
-      {notification.show && (
-        <div className="fixed bottom-6 right-6 z-[100] animate-in slide-in-from-right-full duration-300">
-          <div className={`flex items-start gap-4 p-4 rounded-2xl shadow-2xl border min-w-[320px] ${notification.type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
-            notification.type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
-              'bg-blue-50 border-blue-200 text-blue-800'
-            }`}>
-            <div className={`p-2 rounded-xl ${notification.type === 'success' ? 'bg-emerald-100 text-emerald-600' :
-              notification.type === 'error' ? 'bg-red-100 text-red-600' :
-                'bg-blue-100 text-blue-600'
-              }`}>
-              {notification.type === 'success' ? <CheckCircle2 className="w-5 h-5" /> :
-                notification.type === 'error' ? <AlertTriangle className="w-5 h-5" /> :
-                  <Info className="w-5 h-5" />}
-            </div>
-            <div className="flex-1">
-              <h4 className="font-bold text-sm">{notification.title}</h4>
-              <p className="text-xs mt-1 opacity-90">{notification.message}</p>
-            </div>
-            <button
-              onClick={() => setNotification(prev => ({ ...prev, show: false }))}
-              className="p-1 hover:bg-black/5 rounded-lg transition-colors"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-      )}
-
       {mainContent}
 
       {/* Group Management Modal */}
