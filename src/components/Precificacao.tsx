@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useStorageMode } from '../contexts/StorageModeContext';
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, horizontalListSortingStrategy, useSortable } from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 import {
   DollarSign, Search, ChevronRight, ArrowLeft,
   TrendingUp, Percent, Calculator, AlertCircle,
   ShoppingCart, Store, PackageCheck, BarChart3,
   Download, Upload, CheckCircle2, AlertTriangle, Info, X,
-  LayoutGrid, List, Plus, Minus, Save, RotateCcw
+  LayoutGrid, List, Plus, Minus, Save, RotateCcw, ArrowDownAZ, ArrowUpZA, GripVertical, Settings, Package
 } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { useToast } from './dashboard/Toast';
@@ -39,6 +42,10 @@ interface Formula {
   yield_amount: number;
   yield_unit: string;
   status: string;
+  group_id?: string;
+  groups?: { name: string };
+  packaging_variant_id?: string;
+  label_variant_id?: string;
   formula_ingredients: FormulaIngredient[];
 }
 
@@ -59,6 +66,7 @@ interface PricingEntry {
   fardoPrice: number;
   fardoQty: number;
   fixedCosts: number;
+  updatedAt?: string; // Data de atualização
 }
 
 // ─── Refinement Helpers ─────────────────────────────────────
@@ -127,6 +135,134 @@ const getBaseFormulaName = (name: string): string => {
     .trim();
 };
 
+// ─── Interfaces for Column Configuration ───────────────────────────
+
+interface ColumnConfig {
+  id: string;
+  label: string;
+  visible: boolean;
+}
+
+// ─── Sortable Header Component ───────────────────────────────────
+
+interface SortableHeaderProps {
+  id: string;
+  label: string;
+  sortColumn: string;
+  sortOrder: 'asc' | 'desc';
+  onSort: (column: any) => void;
+}
+
+function SortableHeader({ id, label, sortColumn, sortOrder, onSort }: SortableHeaderProps) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+    zIndex: isDragging ? 1 : 'auto',
+  };
+
+  const getTextAlign = () => 'text-center';
+  const getPadding = () => 'px-3';
+
+  return (
+    <th
+      ref={setNodeRef}
+      style={style}
+      className={`${getPadding()} py-3.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider cursor-pointer hover:bg-slate-100 select-none text-center`}
+      onClick={() => onSort(id)}
+    >
+      <div className="flex items-center justify-center gap-2">
+        <span
+          {...attributes}
+          {...listeners}
+          className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500"
+        >
+          <GripVertical className="w-3 h-3" />
+        </span>
+        <span>
+          {label} {sortColumn === id && (sortOrder === 'asc' ? '↑' : '↓')}
+        </span>
+      </div>
+    </th>
+  );
+}
+
+// ─── Column Settings Modal Component ────────────────────────────
+
+interface ColumnSettingsModalProps {
+  columns: ColumnConfig[];
+  onToggleVisibility: (id: string) => void;
+  onMove: (id: string, direction: 'up' | 'down') => void;
+  onReset: () => void;
+  onClose: () => void;
+}
+
+function ColumnSettingsModal({ columns, onToggleVisibility, onMove, onReset, onClose }: ColumnSettingsModalProps) {
+  return (
+    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={onClose}>
+      <div
+        className="bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4"
+        onClick={e => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between p-5 border-b border-slate-100">
+          <h3 className="text-lg font-bold text-slate-800">Configurar Colunas</h3>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-slate-500" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-2 max-h-[60vh] overflow-y-auto">
+          {columns.map((col, index) => (
+            <div
+              key={col.id}
+              className="flex items-center justify-between p-3 rounded-xl border border-slate-100 hover:border-slate-200 transition-colors"
+            >
+              <div className="flex items-center gap-3">
+                <input
+                  type="checkbox"
+                  checked={col.visible}
+                  onChange={() => onToggleVisibility(col.id)}
+                  className="w-4 h-4 rounded border-slate-300 text-[#202eac] focus:ring-[#202eac]"
+                />
+                <span className={`text-sm font-medium ${col.visible ? 'text-slate-700' : 'text-slate-400'}`}>
+                  {col.label}
+                </span>
+              </div>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => onMove(col.id, 'up')}
+                  disabled={index === 0}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ArrowUpZA className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => onMove(col.id, 'down')}
+                  disabled={index === columns.length - 1}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                >
+                  <ArrowDownAZ className="w-4 h-4 rotate-180" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="p-5 border-t border-slate-100 flex justify-center">
+          <button
+            onClick={onReset}
+            className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-[#202eac] transition-colors"
+          >
+            Resetar para Padrão
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Component ───────────────────────────────────────────────
 
 export default function Precificacao() {
@@ -136,7 +272,86 @@ export default function Precificacao() {
   const [packagingOptions, setPackagingOptions] = useState<PackagingOption[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
+
+  // Sorting state
+  const [sortColumn, setSortColumn] = useState<'name' | 'version' | 'group' | 'lm_code' | 'cost' | 'varejo' | 'atacado' | 'status'>('name');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  const handleSort = (column: typeof sortColumn) => {
+    if (sortColumn === column) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortColumn(column);
+      setSortOrder('asc');
+    }
+  };
+
+  // Column configuration state
+  const DEFAULT_COLUMNS: ColumnConfig[] = [
+    { id: 'name', label: 'Produto', visible: true },
+    { id: 'version', label: 'Versão', visible: true },
+    { id: 'group', label: 'Grupo', visible: true },
+    { id: 'lm_code', label: 'Código', visible: true },
+    { id: 'cost', label: 'Custo/L', visible: true },
+    { id: 'varejo', label: 'Varejo', visible: true },
+    { id: 'atacado', label: 'Atacado', visible: true },
+    { id: 'status', label: 'Status', visible: true },
+  ];
+
+  const [columns, setColumns] = useState<ColumnConfig[]>(() => {
+    try {
+      const saved = localStorage.getItem('precificacao_columns');
+      return saved ? JSON.parse(saved) : DEFAULT_COLUMNS;
+    } catch { return DEFAULT_COLUMNS; }
+  });
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  // Save columns to localStorage when changed
+  useEffect(() => {
+    localStorage.setItem('precificacao_columns', JSON.stringify(columns));
+  }, [columns]);
+
+  // DnD sensors
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates })
+  );
+
+  const handleColumnDragEnd = (event: any) => {
+    const { active, over } = event;
+    if (active.id !== over?.id) {
+      setColumns((items) => {
+        const oldIndex = items.findIndex((i) => i.id === active.id);
+        const newIndex = items.findIndex((i) => i.id === over?.id);
+        const newItems = [...items];
+        const [moved] = newItems.splice(oldIndex, 1);
+        newItems.splice(newIndex, 0, moved);
+        return newItems;
+      });
+    }
+  };
+
+  const toggleColumnVisibility = (id: string) => {
+    setColumns(cols => cols.map(c => c.id === id ? { ...c, visible: !c.visible } : c));
+  };
+
+  const moveColumn = (id: string, direction: 'up' | 'down') => {
+    setColumns(cols => {
+      const index = cols.findIndex(c => c.id === id);
+      if (index === -1) return cols;
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= cols.length) return cols;
+      const newCols = [...cols];
+      [newCols[index], newCols[newIndex]] = [newCols[newIndex], newCols[index]];
+      return newCols;
+    });
+  };
+
+  const resetColumns = () => {
+    setColumns(DEFAULT_COLUMNS);
+  };
 
   // Detail view state
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
@@ -169,7 +384,7 @@ export default function Precificacao() {
       if (mode === 'supabase') {
         const { data, error } = await supabase
           .from('formulas')
-          .select(`*, formula_ingredients(*, ingredients(*), variants:ingredient_variants(name, cost_per_unit))`)
+          .select(`*, groups (name), formula_ingredients(*, ingredients(*), variants:ingredient_variants(name, cost_per_unit))`)
           .order('name');
         if (error) throw error;
         setFormulas(data || []);
@@ -311,6 +526,7 @@ export default function Precificacao() {
       capacityKey: key,
       varejoPrice, atacadoPrice, fardoPrice, fardoQty,
       fixedCosts: fixedCostsPerUnit,
+      updatedAt: new Date().toISOString(),
     };
     setSavedPricing(prev => {
       const filtered = prev.filter(e => !(e.formulaId === selectedFormula.id && e.capacityKey === key));
@@ -337,9 +553,31 @@ export default function Precificacao() {
     const liquidCost = costPerLiter * selectedCapacity;
     const rendimento = Math.floor(baseVol / selectedCapacity);
 
-    const pkg = packagingOptions.find(p => p.capacity === selectedCapacity);
+    // Busca embalagem por variante vinculada + capacidade
+    const variantId = selectedFormula.packaging_variant_id;
+    let pkg = variantId 
+      ? packagingOptions.find(p => p.variant_id === variantId && p.capacity === selectedCapacity)
+      : null;
+    
+    // Fallback: busca apenas por capacidade se não encontrar por variante
+    if (!pkg) {
+      pkg = packagingOptions.find(p => p.capacity === selectedCapacity);
+    }
+    
+    // Busca rótulo por variante vinculada
+    const labelVariantId = selectedFormula.label_variant_id;
+    let labelOpt = labelVariantId
+      ? packagingOptions.find(p => p.variant_id === labelVariantId)
+      : null;
+    
+    // Fallback: busca rótulo genérico se não encontrar por variante
+    if (!labelOpt) {
+      labelOpt = packagingOptions.find(p => p.name.toLowerCase().includes('rótulo') || p.name.toLowerCase().includes('etiqueta') || p.name.toLowerCase().includes('label'));
+    }
+
     const pkgCost = pkg ? parseCost(pkg.cost) : 0;
-    const custoUnidade = liquidCost + pkgCost;
+    const labelCost = labelOpt ? parseCost(labelOpt.cost) : 0;
+    const custoUnidade = liquidCost + pkgCost + labelCost;
     const custoTotal = custoUnidade + fixedCostsPerUnit;
 
     // Varejo metrics
@@ -366,7 +604,7 @@ export default function Precificacao() {
 
     return {
       totalIngCost, costPerLiter, liquidCost, rendimento,
-      pkgCost, custoUnidade, custoTotal,
+      pkgCost, labelCost, custoUnidade, custoTotal,
       varejoLucro, varejoMargem, varejoMarkup,
       atacadoLucro, atacadoMargem, atacadoMarkup,
       custoFardo, fardoTotal, fardoLucro, fardoMargem, fardoMarkup,
@@ -442,14 +680,67 @@ export default function Precificacao() {
     return Object.values(latestVersions);
   }, [formulas]);
 
-  const filteredFormulas = useMemo(() =>
-    consolidatedFormulas.filter(f =>
+  const filteredFormulas = useMemo(() => {
+    const filtered = consolidatedFormulas.filter(f =>
       (
         f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         f.lm_code?.toLowerCase().includes(searchTerm.toLowerCase())
       )
-    ).sort((a, b) => a.name.localeCompare(b.name)),
-    [consolidatedFormulas, searchTerm]);
+    );
+
+    return filtered.sort((a, b) => {
+      let aValue: any;
+      let bValue: any;
+
+      switch (sortColumn) {
+        case 'name':
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+          break;
+        case 'version':
+          aValue = a.version || '';
+          bValue = b.version || '';
+          break;
+        case 'group':
+          aValue = a.groups?.name || '';
+          bValue = b.groups?.name || '';
+          break;
+        case 'lm_code':
+          aValue = a.lm_code || '';
+          bValue = b.lm_code || '';
+          break;
+        case 'cost':
+          aValue = calcIngredientCost(a);
+          bValue = calcIngredientCost(b);
+          break;
+        case 'varejo':
+          aValue = getFormulaPrices(a.id)?.varejoPrice || 0;
+          bValue = getFormulaPrices(b.id)?.varejoPrice || 0;
+          break;
+        case 'atacado':
+          aValue = getFormulaPrices(a.id)?.atacadoPrice || 0;
+          bValue = getFormulaPrices(b.id)?.atacadoPrice || 0;
+          break;
+        case 'status':
+          aValue = getFormulaStatus(a.id) === 'Precificado' ? 1 : 0;
+          bValue = getFormulaStatus(b.id) === 'Precificado' ? 1 : 0;
+          break;
+        default:
+          aValue = a.name.toLowerCase();
+          bValue = b.name.toLowerCase();
+      }
+
+      if (aValue === bValue) return 0;
+      if (aValue === undefined || aValue === null) return 1;
+      if (bValue === undefined || bValue === null) return -1;
+
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortOrder === 'asc' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+
+      return sortOrder === 'asc' ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
+    });
+  }, [consolidatedFormulas, searchTerm, sortColumn, sortOrder, calcIngredientCost, getFormulaPrices, getFormulaStatus]);
 
   // Statistics for summary cards
   const stats = useMemo(() => {
@@ -688,60 +979,107 @@ export default function Precificacao() {
                     )}
                   </div>
 
-                  <div className="bg-[#202eac] rounded-2xl p-4 flex items-center justify-between mt-4">
-                    <div className="flex items-center gap-3 text-white">
-                      <DollarSign className="w-5 h-5 opacity-80" />
-                      <span className="font-bold text-sm">Custo Total por Unidade</span>
+                  <div className="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl p-5 mt-4">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="flex items-center gap-3 text-white">
+                        <DollarSign className="w-5 h-5 opacity-80" />
+                        <span className="font-bold text-sm">Custo por Unidade</span>
+                      </div>
+                      <span className="text-2xl font-black text-white">{fmt(detailCalc.custoTotal)}</span>
                     </div>
-                    <span className="text-2xl font-black text-white">{fmt(detailCalc.custoTotal)}</span>
+                    
+                    {/* Breakdown de custos */}
+                    <div className="grid grid-cols-1 gap-2 bg-white/10 rounded-xl p-3">
+                      <div className="flex justify-between items-center text-white/80 text-xs">
+                        <span className="flex items-center gap-2">
+                          <Package className="w-3.5 h-3.5" />
+                          Ingredientes
+                        </span>
+                        <span className="font-mono font-bold">{fmt(detailCalc.liquidCost)}</span>
+                      </div>
+                      <div className="flex justify-between items-center text-white/80 text-xs">
+                        <span className="flex items-center gap-2">
+                          <Package className="w-3.5 h-3.5" />
+                          Embalagem
+                        </span>
+                        <span className="font-mono font-bold">{fmt(detailCalc.pkgCost)}</span>
+                      </div>
+                      {detailCalc.labelCost > 0 && (
+                        <div className="flex justify-between items-center text-white/80 text-xs">
+                          <span className="flex items-center gap-2">
+                            <Package className="w-3.5 h-3.5" />
+                            Rótulo
+                          </span>
+                          <span className="font-mono font-bold">{fmt(detailCalc.labelCost)}</span>
+                        </div>
+                      )}
+                      {fixedCostsPerUnit > 0 && (
+                        <div className="flex justify-between items-center text-white/80 text-xs">
+                          <span className="flex items-center gap-2">
+                            <Calculator className="w-3.5 h-3.5" />
+                            Custos Fixos
+                          </span>
+                          <span className="font-mono font-bold">{fmt(fixedCostsPerUnit)}</span>
+                        </div>
+                      )}
+                      <div className="border-t border-white/20 pt-2 mt-1 flex justify-between items-center text-white text-xs font-bold">
+                        <span>Total</span>
+                        <span className="font-mono">{fmt(detailCalc.custoTotal)}</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
                 {/* Pricing Cards Grid */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-
                   {/* Varejo Card */}
-                  <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
+                  <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-slate-700 flex items-center gap-2">
-                        <ShoppingCart className="w-4 h-4 text-emerald-600" />
-                        Preço Varejo
-                      </h4>
-                      <span className="text-[10px] text-slate-400 font-bold">(x{detailCalc.varejoMarkup.toFixed(0) || ','})</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                          <ShoppingCart className="w-4 h-4 text-emerald-600" />
+                        </div>
+                        <h4 className="font-bold text-slate-700">Preço Varejo</h4>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md">x{detailCalc.varejoMarkup.toFixed(0)}</span>
                     </div>
                     <PriceAdjuster value={varejoPrice} onChange={setVarejoPrice} cents={95} color="green" />
                     <div className="flex gap-2 mt-5">
                       <MetricBlock label="Markup" value={`${detailCalc.varejoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
-                      <MetricBlock label="Margem" value={`${detailCalc.varejoMargem.toFixed(1)}%`} colorClass="bg-slate-50" />
+                      <MetricBlock label="Margem" value={`${detailCalc.varejoMargem.toFixed(1)}%`} colorClass={`${detailCalc.varejoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.varejoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                       <MetricBlock label="Lucro" value={fmt(detailCalc.varejoLucro)} colorClass="bg-emerald-50 !text-emerald-700 font-black" />
                     </div>
                   </div>
 
                   {/* Atacado Card */}
-                  <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
+                  <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                     <div className="flex items-center justify-between mb-4">
-                      <h4 className="font-bold text-slate-700 flex items-center gap-2">
-                        <Store className="w-4 h-4 text-amber-600" />
-                        Preço Atacado
-                      </h4>
-                      <span className="text-[10px] text-slate-400 font-bold">(x{detailCalc.atacadoMarkup.toFixed(0) || ','})</span>
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                          <Store className="w-4 h-4 text-amber-600" />
+                        </div>
+                        <h4 className="font-bold text-slate-700">Preço Atacado</h4>
+                      </div>
+                      <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md">x{detailCalc.atacadoMarkup.toFixed(0)}</span>
                     </div>
                     <PriceAdjuster value={atacadoPrice} onChange={setAtacadoPrice} cents={90} color="orange" />
                     <div className="flex gap-2 mt-5">
                       <MetricBlock label="Markup" value={`${detailCalc.atacadoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
-                      <MetricBlock label="Margem" value={`${detailCalc.atacadoMargem.toFixed(1)}%`} colorClass="bg-slate-50" />
+                      <MetricBlock label="Margem" value={`${detailCalc.atacadoMargem.toFixed(1)}%`} colorClass={`${detailCalc.atacadoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.atacadoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                       <MetricBlock label="Lucro" value={fmt(detailCalc.atacadoLucro)} colorClass="bg-amber-50 !text-amber-700 font-black" />
                     </div>
                   </div>
                 </div>
 
                 {/* Fardo Card (full width) */}
-                <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
+                <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="font-bold text-slate-700 flex items-center gap-2">
-                      <PackageCheck className="w-4 h-4 text-purple-600" />
-                      Preço Fardo
-                    </h4>
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                        <PackageCheck className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <h4 className="font-bold text-slate-700">Preço Fardo</h4>
+                    </div>
                     <div className="flex items-center gap-2">
                       <button onClick={() => setFardoQty(Math.max(1, fardoQty - 1))}
                         className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
@@ -759,7 +1097,7 @@ export default function Precificacao() {
                     <PriceAdjuster value={fardoPrice} onChange={setFardoPrice} cents={80} color="purple" />
                     <div className="flex-1 flex gap-2">
                       <MetricBlock label="Custo Fardo" value={fmt(detailCalc.custoFardo)} colorClass="bg-slate-50" />
-                      <MetricBlock label="Markup" value={`${detailCalc.fardoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
+                      <MetricBlock label="Markup" value={`${detailCalc.fardoMarkup.toFixed(1)}%`} colorClass={`${detailCalc.fardoMarkup >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.fardoMarkup >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                       <MetricBlock label="Lucro Total" value={fmt(detailCalc.fardoLucro)} colorClass="bg-purple-50 !text-purple-700 font-black" />
                     </div>
                   </div>
@@ -868,16 +1206,50 @@ export default function Precificacao() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800">Precificação</h1>
-          <p className="text-sm text-slate-500 mt-0.5">Defina preços e crie listas de preços personalizadas</p>
-        </div>
-      </header>
-
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-7xl mx-auto space-y-8">
+
+          {/* Module Header - Elaborate */}
+          <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-start gap-5">
+              {/* Icon */}
+              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center shadow-lg shadow-green-500/25 shrink-0">
+                <DollarSign className="w-8 h-8 text-white" />
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  Precificação e Formação de Preços
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full font-medium">Módulo Estratégico</span>
+                </h2>
+                <p className="text-slate-600 text-sm mt-1.5 leading-relaxed max-w-3xl">
+                  Defina preços de venda para diferentes canais (varejo, ataque, fardo). 
+                  Calcule margens, markup e lucratividade por produto e embalagem.
+                </p>
+                
+                {/* Stats Badges */}
+                <div className="flex items-center gap-3 mt-4 flex-wrap">
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <PackageCheck className="w-4 h-4 text-blue-600" />
+                    <span className="text-slate-700 text-sm font-medium uppercase">{stats.total} fórmulas</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                    <span className="text-slate-700 text-sm font-medium uppercase">{stats.priced} precificadas</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <AlertTriangle className="w-4 h-4 text-amber-600" />
+                    <span className="text-slate-700 text-sm font-medium uppercase">{stats.pending} pendentes</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <TrendingUp className="w-4 h-4 text-purple-600" />
+                    <span className="text-slate-700 text-sm font-medium uppercase">{stats.avgMargin.toFixed(1)}% média</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -911,18 +1283,9 @@ export default function Precificacao() {
           </div>
 
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <button onClick={handleExport} className="px-4 py-2 rounded-lg font-medium flex items-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm">
-                <Download className="w-4 h-4" /> Exportar
-              </button>
-              <label className="px-4 py-2 rounded-lg font-medium flex items-center gap-2 bg-slate-100 text-slate-700 hover:bg-slate-200 transition-colors text-sm cursor-pointer">
-                <Upload className="w-4 h-4" /> Importar
-                <input type="file" accept=".json" onChange={handleImport} className="hidden" />
-              </label>
-            </div>
-            {/* Search + Controls */}
-            <div className="flex gap-3 items-center">
-              <div className="flex-1 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+            {/* Search + Controls - Left Side */}
+            <div className="flex gap-3 items-center flex-1">
+              <div className="flex-1 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 max-w-md">
                 <Search className="w-5 h-5 text-slate-400" />
                 <input
                   type="text"
@@ -931,16 +1294,63 @@ export default function Precificacao() {
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="flex-1 outline-none text-slate-700 bg-transparent"
                 />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600">
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
               </div>
-              <div className="flex bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-                <button onClick={() => setViewMode('list')} className={`p-3 transition-colors ${viewMode === 'list' ? 'bg-[#202eac] text-white' : 'text-slate-400 hover:text-slate-600'}`}>
+              <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
+                <button
+                  onClick={() => setViewMode('list')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  title="Lista"
+                >
                   <List className="w-4 h-4" />
                 </button>
-                <button onClick={() => setViewMode('grid')} className={`p-3 transition-colors ${viewMode === 'grid' ? 'bg-[#202eac] text-white' : 'text-slate-400 hover:text-slate-600'}`}>
+                <button
+                  onClick={() => setViewMode('grid')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  title="Blocos"
+                >
                   <LayoutGrid className="w-4 h-4" />
                 </button>
               </div>
+              <button
+                onClick={() => setIsSettingsOpen(true)}
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all bg-white border border-slate-200 shadow-sm"
+                title="Configurar Colunas"
+              >
+                <Settings className="w-4 h-4" />
+              </button>
             </div>
+
+            {/* Export/Import - Right Side */}
+            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
+              <label className="cursor-pointer px-3 py-2 rounded-lg transition-all font-medium flex items-center gap-2 text-slate-600 hover:text-[#202eac] hover:bg-slate-50">
+                <Upload className="w-4 h-4 text-emerald-600" />
+                <span className="hidden sm:inline">Importar</span>
+                <input type="file" accept=".json" onChange={handleImport} className="hidden" />
+              </label>
+              <button
+                onClick={handleExport}
+                className="px-3 py-2 rounded-lg transition-all font-medium flex items-center gap-2 bg-gradient-to-r from-[#202eac] to-[#4b5ce8] text-white shadow-md hover:shadow-lg hover:shadow-indigo-500/25"
+              >
+                <Download className="w-4 h-4" />
+                <span className="hidden sm:inline">Exportar</span>
+              </button>
+            </div>
+
+            {/* Column Settings Modal */}
+            {isSettingsOpen && (
+              <ColumnSettingsModal
+                columns={columns}
+                onToggleVisibility={toggleColumnVisibility}
+                onMove={moveColumn}
+                onReset={resetColumns}
+                onClose={() => setIsSettingsOpen(false)}
+              />
+            )}
           </div>
 
           {/* Loading */}
@@ -1034,19 +1444,58 @@ export default function Precificacao() {
           ) : (
             /* ═══ LIST / TABLE VIEW — with volume breakdown ═══ */
             <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100 bg-slate-50">
-                    <th className="px-6 py-3.5 text-left text-[10px] font-bold text-slate-500 uppercase tracking-wider">Produto</th>
-                    <th className="px-4 py-3.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Volumes</th>
-                    <th className="px-4 py-3.5 text-center text-[10px] font-bold text-slate-500 uppercase tracking-wider">Status</th>
-                  </tr>
-                </thead>
+              <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
+                <SortableContext items={columns.filter(c => c.visible).map(c => c.id)} strategy={horizontalListSortingStrategy}>
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-100 bg-slate-50">
+                        {columns.filter(c => c.visible).map((col) => (
+                          <SortableHeader
+                            key={col.id}
+                            id={col.id}
+                            label={col.label}
+                            sortColumn={sortColumn}
+                            sortOrder={sortOrder}
+                            onSort={handleSort}
+                          />
+                        ))}
+                      </tr>
+                    </thead>
                 <tbody>
                   {filteredFormulas.map(formula => {
                     const cat = getFormulaCategory(formula.name);
                     const catColor = categoryColors[cat] || categoryColors.Produtos;
                     const volStatus = getVolumePricingStatus(formula.id);
+                    const custoBase = calcIngredientCost(formula);
+                    const custoPorLitro = custoBase / (formula.base_volume || 1);
+                    const prices = getFormulaPrices(formula.id);
+
+                    const columnValues: Record<string, React.ReactNode> = {
+                      name: <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors text-sm">{formula.name}</div>,
+                      version: <span className="text-[10px] bg-[#202eac] text-white px-1.5 py-0.5 rounded font-black border border-blue-100/50 shadow-sm">V{(formula.version || '1').replace(/^v/i, '')}</span>,
+                      group: formula.groups?.name ? (
+                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${catColor.bg} ${catColor.text}`}>{formula.groups.name}</span>
+                      ) : (
+                        <span className="text-xs text-slate-400">-</span>
+                      ),
+                      lm_code: <span className="text-xs text-slate-500 font-mono">{formula.lm_code || 'S/C'}</span>,
+                      cost: <span className="text-sm font-bold text-slate-700">{fmt(custoPorLitro)}</span>,
+                      varejo: prices && prices.varejoPrice > 0 ? (
+                        <span className="text-sm font-bold text-emerald-600">{fmt(prices.varejoPrice)}</span>
+                      ) : (
+                        <span className="text-xs text-amber-500 flex items-center justify-end gap-1"><AlertTriangle className="w-3 h-3" /> -</span>
+                      ),
+                      atacado: prices && prices.atacadoPrice > 0 ? (
+                        <span className="text-sm font-bold text-amber-600">{fmt(prices.atacadoPrice)}</span>
+                      ) : (
+                        <span className="text-xs text-slate-400">-</span>
+                      ),
+                      status: <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${volStatus.priced === volStatus.total && volStatus.total > 0 ? 'bg-emerald-50 text-emerald-600' : volStatus.priced > 0 ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>{volStatus.priced}/{volStatus.total}</span>,
+                    };
+
+                    const getTdClass = (id: string) => {
+                      return 'px-3 py-4 text-center';
+                    };
 
                     return (
                       <tr
@@ -1054,44 +1503,18 @@ export default function Precificacao() {
                         onClick={() => openFormula(formula)}
                         className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer group"
                       >
-                        <td className="px-6 py-4">
-                          <div>
-                            <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors text-sm">{formula.name}</div>
-                            <div className="flex items-center gap-2 mt-0.5">
-                              <span className="text-xs text-slate-400 font-mono">{formula.lm_code || 'S/C'}</span>
-                              <span className="text-[10px] bg-[#202eac] text-white px-1.5 py-0.5 rounded font-black border border-blue-100/50 shadow-sm shrink-0">V{(formula.version || '1').replace(/^v/i, '')}</span>
-                              <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${catColor.bg} ${catColor.text}`}>{cat}</span>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center justify-center gap-1.5 flex-wrap">
-                            {uniqueCapacities.map(cap => {
-                              const entry = savedPricing.find(e => e.formulaId === formula.id && e.capacityKey === String(cap));
-                              const hasPricing = entry && entry.varejoPrice > 0;
-                              const cc = getCapColor(cap);
-                              return (
-                                <span key={cap} className={`text-[10px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 ${cc.bg} ${cc.text} border ${cc.border}`}>
-                                  {formatCapacity(cap)}
-                                  {hasPricing
-                                    ? <CheckCircle2 className="w-3 h-3 text-emerald-500" />
-                                    : <AlertTriangle className="w-3 h-3 text-amber-400" />
-                                  }
-                                </span>
-                              );
-                            })}
-                          </div>
-                        </td>
-                        <td className="px-4 py-4 text-center">
-                          <span className={`text-[11px] font-bold px-2.5 py-1 rounded-lg ${volStatus.priced === volStatus.total && volStatus.total > 0 ? 'bg-emerald-50 text-emerald-600' : volStatus.priced > 0 ? 'bg-blue-50 text-blue-600' : 'bg-amber-50 text-amber-600'}`}>
-                            {volStatus.priced}/{volStatus.total}
-                          </span>
-                        </td>
+                        {columns.filter(c => c.visible).map(col => (
+                          <td key={col.id} className={getTdClass(col.id)}>
+                            {columnValues[col.id]}
+                          </td>
+                        ))}
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
+                </SortableContext>
+              </DndContext>
             </div>
           )}
         </div>

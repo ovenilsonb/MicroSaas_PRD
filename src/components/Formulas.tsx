@@ -70,6 +70,8 @@ interface Formula {
   ph_max?: string;
   viscosity_min?: string;
   viscosity_max?: string;
+  packaging_variant_id?: string;
+  label_variant_id?: string;
 }
 
 export default function Formulas() {
@@ -77,6 +79,7 @@ export default function Formulas() {
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
+  const [packagingVariants, setPackagingVariants] = useState<any[]>([]);
   const { mode } = useStorageMode();
 
   const [isLoading, setIsLoading] = useState(true);
@@ -229,6 +232,28 @@ export default function Formulas() {
         // Fetch Ingredients from Supabase
         const { data: ingData } = await supabase.from('ingredients').select('*, variants:ingredient_variants(*)').order('name');
         if (ingData) setAllIngredients(ingData);
+
+        // Fetch Packaging Variants (ingredients that are packaging type)
+        const { data: packagingData } = await supabase
+          .from('ingredients')
+          .select('id, name, variants:ingredient_variants(id, name, cost_per_unit)')
+          .eq('produto_quimico', false);
+        
+        if (packagingData) {
+          const allVariants: any[] = [];
+          packagingData.forEach((ing: any) => {
+            if (ing.variants && Array.isArray(ing.variants)) {
+              ing.variants.forEach((v: any) => {
+                allVariants.push({
+                  ...v,
+                  ingredient_name: ing.name,
+                  type: 'packaging'
+                });
+              });
+            }
+          });
+          setPackagingVariants(allVariants);
+        }
       } else {
         // Fetch from Local Storage
         let localFormulas = JSON.parse(localStorage.getItem('local_formulas') || '[]');
@@ -280,6 +305,21 @@ export default function Formulas() {
         setFormulas(localFormulas);
         setGroups(localGroups);
         setAllIngredients(localIngredients);
+
+        // Extract packaging variants from local ingredients
+        const localPackagingVariants: any[] = [];
+        localIngredients.forEach((ing: any) => {
+          if (ing.variants && Array.isArray(ing.variants)) {
+            ing.variants.forEach((v: any) => {
+              localPackagingVariants.push({
+                ...v,
+                ingredient_name: ing.name,
+                type: 'packaging'
+              });
+            });
+          }
+        });
+        setPackagingVariants(localPackagingVariants);
       }
 
     } catch (error) {
@@ -593,6 +633,8 @@ export default function Formulas() {
           ph_max: currentFormula.ph_max || null,
           viscosity_min: currentFormula.viscosity_min || null,
           viscosity_max: currentFormula.viscosity_max || null,
+          packaging_variant_id: currentFormula.packaging_variant_id || null,
+          label_variant_id: currentFormula.label_variant_id || null,
         };
 
         if (formulaId) {
@@ -1000,6 +1042,50 @@ export default function Formulas() {
                       </button>
                     </div>
                   </div>
+                  
+                  {packagingVariants.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Embalagem Padrão</label>
+                      <select
+                        value={currentFormula.packaging_variant_id || ''}
+                        onChange={e => setCurrentFormula({ ...currentFormula, packaging_variant_id: e.target.value || undefined })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                      >
+                        <option value="">Selecione a embalagem padrão...</option>
+                        {(() => {
+                          const packagingFilter = /embalagem|frasco|bolsa|tubo|pot|bottle|galão|bidão|dispenser|jarra|copo|plástico|vidro|bag|sachê/i;
+                          const filtered = packagingVariants.filter(v => packagingFilter.test(v.name));
+                          const options = filtered.length > 0 ? filtered : packagingVariants;
+                          return options.map(v => (
+                            <option key={v.id} value={v.id}>{v.name}</option>
+                          ));
+                        })()}
+                      </select>
+                      <p className="text-xs text-slate-500 mt-1">Usado para cálculo automático de custo na precificação</p>
+                    </div>
+                  )}
+
+                  {packagingVariants.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Rótulo Padrão</label>
+                      <select
+                        value={currentFormula.label_variant_id || ''}
+                        onChange={e => setCurrentFormula({ ...currentFormula, label_variant_id: e.target.value || undefined })}
+                        className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                      >
+                        <option value="">Selecione o rótulo padrão...</option>
+                        {(() => {
+                          const labelFilter = /rótulo|etiqueta|label|adesivo|sticker|tag|papel|decoration|impresso/i;
+                          const filtered = packagingVariants.filter(v => labelFilter.test(v.name));
+                          const options = filtered.length > 0 ? filtered : packagingVariants;
+                          return options.map(v => (
+                            <option key={v.id} value={v.id}>{v.name}</option>
+                          ));
+                        })()}
+                      </select>
+                      <p className="text-xs text-slate-500 mt-1">Usado para cálculo automático de custo na precificação</p>
+                    </div>
+                  )}
                 </div>
 
                 <div>
