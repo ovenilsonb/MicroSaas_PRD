@@ -9,8 +9,8 @@ interface PrecificacaoCardProps {
 }
 
 export default function PrecificacaoCard({ formula, onClick }: PrecificacaoCardProps) {
-  const rawV = formula.version || 'V1';
-  const badge = rawV.startsWith('V') ? rawV : `V${rawV}`;
+  const rawV = formula.version || 'v1.0';
+  const badge = rawV.toLowerCase().startsWith('v') ? rawV : `v${rawV}`;
   const category = getFormulaCategory(formula.name);
   const colors = categoryColors[category] || categoryColors.Produtos;
 

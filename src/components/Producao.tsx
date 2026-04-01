@@ -802,7 +802,7 @@ export default function Producao() {
                             </td>
                             <td className="py-4 px-6">
                               <div className="font-semibold text-slate-700">{formula?.name || '—'}</div>
-                              <div className="text-[10px] text-slate-400 font-mono uppercase">{formula?.lm_code || 'S/C'} • {formula?.version || ''}</div>
+                              <div className="text-[10px] text-slate-400 font-mono uppercase">{formula?.lm_code || 'S/C'} • {(formula?.version || 'v1.0').toLowerCase()}</div>
                             </td>
                             <td className="py-4 px-6 text-center font-bold text-slate-600">{order.planned_volume}L</td>
                             <td className="py-4 px-6">
@@ -873,7 +873,7 @@ export default function Producao() {
                             <div className={`p-2 rounded-lg ${targetFormulaId === f.id ? 'bg-[#202eac] text-white' : 'bg-slate-200 text-slate-500'}`}><Beaker className="w-4 h-4" /></div>
                             <div>
                               <div className="font-bold text-sm text-slate-800">{f.name}</div>
-                              <div className="text-[10px] text-slate-400 font-mono">{f.lm_code || 'S/C'} • {f.version} • {f.base_volume}L</div>
+                              <div className="text-[10px] text-slate-400 font-mono">{f.lm_code || 'S/C'} • {(f.version || 'v1.0').toLowerCase()} • {f.base_volume}L</div>
                             </div>
                           </div>
                           {targetFormulaId === f.id && <CheckCircle2 className="w-5 h-5 text-[#202eac]" />}
@@ -1156,7 +1156,7 @@ export default function Producao() {
                       <div className="w-14 h-14 bg-[#202eac]/10 text-[#202eac] rounded-2xl flex items-center justify-center"><Factory className="w-7 h-7" /></div>
                       <div>
                         <h2 className="text-xl font-black text-slate-800">OF: {selectedOrder.batch_number}</h2>
-                        <p className="text-sm text-slate-500">{formula?.name} • {formula?.version} • {(selectedOrder.planned_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}L</p>
+                        <p className="text-sm text-slate-500">{formula?.name} • {(formula?.version || 'v1.0').toLowerCase()} • {(selectedOrder.planned_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}L</p>
                         {selectedOrder.operatorName && <p className="text-xs text-slate-400 mt-1">Operador: {selectedOrder.operatorName} {selectedOrder.equipmentId ? `• ${selectedOrder.equipmentId}` : ''}</p>}
                       </div>
                     </div>

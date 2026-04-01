@@ -16,7 +16,9 @@ import {
   HardDrive,
   Cloud,
   Database,
-  ChevronRight
+  ChevronRight,
+  Bell,
+  User
 } from 'lucide-react';
 
 interface NavItemProps {
@@ -106,6 +108,20 @@ const navItems = [
 export default function Sidebar({ activeMenu, setActiveMenu, mode, isSyncing, onModeToggle, onSync }: SidebarProps) {
   return (
     <aside className="w-72 bg-slate-900 flex flex-col shadow-2xl z-20 sticky top-0 h-screen shrink-0">
+      {/* Top Section - Notifications & Profile */}
+      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+        <button className="relative p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 transition-colors">
+          <Bell className="w-5 h-5 text-slate-300" />
+          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
+        </button>
+        
+        <button className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800 transition-colors">
+          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#202eac] to-[#4b5ce8] flex items-center justify-center">
+            <User className="w-4 h-4 text-white" />
+          </div>
+        </button>
+      </div>
+
       {/* Logo Section */}
       <div className="p-5 border-b border-slate-800">
         <div className="flex items-center gap-3 mb-4">

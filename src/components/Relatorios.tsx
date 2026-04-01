@@ -322,7 +322,7 @@ export default function Relatorios() {
 
         <div class="meta-grid">
           <div class="meta-box"><span class="meta-label">Produto</span><span class="meta-value brand-accent">${formula.name}</span></div>
-          <div class="meta-box"><span class="meta-label">Versão Operacional</span><span class="meta-value">${formula.version || 'V1.0'}</span></div>
+          <div class="meta-box"><span class="meta-label">Versão Operacional</span><span class="meta-value">${(formula.version || 'v1.0').toLowerCase()}</span></div>
           <div class="meta-box"><span class="meta-label">Volume Lote Base</span><span class="meta-value">${formatVol(formula.base_volume)} L/Kg</span></div>
           <div class="meta-box"><span class="meta-label">Status</span><span class="meta-value" style="text-transform: uppercase;">${formula.status === 'active' ? 'Ativa' : formula.status}</span></div>
         </div>
@@ -787,7 +787,7 @@ export default function Relatorios() {
                       >
                         <option value="">Escolha uma fórmula do banco de dados...</option>
                         {formulas.map(f => (
-                          <option key={f.id} value={f.id}>{f.name} — (Vol: {f.base_volume}L • Versão: {f.version})</option>
+                          <option key={f.id} value={f.id}>{f.name} — (Vol: {f.base_volume}L • Versão: {(f.version || 'v1.0').toLowerCase()})</option>
                         ))}
                       </select>
                       <ChevronRight className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none rotate-90" />

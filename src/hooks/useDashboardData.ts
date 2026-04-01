@@ -111,8 +111,14 @@ export function useDashboardData(): UseDashboardDataReturn {
         totalFornecedores = localFornecedores.length;
 
         activity = [
-          ...localForms.map((f: any) => ({ type: 'formula' as const, name: f.name, date: new Date(f.created_at), id: f.id })),
-          ...localIngs.map((i: any) => ({ type: 'insumo' as const, name: i.name, date: new Date(i.created_at) }))
+          ...localForms.map((f: any) => {
+            const date = f.created_at ? new Date(f.created_at) : new Date();
+            return { type: 'formula' as const, name: f.name || 'Sem Nome', date: isNaN(date.getTime()) ? new Date() : date, id: f.id };
+          }),
+          ...localIngs.map((i: any) => {
+            const date = i.created_at ? new Date(i.created_at) : new Date();
+            return { type: 'insumo' as const, name: i.name || 'Sem Nome', date: isNaN(date.getTime()) ? new Date() : date };
+          })
         ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
       }
 

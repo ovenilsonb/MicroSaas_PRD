@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, Component, ReactNode } from 'react';
 import { supabase } from '../lib/supabase';
 import { useStorageMode } from '../contexts/StorageModeContext';
-import { Plus, Trash2, Search, X, Package, Beaker, TestTubes, Component, ArrowRightLeft, Box, AlertCircle, Copy, AlertTriangle, List, LayoutGrid, ArrowDownAZ, ArrowUpZA, CheckCircle2, Info, MoreVertical, TrendingUp, DollarSign, Pencil, Download, Upload } from 'lucide-react';
+import { Plus, Trash2, Search, X, Package, Beaker, TestTubes, ArrowRightLeft, Box, AlertCircle, Copy, AlertTriangle, List, LayoutGrid, ArrowDownAZ, ArrowUpZA, CheckCircle2, MoreVertical, TrendingUp, Download, Upload, RefreshCw, Users, Pencil } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { generateId } from '../lib/id';
 import { useToast } from './dashboard/Toast';
+import { TableSkeleton, CardSkeleton } from './Skeleton';
 
 interface Variant {
   id?: string;
@@ -37,16 +38,73 @@ interface Ingredient {
   variants?: Variant[];
 }
 
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class ErrorBoundary extends Component<{children: ReactNode}, ErrorBoundaryState> {
+  constructor(props: {children: ReactNode}) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
+    console.error('[ErrorBoundary] Erro capturado:', error.message, error.stack);
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+    console.error('[ErrorBoundary] Erro detalhado:', error, errorInfo.componentStack);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+          <div className="flex-1 flex items-center justify-center p-8">
+            <div className="bg-white rounded-2xl border border-red-200 shadow-lg p-8 max-w-md text-center">
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertTriangle className="w-8 h-8" />
+              </div>
+              <h2 className="text-xl font-bold text-slate-800 mb-2">Algo deu errado</h2>
+              <p className="text-slate-600 mb-4">O módulo de Insumos encontrou um erro.</p>
+              <div className="bg-slate-100 p-3 rounded-lg mb-4 text-left overflow-auto max-h-32">
+                <code className="text-xs text-red-600">{this.state.error?.message}</code>
+              </div>
+              <button
+                onClick={() => {
+                  this.setState({ hasError: false });
+                }}
+                className="px-6 py-2 bg-[#202eac] text-white font-medium rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2 mx-auto"
+              >
+                <RefreshCw className="w-4 h-4" /> Tentar Novamente
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return this.props.children;
+  }
+}
+
 export default function Insumos() {
   const { showToast } = useToast();
+  const { mode } = useStorageMode();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [suppliers, setSuppliers] = useState<any[]>([]);
-  const { mode } = useStorageMode();
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
   const [viewMode, setViewMode] = useState<'list' | 'grid'>(() => {
-    const saved = localStorage.getItem('insumosViewMode');
-    return (saved as 'list' | 'grid') || 'list';
+    try {
+      const saved = localStorage.getItem('insumosViewMode');
+      return (saved as 'list' | 'grid') || 'list';
+    } catch {
+      return 'list';
+    }
   });
 
   const handleSetViewMode = (mode: 'list' | 'grid') => {
@@ -55,6 +113,26 @@ export default function Insumos() {
   };
   const [sortField, setSortField] = useState<keyof Ingredient>('name');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
+
+  // Filter states
+  const [filterType, setFilterType] = useState('');
+  const [filterSupplier, setFilterSupplier] = useState('');
+  const [filterStock, setFilterStock] = useState('');
+
+  // Filter handlers with reset
+  const handleFilterTypeChange = (value: string) => {
+    setFilterType(value);
+    setFilterSupplier('');
+    setFilterStock('');
+  };
+
+  const handleFilterSupplierChange = (value: string) => {
+    setFilterSupplier(value);
+  };
+
+  const handleFilterStockChange = (value: string) => {
+    setFilterStock(value);
+  };
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -88,22 +166,40 @@ export default function Insumos() {
 
     try {
       const data = await importFromJson(file);
+      
+      // Validate data structure
       if (!Array.isArray(data)) {
-        throw new Error('Formato de dados inválido.');
+        throw new Error('Formato de dados inválido. O arquivo deve conter um array de objetos.');
       }
 
-      // If in Supabase mode, we should ideally upsert to the database
-      // For now, let's update the local state and handle persistence based on mode
+      // Validate first item has required fields
+      if (data.length > 0) {
+        const firstItem = data[0];
+        if (!firstItem.id || !firstItem.name) {
+          throw new Error('Dados inválidos. Cada item deve ter id e name.');
+        }
+      }
+
       if (mode === 'supabase') {
         showToast('info', 'Importando...', 'Sincronizando dados com o Supabase...');
 
-        // This is a simplified import for Supabase, bulk upsert would be better
         for (const item of data) {
+          // Upsert ingredient
           const { error } = await supabase.from('ingredients').upsert({
             ...item,
-            variants: undefined // Don't upsert nested variants directly in this call
+            variants: undefined
           });
           if (error) console.error(`Erro ao importar ${item.name}:`, error);
+
+          // Upsert variants if exist
+          if (item.variants && Array.isArray(item.variants)) {
+            for (const variant of item.variants) {
+              await supabase.from('ingredient_variants').upsert({
+                ...variant,
+                ingredient_id: item.id
+              });
+            }
+          }
         }
         await fetchIngredients();
       } else {
@@ -111,11 +207,23 @@ export default function Insumos() {
         const newData = [...localData];
 
         data.forEach((item: any) => {
-          const index = newData.findIndex(i => i.id === item.id);
+          if (!item.id || !item.name) return;
+          
+          const sanitizedItem = {
+            ...item,
+            estoque_atual: parseFloat(item.estoque_atual) || 0,
+            estoque_minimo: parseFloat(item.estoque_minimo) || 0,
+            cost_per_unit: typeof item.cost_per_unit === 'string' 
+              ? parseFloat(item.cost_per_unit.replace(',', '.')) || 0 
+              : parseFloat(item.cost_per_unit) || 0,
+            variants: Array.isArray(item.variants) ? item.variants : []
+          };
+
+          const index = newData.findIndex(i => i.id === sanitizedItem.id);
           if (index >= 0) {
-            newData[index] = item;
+            newData[index] = sanitizedItem;
           } else {
-            newData.push(item);
+            newData.push(sanitizedItem);
           }
         });
 
@@ -127,7 +235,10 @@ export default function Insumos() {
     } catch (err: any) {
       showToast('error', 'Erro na Importação', err.message || 'Falha ao importar arquivo.');
     } finally {
-      if (e.target) e.target.value = '';
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -175,6 +286,7 @@ export default function Insumos() {
   const [newVariant, setNewVariant] = useState({ name: '', codigo: '', cost_per_unit: '' });
 
   useEffect(() => {
+    console.log('[Insumos] Fetching data, mode:', mode);
     fetchIngredients();
     fetchSuppliers();
   }, [mode]);
@@ -182,22 +294,35 @@ export default function Insumos() {
   const fetchSuppliers = async () => {
     try {
       if (mode === 'supabase') {
-        const { data, error } = await supabase
-          .from('suppliers')
-          .select('id, name')
-          .order('name');
+        try {
+          const { data, error } = await supabase
+            .from('suppliers')
+            .select('id, name')
+            .order('name');
 
-        if (error) {
-          if (error.code !== '42P01') throw error;
-        } else {
-          setSuppliers(data || []);
+          if (error) {
+            if (error.code !== '42P01') throw error;
+          } else {
+            setSuppliers(data || []);
+          }
+        } catch (supabaseErr) {
+          console.error('Erro Supabase fornecedores:', supabaseErr);
+          // Fallback local
+          const localSuppliers = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
+          setSuppliers(localSuppliers);
         }
       } else {
-        const localSuppliers = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
-        setSuppliers(localSuppliers);
+        try {
+          const localSuppliers = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
+          setSuppliers(localSuppliers);
+        } catch (localErr) {
+          console.error('Erro localStorage fornecedores:', localErr);
+          setSuppliers([]);
+        }
       }
     } catch (error) {
       console.error('Erro ao buscar fornecedores:', error);
+      setSuppliers([]); // Fallback seguro
     }
   };
 
@@ -205,58 +330,54 @@ export default function Insumos() {
     setIsLoading(true);
     try {
       if (mode === 'supabase') {
-        const { data, error } = await supabase
-          .from('ingredients')
-          .select('*, variants:ingredient_variants(*)')
-          .order('name');
+        try {
+          const { data, error } = await supabase
+            .from('ingredients')
+            .select('*, variants:ingredient_variants(*)')
+            .order('name');
 
-        if (error) throw error;
-        setIngredients(data || []);
+          if (error) throw error;
+          setIngredients(data || []);
+        } catch (supabaseError: any) {
+          console.error('Erro Supabase ao buscar insumos:', supabaseError);
+          showToast('warning', 'Modo Offline', 'Usando dados locais devido a erro de conexão.');
+          // Fallback para local se Supabase falhar
+          let localIngredients = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
+          if (localIngredients.length === 0) {
+            localIngredients = [
+              { id: generateId(), name: 'Água Desmineralizada', unit: 'L', cost_per_unit: 0.50, produto_quimico: true, created_at: new Date().toISOString(), estoque_atual: 1000, estoque_minimo: 100 },
+              { id: generateId(), name: 'Essência de Lavanda', unit: 'L', cost_per_unit: 45.00, produto_quimico: true, created_at: new Date().toISOString(), estoque_atual: 10, estoque_minimo: 2 },
+              { id: generateId(), name: 'Frasco 500ml', unit: 'UN', cost_per_unit: 1.20, produto_quimico: false, created_at: new Date().toISOString(), estoque_atual: 500, estoque_minimo: 50 }
+            ];
+            localStorage.setItem('local_ingredients', JSON.stringify(localIngredients));
+          }
+          setIngredients(localIngredients);
+        }
       } else {
         // Fetch from Local Storage
-        let localIngredients = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
+        try {
+          let localIngredients = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
 
-        // Populate with sample data if empty
-        if (localIngredients.length === 0) {
-          localIngredients = [
-            {
-              id: generateId(),
-              name: 'Água Desmineralizada',
-              unit: 'L',
-              cost_per_unit: 0.50,
-              produto_quimico: true,
-              created_at: new Date().toISOString(),
-              estoque_atual: 1000,
-              estoque_minimo: 100
-            },
-            {
-              id: generateId(),
-              name: 'Essência de Lavanda',
-              unit: 'L',
-              cost_per_unit: 45.00,
-              produto_quimico: true,
-              created_at: new Date().toISOString(),
-              estoque_atual: 10,
-              estoque_minimo: 2
-            },
-            {
-              id: generateId(),
-              name: 'Frasco 500ml',
-              unit: 'UN',
-              cost_per_unit: 1.20,
-              produto_quimico: false,
-              created_at: new Date().toISOString(),
-              estoque_atual: 500,
-              estoque_minimo: 50
-            }
-          ];
-          localStorage.setItem('local_ingredients', JSON.stringify(localIngredients));
+          // Populate with sample data if empty
+          if (localIngredients.length === 0) {
+            localIngredients = [
+              { id: generateId(), name: 'Água Desmineralizada', unit: 'L', cost_per_unit: 0.50, produto_quimico: true, created_at: new Date().toISOString(), estoque_atual: 1000, estoque_minimo: 100 },
+              { id: generateId(), name: 'Essência de Lavanda', unit: 'L', cost_per_unit: 45.00, produto_quimico: true, created_at: new Date().toISOString(), estoque_atual: 10, estoque_minimo: 2 },
+              { id: generateId(), name: 'Frasco 500ml', unit: 'UN', cost_per_unit: 1.20, produto_quimico: false, created_at: new Date().toISOString(), estoque_atual: 500, estoque_minimo: 50 }
+            ];
+            localStorage.setItem('local_ingredients', JSON.stringify(localIngredients));
+          }
+
+          setIngredients(localIngredients);
+        } catch (localError: any) {
+          console.error('Erro ao ler localStorage:', localError);
+          setIngredients([]); // Fallback para array vazio
+          showToast('warning', 'Dados Resetados', 'Erro ao carregar dados locais. Lista foi resetada.');
         }
-
-        setIngredients(localIngredients);
       }
     } catch (error) {
-      console.error('Erro ao buscar insumos:', error);
+      console.error('Erro geral ao buscar insumos:', error);
+      setIngredients([]); // Fallback seguro
       showToast('error', 'Erro de Carregamento', 'Não foi possível carregar a lista de insumos.');
     } finally {
       setIsLoading(false);
@@ -338,7 +459,7 @@ export default function Insumos() {
           ).map((f: any) => ({
             id: f.id,
             name: f.name,
-            version: f.version || 'V1'
+            version: f.version || 'v1.0'
           }));
           setUsageFormulas(formulasUsing);
         } catch (err) {
@@ -598,7 +719,33 @@ export default function Insumos() {
 
   const filteredIngredients = useMemo(() => {
     return ingredients
-      .filter(ing => ing.name.toLowerCase().includes(searchTerm.toLowerCase()) || ing.codigo?.toLowerCase().includes(searchTerm.toLowerCase()))
+      .filter(ing => {
+        // Search filter
+        const matchesSearch = ing.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+          ing.codigo?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          ing.fornecedor?.toLowerCase().includes(searchTerm.toLowerCase());
+        
+        // Type filter
+        const matchesType = !filterType || 
+          (filterType === 'quimico' && ing.produto_quimico) ||
+          (filterType === 'embalagem' && !ing.produto_quimico && ing.name.toLowerCase().includes('embal')) ||
+          (filterType === 'rotulo' && ing.name.toLowerCase().includes('rótulo') || ing.name.toLowerCase().includes('rotulo'));
+        
+        // Supplier filter
+        const matchesSupplier = !filterSupplier || ing.fornecedor === filterSupplier;
+        
+        // Stock filter
+        let matchesStock = true;
+        if (filterStock) {
+          const atual = ing.estoque_atual || 0;
+          const minimo = ing.estoque_minimo || 0;
+          if (filterStock === 'baixo') matchesStock = atual <= minimo;
+          else if (filterStock === 'medio') matchesStock = atual > minimo && atual <= minimo * 2;
+          else if (filterStock === 'alto') matchesStock = atual > minimo * 2;
+        }
+        
+        return matchesSearch && matchesType && matchesSupplier && matchesStock;
+      })
       .sort((a, b) => {
         const aValue = a[sortField];
         const bValue = b[sortField];
@@ -617,7 +764,7 @@ export default function Insumos() {
 
         return 0;
       });
-  }, [ingredients, searchTerm, sortField, sortOrder]);
+  }, [ingredients, searchTerm, sortField, sortOrder, filterType, filterSupplier, filterStock]);
 
   const stats = useMemo(() => {
     const total = ingredients.length;
@@ -652,159 +799,265 @@ export default function Insumos() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
-      {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
-        <div>
-          <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-            <Package className="w-6 h-6 text-[#202eac]" />
-            Insumos e Matérias-Primas
-          </h1>
-          <p className="text-sm text-slate-500 mt-1">Gerencie seu catálogo de ingredientes e custos</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <label className="cursor-pointer px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 font-medium flex items-center gap-2 transition-colors shadow-sm">
-            <Upload className="w-4 h-4 text-emerald-600" /> Importar
-            <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-          </label>
-          <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 font-medium flex items-center gap-2 transition-colors shadow-sm"
-          >
-            <Download className="w-4 h-4 text-[#202eac]" /> Exportar
-          </button>
-          <button
-            onClick={() => handleOpenModal()}
-            className="px-4 py-2 bg-[#202eac] text-white rounded-lg hover:bg-blue-800 font-medium flex items-center gap-2 transition-colors shadow-sm"
-          >
-            <Plus className="w-4 h-4" /> Adicionar Insumo
-          </button>
-        </div>
-      </header>
-
+    <ErrorBoundary>
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+        
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-7xl mx-auto space-y-6">
 
-          {/* Summary Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            {/* Total Insumos */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col group hover:border-[#202eac] transition-all">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-blue-50 text-[#202eac] rounded-xl flex items-center justify-center">
-                  <Package className="w-5 h-5" />
-                </div>
-              </div>
-              <p className="text-slate-500 text-sm font-medium">Total de Insumos</p>
-              <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.total}</h3>
+          {/* Action Bar */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                <Package className="w-6 h-6 text-[#202eac]" />
+                Insumos
+              </h2>
+              <span className="text-sm text-slate-500">{stats.total} itens cadastrados</span>
             </div>
-
-            {/* Estoque Baixo */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col group hover:border-red-500 transition-all">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-red-50 text-red-600 rounded-xl flex items-center justify-center">
-                  <AlertTriangle className="w-5 h-5" />
-                </div>
-                {stats.lowStock > 0 && (
-                  <span className="flex h-2 w-2 relative">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
-                  </span>
-                )}
-              </div>
-              <p className="text-slate-500 text-sm font-medium">Estoque Baixo</p>
-              <h3 className={`text-2xl font-bold mt-1 ${stats.lowStock > 0 ? 'text-red-600' : 'text-slate-800'}`}>
-                {stats.lowStock}
-              </h3>
-            </div>
-
-            {/* Investimento */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col group hover:border-emerald-500 transition-all">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center">
-                  <TrendingUp className="w-5 h-5" />
-                </div>
-              </div>
-              <p className="text-slate-500 text-sm font-medium">Valor em Estoque</p>
-              <h3 className="text-2xl font-bold text-slate-800 mt-1">
-                {stats.investment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })}
-              </h3>
-            </div>
-
-            {/* Produtos Químicos */}
-            <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col group hover:border-amber-500 transition-all">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-10 h-10 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center">
-                  <Beaker className="w-5 h-5" />
-                </div>
-              </div>
-              <p className="text-slate-500 text-sm font-medium">Produtos Químicos</p>
-              <h3 className="text-2xl font-bold text-slate-800 mt-1">{stats.chemical}</h3>
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium flex items-center gap-2 transition-all shadow-sm">
+                <Upload className="w-4 h-4 text-emerald-600" /> 
+                <span className="hidden sm:inline">Importar</span>
+                <input 
+                  ref={fileInputRef}
+                  type="file" 
+                  accept=".json" 
+                  className="hidden" 
+                  onChange={handleImport} 
+                  aria-label="Importar insumos" 
+                />
+              </label>
+              <button
+                onClick={handleExport}
+                className="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium flex items-center gap-2 transition-all shadow-sm"
+                aria-label="Exportar insumos"
+              >
+                <Download className="w-4 h-4 text-[#202eac]" /> 
+                <span className="hidden sm:inline">Exportar</span>
+              </button>
+              <button
+                onClick={() => handleOpenModal()}
+                className="px-5 py-2.5 bg-gradient-to-r from-[#202eac] to-[#4b5ce8] text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 font-medium flex items-center gap-2 transition-all"
+                aria-label="Adicionar novo insumo"
+              >
+                <Plus className="w-4 h-4" /> 
+                <span className="hidden sm:inline">Adicionar</span>
+              </button>
             </div>
           </div>
 
-          {/* Search Bar and Controls */}
-          <div className="flex items-center gap-4">
-            <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 flex-1">
-              <Search className="w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Buscar insumos..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="flex-1 outline-none text-slate-700"
-              />
+          {/* Module Header - Elaborate */}
+          <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-2xl p-6 shadow-sm border border-slate-200">
+            <div className="flex items-start gap-5">
+              {/* Icon */}
+              <div className="w-16 h-16 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-2xl flex items-center justify-center shadow-lg shadow-emerald-500/25 shrink-0">
+                <Package className="w-8 h-8 text-white" />
+              </div>
+              
+              {/* Content */}
+              <div className="flex-1">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  Gestão de Insumos e Matérias-Primas
+                  <span className="text-xs bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-medium">Módulo Principal</span>
+                </h2>
+                <p className="text-slate-600 text-sm mt-1.5 leading-relaxed max-w-3xl">
+                  Gerencie todas as matérias-primas utilizadas na produção. Este módulo é a base do sistema, permitindo controlar custos unitários, fornecedores, estoque mínimo e variações de produtos. Mantenha o cadastro atualizado para garantir qualidade e eficiência na fabricação.
+                </p>
+                
+                {/* Stats Badges */}
+                <div className="flex items-center gap-3 mt-4 flex-wrap">
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <Package className="w-4 h-4 text-emerald-600" />
+                    <span className="text-slate-700 text-sm font-medium uppercase">{stats.total} itens cadastrados</span>
+                  </div>
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <Users className="w-4 h-4 text-blue-600" />
+                    <span className="text-slate-700 text-sm font-medium uppercase">{suppliers.length} fornecedores</span>
+                  </div>
+                  {stats.lowStock > 0 && (
+                    <div className="flex items-center gap-2 bg-red-100 px-3 py-1.5 rounded-lg">
+                      <AlertTriangle className="w-4 h-4 text-red-600" />
+                      <span className="text-red-700 text-sm font-medium uppercase">{stats.lowStock} alertas de estoque</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                    <Beaker className="w-4 h-4 text-amber-600" />
+                    <span className="text-slate-700 text-sm font-medium uppercase">{stats.chemical} produtos químicos</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Summary Cards - Horizontal Layout */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Total Insumos */}
+            <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-[#202eac]/30 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-[#202eac] to-[#4b5ce8] rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+                <Package className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-slate-500 text-xs font-medium truncate uppercase">Total de Insumos</p>
+                <h3 className="text-2xl font-bold text-slate-800">{stats.total}</h3>
+              </div>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            {/* Estoque Baixo */}
+            <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-red-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-red-500/20 shrink-0">
+                <AlertTriangle className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-slate-500 text-xs font-medium truncate uppercase">Estoque Baixo</p>
+                <h3 className={`text-2xl font-bold ${stats.lowStock > 0 ? 'text-red-600' : 'text-slate-800'}`}>
+                  {stats.lowStock}
+                </h3>
+              </div>
+            </div>
+
+            {/* Investimento */}
+            <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-emerald-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
+                <TrendingUp className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-slate-500 text-xs font-medium truncate uppercase">Valor em Estoque</p>
+                <h3 className="text-2xl font-bold text-slate-800 truncate">
+                  {stats.investment.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL', minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                </h3>
+              </div>
+            </div>
+
+            {/* Produtos Químicos */}
+            <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-amber-300 transition-all duration-300">
+              <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+                <Beaker className="w-5 h-5 text-white" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-slate-500 text-xs font-medium truncate uppercase">Produtos Químicos</p>
+                <h3 className="text-2xl font-bold text-slate-800">{stats.chemical}</h3>
+              </div>
+            </div>
+          </div>
+
+          {/* Search and Controls Bar */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {/* Search - Compact */}
+            <div className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 w-64 focus-within:border-[#202eac] focus-within:ring-2 focus-within:ring-[#202eac]/10 transition-all">
+              <Search className="w-4 h-4 text-slate-400 shrink-0" />
+              <input
+                type="text"
+                placeholder="Buscar..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 min-w-0"
+              />
+              {searchTerm && (
+                <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600 shrink-0">
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </div>
+
+            {/* Filter: Tipo */}
+            <select 
+              className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm text-sm text-slate-600 outline-none focus:border-[#202eac] cursor-pointer uppercase"
+              value={filterType}
+              onChange={(e) => handleFilterTypeChange(e.target.value)}
+              aria-label="Filtrar por tipo"
+            >
+              <option value="">Todos os tipos</option>
+              <option value="quimico">Químicos</option>
+              <option value="embalagem">Embalagens</option>
+              <option value="rotulo">Rótulos</option>
+            </select>
+
+            {/* Filter: Fornecedor */}
+            <select 
+              className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm text-sm text-slate-600 outline-none focus:border-[#202eac] cursor-pointer uppercase"
+              value={filterSupplier}
+              onChange={(e) => handleFilterSupplierChange(e.target.value)}
+              aria-label="Filtrar por fornecedor"
+            >
+              <option value="">Todos fornecedores</option>
+              {suppliers.map(s => (
+                <option key={s.id} value={s.name}>{s.name}</option>
+              ))}
+            </select>
+
+            {/* Filter: Estoque */}
+            <select 
+              className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm text-sm text-slate-600 outline-none focus:border-[#202eac] cursor-pointer uppercase"
+              value={filterStock}
+              onChange={(e) => handleFilterStockChange(e.target.value)}
+              aria-label="Filtrar por estoque"
+            >
+              <option value="">Estoque</option>
+              <option value="baixo">Estoque baixo</option>
+              <option value="medio">Estoque médio</option>
+              <option value="alto">Estoque alto</option>
+            </select>
+
+            {/* Spacer */}
+            <div className="flex-1"></div>
+
+            {/* View Mode */}
+            <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
               <button
                 onClick={() => handleSetViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                title="Visualização em Lista"
+                className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                title="Lista"
               >
-                <List className="w-5 h-5" />
+                <List className="w-4 h-4" />
               </button>
               <button
                 onClick={() => handleSetViewMode('grid')}
-                className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                title="Visualização em Blocos"
+                className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                title="Blocos"
               >
-                <LayoutGrid className="w-5 h-5" />
+                <LayoutGrid className="w-4 h-4" />
               </button>
             </div>
 
-            <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            {/* Sort */}
+            <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
               <button
                 onClick={() => setSortOrder('asc')}
-                className={`p-2 rounded-lg transition-colors ${sortOrder === 'asc' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                title="Ordem Alfabética (A-Z)"
+                className={`p-2 rounded-lg transition-all duration-200 ${sortOrder === 'asc' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                title="A-Z"
               >
-                <ArrowDownAZ className="w-5 h-5" />
+                <ArrowDownAZ className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setSortOrder('desc')}
-                className={`p-2 rounded-lg transition-colors ${sortOrder === 'desc' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                title="Ordem Alfabética (Z-A)"
+                className={`p-2 rounded-lg transition-all duration-200 ${sortOrder === 'desc' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                title="Z-A"
               >
-                <ArrowUpZA className="w-5 h-5" />
+                <ArrowUpZA className="w-4 h-4" />
               </button>
             </div>
           </div>
 
           {/* Content Area */}
           {isLoading ? (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500">
-              Carregando insumos...
+            <div className="space-y-4">
+              <CardSkeleton count={4} />
+              <TableSkeleton rows={8} />
             </div>
           ) : filteredIngredients.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500">
-              Nenhum insumo encontrado. Clique em "Adicionar Insumo" para começar.
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
+              <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <Package className="w-8 h-8 text-slate-400" />
+              </div>
+              <p className="text-slate-600 font-medium">Nenhum insumo encontrado</p>
+              <p className="text-slate-400 text-sm mt-1">Clique em "Adicionar Insumo" para começar</p>
             </div>
           ) : viewMode === 'list' ? (
             <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
               <table className="w-full text-left border-collapse">
                 <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm">
+                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm uppercase">
                     <th className="py-4 px-4 font-semibold w-32 text-left cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('validade_indeterminada')}>
                       Validade {sortField === 'validade_indeterminada' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
@@ -818,13 +1071,16 @@ export default function Insumos() {
                       Valor {sortField === 'cost_per_unit' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
                     <th className="py-4 px-4 font-semibold w-24 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('tem_variantes')}>
-                      Variantes? {sortField === 'tem_variantes' && (sortOrder === 'asc' ? '↑' : '↓')}
+                      Variantes {sortField === 'tem_variantes' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
                     <th className="py-4 px-4 font-semibold w-32 cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('fornecedor')}>
                       Fornecedor {sortField === 'fornecedor' && (sortOrder === 'asc' ? '↑' : '↓')}
                     </th>
                     <th className="py-4 px-4 font-semibold w-32 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('estoque_atual')}>
                       Estoque {sortField === 'estoque_atual' && (sortOrder === 'asc' ? '↑' : '↓')}
+                    </th>
+                    <th className="py-4 px-4 font-semibold w-32 text-center">
+                      Última Mov.
                     </th>
                     <th className="py-4 px-4 font-semibold w-24 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('produto_quimico')}>
                       Tipo {sortField === 'produto_quimico' && (sortOrder === 'asc' ? '↑' : '↓')}
@@ -844,7 +1100,7 @@ export default function Insumos() {
                     let validityTitle = 'Validade Indeterminada';
                     let validityText = 'Indeterminada';
 
-                    if (!ing.validade_indeterminada && ing.expiry_date) {
+                    if (!ing.validade_indeterminada && typeof ing.expiry_date === 'string' && ing.expiry_date.includes('-')) {
                       const today = new Date();
                       today.setHours(0, 0, 0, 0);
 
@@ -888,33 +1144,43 @@ export default function Insumos() {
                         </td>
 
                         {/* Nome / Código */}
-                        <td className="py-3 px-4">
+                        <td className="py-4 px-4">
                           <div className="font-bold text-slate-800 uppercase">{ing.name}</div>
-                          <div className="text-xs text-slate-400 italic mt-0.5">{ing.codigo || 'S/ CÓDIGO'}</div>
+                          <div className="text-xs text-slate-400 mt-0.5 uppercase">{ing.codigo || 'Sem código'}</div>
                         </td>
 
                         {/* Unidade */}
-                        <td className="py-3 px-4 text-slate-600 font-medium">
-                          {ing.unit?.toUpperCase()}
+                        <td className="py-4 px-4">
+                          <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg">
+                            {ing.unit?.toUpperCase()}
+                          </span>
                         </td>
 
                         {/* Valor */}
-                        <td className="py-3 px-4">
-                          {ing.tem_variantes && ing.variants && ing.variants.length > 0 ? (
+                        <td className="py-4 px-4">
+                          {ing.tem_variantes && Array.isArray(ing.variants) && ing.variants.length > 0 ? (
                             <div className="flex flex-col">
                               {(() => {
-                                const costs = ing.variants.map(v => typeof v.cost_per_unit === 'string' ? parseFloat(v.cost_per_unit.replace(/\./g, '').replace(',', '.')) || 0 : v.cost_per_unit || 0);
+                                const costs = ing.variants
+                                  .filter(v => v !== null && v !== undefined)
+                                  .map(v => typeof v.cost_per_unit === 'string' 
+                                    ? parseFloat(v.cost_per_unit.replace(/\./g, '').replace(',', '.')) || 0 
+                                    : typeof v.cost_per_unit === 'number' ? v.cost_per_unit : 0);
+                                
+                                if (costs.length === 0) return <span className="text-slate-400 text-sm">Sem valor</span>;
+                                
                                 const minCost = Math.min(...costs);
                                 const maxCost = Math.max(...costs);
-                                if (minCost === maxCost) {
+                                
+                                if (minCost === maxCost || isNaN(minCost) || !isFinite(minCost)) {
                                   return (
-                                    <span className="font-bold text-slate-800">{formatCurrency(minCost)}</span>
+                                    <span className="font-bold text-slate-800">{formatCurrency(isNaN(minCost) ? 0 : minCost === Infinity ? 0 : minCost)}</span>
                                   );
                                 }
                                 return (
                                   <>
-                                    <span className="font-bold text-slate-800 text-sm" title="Menor valor">{formatCurrency(minCost)}</span>
-                                    <span className="text-xs text-slate-500 font-medium mt-0.5" title="Maior valor">até {formatCurrency(maxCost)}</span>
+                                    <span className="font-bold text-slate-800 text-sm">{formatCurrency(minCost)}</span>
+                                    <span className="text-xs text-slate-500">até {formatCurrency(maxCost)}</span>
                                   </>
                                 );
                               })()}
@@ -925,26 +1191,26 @@ export default function Insumos() {
                         </td>
 
                         {/* Variantes? */}
-                        <td className="py-3 px-4 text-center">
-                          <span className={`px-2 py-1 text-[10px] font-bold rounded-md ${ing.tem_variantes
-                              ? 'bg-purple-100 text-purple-700 border border-purple-200'
-                              : 'bg-slate-100 text-slate-500 border border-slate-200'
+                        <td className="py-4 px-4 text-center">
+                          <span className={`px-2.5 py-1 text-[10px] font-bold rounded-lg uppercase ${ing.tem_variantes
+                              ? 'bg-emerald-100 text-emerald-700'
+                              : 'bg-purple-100 text-purple-700'
                             }`}>
                             {ing.tem_variantes ? 'SIM' : 'NÃO'}
                           </span>
                         </td>
 
                         {/* Fornecedor */}
-                        <td className="py-3 px-4 text-slate-500 text-sm uppercase">
-                          {ing.fornecedor || '-'}
+                        <td className="py-4 px-4 text-slate-600 text-sm">
+                          <span className="px-2 py-1 bg-slate-50 rounded-md uppercase">{ing.fornecedor || '-'}</span>
                         </td>
 
                         {/* Estoque */}
-                        <td className="py-3 px-4 text-center">
-                          <div className={`font-bold ${isEstoqueBaixo ? 'text-red-500' : 'text-emerald-600'}`}>
+                        <td className="py-4 px-4 text-center">
+                          <div className={`font-bold ${isEstoqueBaixo ? 'text-red-600' : 'text-emerald-600'}`}>
                             {estoqueAtual.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
                           </div>
-                          <div className="w-full h-1.5 bg-slate-200 rounded-full mt-1.5 overflow-hidden flex">
+                          <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden flex">
                             <div
                               className={`h-full rounded-full transition-all duration-500 ${isEstoqueBaixo
                                   ? 'bg-red-500'
@@ -952,6 +1218,16 @@ export default function Insumos() {
                                 }`}
                               style={{ width: `${percentualEstoque}%` }}
                             ></div>
+                          </div>
+                        </td>
+
+                        {/* Última Movimentação */}
+                        <td className="py-4 px-4 text-center">
+                          <div className="flex flex-col items-center">
+                            <span className="text-xs text-slate-500 font-medium uppercase">
+                              {ing.created_at ? new Date(ing.created_at).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : '-'}
+                            </span>
+                            <span className="text-[10px] text-slate-400 uppercase">Cadastro</span>
                           </div>
                         </td>
 
@@ -963,7 +1239,7 @@ export default function Insumos() {
                             </div>
                           ) : (
                             <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 flex items-center justify-center mx-auto" title="Outros">
-                              <Component className="w-4 h-4" />
+                              <Box className="w-4 h-4" />
                             </div>
                           )}
 
@@ -1643,7 +1919,7 @@ export default function Insumos() {
                                   </div>
                                   <div>
                                     <h4 className="font-medium text-slate-800">{f.name}</h4>
-                                    <p className="text-xs text-slate-500 mt-0.5">Versão: {f.version || 'V1'}</p>
+                                    <p className="text-xs text-slate-500 mt-0.5">Versão: {f.version || 'v1.0'}</p>
                                   </div>
                                 </li>
                               ))}
@@ -1742,5 +2018,6 @@ export default function Insumos() {
         </div>
       )}
     </div>
+    </ErrorBoundary>
   );
 }

@@ -25,7 +25,7 @@ create table if not exists public.quality_controls (
   appearance_status text,
   notes text,
   analyst_name text,
-  status text not null default 'pending', -- pending, approved, rejected
+  status text not null default 'pending', -- pending, approved, rejected, 
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

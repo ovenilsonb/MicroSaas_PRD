@@ -164,7 +164,7 @@ export function useFormulasData(): UseFormulasDataReturn {
         ...formula,
         id: newId,
         name: `${formula.name} (Cópia)`,
-        version: 'V1',
+        version: 'v1.0',
         status: 'draft' as const,
         created_at: now,
         updated_at: now,

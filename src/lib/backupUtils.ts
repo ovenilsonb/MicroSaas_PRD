@@ -31,5 +31,8 @@ export function getBackupFilename(moduleName: string) {
   const day = String(now.getDate()).padStart(2, '0');
   const month = String(now.getMonth() + 1).padStart(2, '0');
   const year = String(now.getFullYear()).slice(-2);
-  return `Backup_${moduleName}_${day}_${month}_${year}.json`;
+  const hour = String(now.getHours()).padStart(2, '0');
+  const minute = String(now.getMinutes()).padStart(2, '0');
+  const second = String(now.getSeconds()).padStart(2, '0');
+  return `Backup_${moduleName}_${day}_${month}_${year}_${hour}_${minute}_${second}.json`;
 }

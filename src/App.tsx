@@ -1,11 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import {
-  Beaker, Calculator, DollarSign, Package, FileBarChart,
-  Settings, Plus, Save, Printer, ArrowRight, Search,
-  ChevronDown, AlertCircle, FlaskConical,
-  ShoppingCart, Users, Factory, Shield, Archive,
-  Download, Upload, Database, Copy, CheckCircle2, LayoutDashboard,
-  Cloud, HardDrive
+  Settings, Save, AlertCircle, 
+  Download, Upload, Database, Copy, CheckCircle2,
 } from 'lucide-react';
 import { useStorageMode } from './contexts/StorageModeContext';
 import { isSupabaseConfigured, supabase } from './lib/supabase';
@@ -22,6 +18,9 @@ const Clientes = lazy(() => import('./components/Clientes'));
 const Producao = lazy(() => import('./components/Producao'));
 const Qualidade = lazy(() => import('./components/Qualidade'));
 const Estoque = lazy(() => import('./components/Estoque'));
+
+import Sidebar from './components/Sidebar';
+import Header from './components/Header';
 
 function LoadingFallback() {
   return (
@@ -107,7 +106,7 @@ create table if not exists public.ingredient_variants (
 create table if not exists public.formulas (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
-  version text not null default 'V1',
+  version text not null default 'v1.0',
   base_volume numeric not null default 100,
   status text not null default 'draft',
   group_id uuid references public.groups(id) on delete set null,
@@ -347,104 +346,56 @@ create table if not exists public.inventory_logs (
       `}</style>
       <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
 
-      {/* Sidebar Navigation - Fixed/Sticky */}
-      <aside className="w-64 bg-[#202eac] text-white flex flex-col shadow-xl z-20 sticky top-0 h-screen shrink-0">
-        <div className="p-6 flex flex-col gap-4 border-b border-white/10">
-          <div className="flex items-center gap-3">
-            <div className="bg-white/20 p-2 rounded-lg text-white">
-              <FlaskConical className="w-6 h-6" />
-            </div>
-            <span className="font-bold text-lg text-white tracking-tight">QuímicaSaaS</span>
-          </div>
-          
-          <button 
-            onClick={handleModeToggle}
-            className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all border ${
-              mode === 'local' 
-                ? 'bg-amber-500/20 text-amber-300 border-amber-500/30 hover:bg-amber-500/30' 
-                : 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/30'
-            }`}
-          >
-            {mode === 'local' ? (
-              <><HardDrive className="w-3.5 h-3.5" /> Salvar Local</>
-            ) : (
-              <><Cloud className="w-3.5 h-3.5" /> Salvar On-line</>
-            )}
-          </button>
-          
-          <button
-            onClick={syncFromSupabase}
-            disabled={isSyncing}
-            className="w-full flex items-center justify-center gap-2 px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all bg-white/5 text-white/70 border border-white/10 hover:bg-white/10 hover:text-white disabled:opacity-50"
-          >
-            <Database className={`w-3 h-3 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Sincronizando...' : 'Sincronizar On-line → Local'}
-          </button>
-        </div>
-
-        <nav className="flex-1 px-4 py-6 space-y-6 overflow-y-auto custom-scrollbar left-scrollbar">
-
-          {/* MCP Modules */}
-          <div>
-            <h3 className="px-3 text-xs font-bold text-white/50 uppercase tracking-wider mb-2">MCP (Versão 1.0)</h3>
-            <div className="space-y-1">
-              <NavItem icon={<LayoutDashboard />} label="Dashboard" active={activeMenu === 'dashboard'} onClick={() => setActiveMenu('dashboard')} />
-              <NavItem icon={<Package />} label="Insumos" active={activeMenu === 'insumos'} onClick={() => setActiveMenu('insumos')} />
-              <NavItem icon={<Beaker />} label="Fórmulas" active={activeMenu === 'formulas'} onClick={() => setActiveMenu('formulas')} />
-              <NavItem icon={<Calculator />} label="Proporção" active={activeMenu === 'proporcao'} onClick={() => setActiveMenu('proporcao')} />
-              <NavItem icon={<DollarSign />} label="Precificação" active={activeMenu === 'precificacao'} onClick={() => setActiveMenu('precificacao')} />
-              <NavItem icon={<Users />} label="Fornecedores" active={activeMenu === 'fornecedores'} onClick={() => setActiveMenu('fornecedores')} />
-              <NavItem icon={<Users />} label="Clientes" active={activeMenu === 'clientes'} onClick={() => setActiveMenu('clientes')} />
-              <NavItem icon={<FileBarChart />} label="Relatórios" active={activeMenu === 'relatorios'} onClick={() => setActiveMenu('relatorios')} />
-            </div>
-          </div>
-
-          {/* Future Modules (V2) */}
-          <div>
-            <h3 className="px-3 text-xs font-bold text-white/50 uppercase tracking-wider mb-2">Em Breve (V2)</h3>
-            <div className="space-y-1">
-              <NavItem icon={<Archive />} label="Estoque" active={activeMenu === 'estoque'} onClick={() => setActiveMenu('estoque')} />
-              <NavItem icon={<Factory />} label="Produção" active={activeMenu === 'producao'} onClick={() => setActiveMenu('producao')} />
-              <NavItem icon={<Shield />} label="Qualidade" active={activeMenu === 'qualidade'} onClick={() => setActiveMenu('qualidade')} />
-              <NavItem icon={<ShoppingCart />} label="Compras" disabled />
-              <NavItem icon={<DollarSign />} label="Vendas" disabled />
-              {/* <NavItem icon={<Users />} label="Clientes" disabled /> -- Removed as it's now active */}
-              <NavItem icon={<Users />} label="Usuários" disabled />
-            </div>
-          </div>
-
-        </nav>
-
-        <div className="p-4 border-t border-white/10">
-          <NavItem icon={<Settings />} label="Configurações" active={activeMenu === 'configuracoes'} onClick={() => setActiveMenu('configuracoes')} />
-        </div>
-      </aside>
+      {/* Sidebar Navigation - Modern Refactored */}
+      <Sidebar 
+        activeMenu={activeMenu}
+        setActiveMenu={setActiveMenu}
+        mode={mode}
+        isSyncing={isSyncing}
+        onModeToggle={handleModeToggle}
+        onSync={syncFromSupabase}
+      />
 
       {/* Main Content Area */}
-      <main className="flex-1 flex flex-col h-screen overflow-hidden">
-        <Suspense fallback={<LoadingFallback />}>
-          {activeMenu === 'dashboard' && <Dashboard setActiveMenu={setActiveMenu} />}
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
+        {activeMenu !== 'insumos' && activeMenu !== 'formulas' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && (
+          <Header 
+            title={activeMenu.charAt(0).toUpperCase() + activeMenu.slice(1)}
+            subtitle={
+              activeMenu === 'dashboard' ? 'Visão geral do seu sistema' :
+              activeMenu === 'formulas' ? 'Gestão de formulações e versões' :
+              activeMenu === 'insumos' ? 'Catálogo de matérias-primas e custos' :
+              activeMenu === 'producao' ? 'Controle de ordens de fabricação' :
+              'Gerenciamento de módulos do MicroSaaS'
+            }
+          />
+        )}
 
-          {activeMenu === 'insumos' && <Insumos />}
+        <div className="flex-1 overflow-auto custom-scrollbar">
+          <Suspense fallback={<LoadingFallback />}>
+            {activeMenu === 'dashboard' && <Dashboard setActiveMenu={setActiveMenu} />}
 
-          {activeMenu === 'formulas' && <Formulas />}
+            {activeMenu === 'insumos' && <Insumos />}
 
-          {activeMenu === 'proporcao' && <Proporcao />}
+            {activeMenu === 'formulas' && <Formulas />}
 
-          {activeMenu === 'precificacao' && <Precificacao />}
+            {activeMenu === 'proporcao' && <Proporcao />}
 
-          {activeMenu === 'fornecedores' && <Fornecedores />}
+            {activeMenu === 'precificacao' && <Precificacao />}
 
-          {activeMenu === 'clientes' && <Clientes />}
+            {activeMenu === 'fornecedores' && <Fornecedores />}
 
-          {activeMenu === 'relatorios' && <Relatorios />}
+            {activeMenu === 'clientes' && <Clientes />}
 
-          {activeMenu === 'producao' && <Producao />}
+            {activeMenu === 'relatorios' && <Relatorios />}
 
-          {activeMenu === 'qualidade' && <Qualidade />}
+            {activeMenu === 'producao' && <Producao />}
 
-          {activeMenu === 'estoque' && <Estoque />}
-        </Suspense>
+            {activeMenu === 'qualidade' && <Qualidade />}
+
+            {activeMenu === 'estoque' && <Estoque />}
+          </Suspense>
+        </div>
 
         {/* Settings View */}
         {activeMenu === 'configuracoes' && (
@@ -572,27 +523,3 @@ create table if not exists public.inventory_logs (
   );
 }
 
-function NavItem({ icon, label, active, disabled, onClick }: { icon: React.ReactNode, label: string, active?: boolean, disabled?: boolean, onClick?: () => void }) {
-  return (
-    <button
-      onClick={disabled ? undefined : onClick}
-      disabled={disabled}
-      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors text-sm font-bold ${active
-        ? 'bg-white/20 text-white'
-        : disabled
-          ? 'text-white/40 cursor-not-allowed'
-          : 'text-white/70 hover:bg-white/10 hover:text-white'
-        }`}
-    >
-      <div className={`${active ? 'text-white' : disabled ? 'text-white/40' : 'text-white/70'}`}>
-        {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-5 h-5' })}
-      </div>
-      {label}
-      {disabled && (
-        <span className="ml-auto text-[10px] uppercase tracking-wider bg-white/10 px-2 py-0.5 rounded-full">
-          V2
-        </span>
-      )}
-    </button>
-  );
-}

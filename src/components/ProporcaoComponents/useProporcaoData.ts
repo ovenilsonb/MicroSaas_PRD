@@ -243,35 +243,34 @@ export function useCalculation(
 
     if (calculationMode === 'volume') {
       const options: { items: { capacity: number; quantity: number }[] }[] = [];
-      const findCombinations = (
-        remaining: number,
-        capacityIdx: number,
-        current: { capacity: number; quantity: number }[]
-      ) => {
-        if (options.length >= 5) return;
-        if (Math.abs(remaining) < 0.001) {
-          options.push({ items: [...current] });
-          return;
+      
+      const sortedCaps = [...uniqueCapacities].sort((a, b) => a - b);
+      
+      for (const cap of sortedCaps) {
+        const qty = Math.round(val / cap);
+        const remainder = val - (qty * cap);
+        
+        if (Math.abs(remainder) < 0.001 && qty > 0) {
+          options.push({ items: [{ capacity: cap, quantity: qty }] });
         }
-        if (capacityIdx >= uniqueCapacities.length) return;
+      }
 
-        const cap = uniqueCapacities[capacityIdx];
-        const maxUnits = Math.min(Math.floor(remaining / cap), 1000);
-        for (let q = maxUnits; q >= 0; q--) {
-          if (q > 0) current.push({ capacity: cap, quantity: q });
-          findCombinations(remaining - q * cap, capacityIdx + 1, current);
-          if (q > 0) current.pop();
-          if (options.length >= 5) break;
-        }
-      };
-      findCombinations(val, 0, []);
+      if (options.length === 0) {
+        return [{
+          id: 'no-packaging',
+          name: 'Volume sem embalagem disponível',
+          items: [],
+          isSuggested: false,
+        }];
+      }
+
       return options
-        .sort((a, b) => a.items.length - b.items.length)
+        .sort((a, b) => a.items[0].capacity - b.items[0].capacity)
         .map((opt, idx) => ({
           ...opt,
           id: `opt-${idx}`,
-          name: `Opção ${idx + 1}`,
-          isSuggested: opt.items.length === 1,
+          name: `${opt.items[0].quantity}x ${opt.items[0].capacity}L`,
+          isSuggested: idx === 0,
         }));
     } else {
       return uniqueCapacities.map((cap, idx) => ({

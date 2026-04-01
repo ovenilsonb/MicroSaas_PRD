@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "./lib/design-tokens.css";
+
 
 @layer base {
   /* Hide number input arrows */
@@ -9,6 +11,7 @@
   }
   input[type="number"] {
     -moz-appearance: textfield;
+    appearance: textfield;
   }
 }
 

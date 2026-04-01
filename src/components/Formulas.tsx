@@ -930,7 +930,7 @@ export default function Formulas() {
             )}
             <button
               onClick={handleCloseEditor}
-              className="px-4 py-2 text-slate-600 font-medium hover:bg-slate-100 rounded-lg transition-colors"
+              className="px-4 py-2 bg-white border border-slate-300 text-slate-600 font-medium hover:bg-slate-50 hover:border-slate-400 rounded-lg transition-colors shadow-sm"
             >
               Cancelar
             </button>
@@ -1501,153 +1501,205 @@ export default function Formulas() {
     // ==========================================
     mainContent = (
       <>
-        {/* Header */}
-        <header className="bg-white border-b border-slate-200 px-8 py-6 shrink-0">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                <Beaker className="w-6 h-6 text-[#202eac]" /> Fórmulas e Receitas
-              </h1>
-              <p className="text-sm text-slate-500 mt-1">Gerencie suas formulações, custos e proporções.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <label className="cursor-pointer px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 font-medium flex items-center gap-2 transition-colors shadow-sm text-sm">
-                <Upload className="w-4 h-4 text-emerald-600" /> Importar
-                <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-              </label>
-              <button
-                onClick={handleExport}
-                className="px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 font-medium flex items-center gap-2 transition-colors shadow-sm text-sm"
-              >
-                <Download className="w-4 h-4 text-[#202eac]" /> Exportar
-              </button>
-              <button
-                onClick={() => handleOpenEditor()}
-                className="px-5 py-2.5 bg-[#202eac] hover:bg-blue-800 text-white font-bold rounded-xl transition-colors flex items-center justify-center gap-2 shadow-sm"
-              >
-                <Plus className="w-5 h-5" /> Nova Fórmula
-              </button>
-            </div>
-          </div>
+        {/* Main Content */}
+        <div className="flex-1 overflow-auto p-8">
+          <div className="max-w-7xl mx-auto space-y-6">
 
-          {/* Filters & Controls */}
-          <div className="mt-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full sm:w-96">
-              <Search className="w-5 h-5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Buscar por nome, LM ou grupo..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 bg-slate-100 border-transparent focus:bg-white focus:border-[#202eac] focus:ring-2 focus:ring-[#202eac]/20 rounded-xl transition-all"
-              />
+            {/* Action Bar */}
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                  <Beaker className="w-6 h-6 text-[#202eac]" />
+                  Fórmulas
+                </h2>
+                <span className="text-sm text-slate-500">{formulas.length} fórmulas cadastradas</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="cursor-pointer px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium flex items-center gap-2 transition-all shadow-sm">
+                  <Upload className="w-4 h-4 text-emerald-600" /> 
+                  <span className="hidden sm:inline">Importar</span>
+                  <input type="file" accept=".json" className="hidden" onChange={handleImport} />
+                </label>
+                <button
+                  onClick={handleExport}
+                  className="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium flex items-center gap-2 transition-all shadow-sm"
+                >
+                  <Download className="w-4 h-4 text-[#202eac]" /> 
+                  <span className="hidden sm:inline">Exportar</span>
+                </button>
+                <button
+                  onClick={() => handleOpenEditor()}
+                  className="px-5 py-2.5 bg-gradient-to-r from-[#202eac] to-[#4b5ce8] text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 font-medium flex items-center gap-2 transition-all"
+                >
+                  <Plus className="w-4 h-4" /> 
+                  <span className="hidden sm:inline">Nova Fórmula</span>
+                </button>
+              </div>
             </div>
 
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+            {/* Module Header - Elaborate */}
+            <div className="bg-gradient-to-br from-white via-slate-50 to-slate-100 rounded-2xl p-6 shadow-sm border border-slate-200">
+              <div className="flex items-start gap-5">
+                {/* Icon */}
+                <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0">
+                  <Beaker className="w-8 h-8 text-white" />
+                </div>
+                
+                {/* Content */}
+                <div className="flex-1">
+                  <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                    Gestão de Fórmulas e Receitas
+                    <span className="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full font-medium">Módulo Principal</span>
+                  </h2>
+                  <p className="text-slate-600 text-sm mt-1.5 leading-relaxed max-w-3xl">
+                    Gerencie todas as formulações utilizadas na produção. Controle versões, custos, rendimentos e instruções de preparo.
+                  </p>
+                  
+                  {/* Stats Badges */}
+                  <div className="flex items-center gap-3 mt-4 flex-wrap">
+                    <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                      <Beaker className="w-4 h-4 text-blue-600" />
+                      <span className="text-slate-700 text-sm font-medium uppercase">{formulas.length} fórmulas</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                      <span className="text-slate-700 text-sm font-medium uppercase">{formulas.filter(f => f.status === 'active').length} ativas</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                      <AlertTriangle className="w-4 h-4 text-amber-600" />
+                      <span className="text-slate-700 text-sm font-medium uppercase">{formulas.filter(f => f.status === 'draft').length} rascunhos</span>
+                    </div>
+                    <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
+                      <LayoutGrid className="w-4 h-4 text-purple-600" />
+                      <span className="text-slate-700 text-sm font-medium uppercase">{groups.length} grupos</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Summary Cards - Horizontal Layout */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Total Fórmulas */}
+              <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-blue-300 transition-all duration-300">
+                <div className="w-12 h-12 bg-gradient-to-br from-[#202eac] to-[#4b5ce8] rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
+                  <Beaker className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-xs font-medium truncate uppercase">Total de Fórmulas</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{formulas.length}</h3>
+                </div>
+              </div>
+
+              {/* Fórmulas Ativas */}
+              <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-emerald-300 transition-all duration-300">
+                <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
+                  <CheckCircle2 className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-xs font-medium truncate uppercase">Fórmulas Ativas</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{formulas.filter(f => f.status === 'active').length}</h3>
+                </div>
+              </div>
+
+              {/* Em Rascunho */}
+              <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-amber-300 transition-all duration-300">
+                <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
+                  <AlertTriangle className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-xs font-medium truncate uppercase">Em Rascunho</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{formulas.filter(f => f.status === 'draft').length}</h3>
+                </div>
+              </div>
+
+              {/* Grupos */}
+              <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-purple-300 transition-all duration-300">
+                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 shrink-0">
+                  <LayoutGrid className="w-5 h-5 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-slate-500 text-xs font-medium truncate uppercase">Total de Grupos</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{groups.length}</h3>
+                </div>
+              </div>
+            </div>
+
+            {/* Search and Controls Bar */}
+            <div className="flex items-center gap-3 flex-wrap">
+              {/* Search - Compact */}
+              <div className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 w-64 focus-within:border-[#202eac] focus-within:ring-2 focus-within:ring-[#202eac]/10 transition-all">
+                <Search className="w-4 h-4 text-slate-400 shrink-0" />
+                <input
+                  type="text"
+                  placeholder="Buscar..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 min-w-0"
+                />
+                {searchTerm && (
+                  <button onClick={() => setSearchTerm('')} className="text-slate-400 hover:text-slate-600 shrink-0">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
+              {/* Spacer */}
+              <div className="flex-1"></div>
+
+              {/* View Mode */}
+              <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
                 <button
                   onClick={() => handleSetViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${viewMode === 'list' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  title="Visualização em Lista"
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  title="Lista"
                 >
-                  <List className="w-5 h-5" />
+                  <List className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => handleSetViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${viewMode === 'grid' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  title="Visualização em Grade"
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  title="Blocos"
                 >
-                  <LayoutGrid className="w-5 h-5" />
+                  <LayoutGrid className="w-4 h-4" />
                 </button>
               </div>
 
-              <div className="flex items-center gap-2 bg-slate-100 p-1 rounded-xl border border-slate-200">
+              {/* Sort */}
+              <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
                 <button
                   onClick={() => setSortOrder('asc')}
-                  className={`p-2 rounded-lg transition-colors ${sortOrder === 'asc' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  title="Ordem Alfabética (A-Z)"
+                  className={`p-2 rounded-lg transition-all duration-200 ${sortOrder === 'asc' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  title="A-Z"
                 >
-                  <ArrowDownAZ className="w-5 h-5" />
+                  <ArrowDownAZ className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setSortOrder('desc')}
-                  className={`p-2 rounded-lg transition-colors ${sortOrder === 'desc' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}
-                  title="Ordem Alfabética (Z-A)"
+                  className={`p-2 rounded-lg transition-all duration-200 ${sortOrder === 'desc' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  title="Z-A"
                 >
-                  <ArrowUpZA className="w-5 h-5" />
+                  <ArrowUpZA className="w-4 h-4" />
                 </button>
               </div>
             </div>
-          </div>
-        </header>
 
-        {/* Summary Cards */}
-        <div className="px-8 pt-8 shrink-0">
-          <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-blue-50 text-[#202eac] rounded-xl flex items-center justify-center shrink-0">
-                <FileText className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total de Fórmulas</p>
-                <h3 className="text-2xl font-black text-slate-800">{formulas.length}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Fórmulas Ativas</p>
-                <h3 className="text-2xl font-black text-slate-800">{formulas.filter(f => f.status === 'active').length}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center shrink-0">
-                <AlertTriangle className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Em Rascunho</p>
-                <h3 className="text-2xl font-black text-slate-800">{formulas.filter(f => f.status === 'draft').length}</h3>
-              </div>
-            </div>
-
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
-              <div className="w-12 h-12 bg-purple-50 text-purple-600 rounded-xl flex items-center justify-center shrink-0">
-                <LayoutGrid className="w-6 h-6" />
-              </div>
-              <div>
-                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total de Grupos</p>
-                <h3 className="text-2xl font-black text-slate-800">{groups.length}</h3>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-auto p-8">
-          {isLoading ? (
-            <div className="flex flex-col items-center justify-center h-64">
-              <div className="w-10 h-10 border-4 border-blue-200 border-t-[#202eac] rounded-full animate-spin mb-4"></div>
-              <p className="text-slate-500 font-medium">Carregando fórmulas...</p>
-            </div>
-          ) : filteredFormulas.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-lg mx-auto mt-10 shadow-sm">
-              <div className="w-20 h-20 bg-blue-50 text-[#202eac] rounded-full flex items-center justify-center mx-auto mb-6">
-                <Beaker className="w-10 h-10" />
-              </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Nenhuma fórmula encontrada</h3>
-              <p className="text-slate-500 mb-8">Você ainda não cadastrou nenhuma fórmula ou a busca não retornou resultados.</p>
-              <button
-                onClick={() => handleOpenEditor()}
-                className="px-6 py-3 bg-[#202eac] hover:bg-blue-800 text-white font-bold rounded-xl transition-colors inline-flex items-center gap-2 shadow-sm"
-              >
-                <Plus className="w-5 h-5" /> Criar Primeira Fórmula
-              </button>
-            </div>
-          ) : viewMode === 'grid' ? (
+            {/* Content Area */}
+            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-64">
+                  <div className="w-10 h-10 border-4 border-blue-200 border-t-[#202eac] rounded-full animate-spin mb-4"></div>
+                  <p className="text-slate-500 font-medium">Carregando fórmulas...</p>
+                </div>
+              ) : filteredFormulas.length === 0 ? (
+                <div className="p-12 text-center">
+                  <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Beaker className="w-8 h-8 text-slate-400" />
+                  </div>
+                  <p className="text-slate-600 font-medium">Nenhuma fórmula encontrada</p>
+                  <p className="text-slate-400 text-sm mt-1">Clique em "Nova Fórmula" para começar</p>
+                </div>
+              ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredFormulas.map((formula) => {
                 const totalCost = calculateTotalCost(formula.formula_ingredients || []);
@@ -1892,6 +1944,8 @@ export default function Formulas() {
               </table>
             </div>
           )}
+        </div>
+        </div>
         </div>
       </>
     );

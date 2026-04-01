@@ -1,5 +1,5 @@
 import React from 'react';
-import { Beaker, Scale, Calculator, ChevronRight } from 'lucide-react';
+import { Beaker, Scale, ChevronRight } from 'lucide-react';
 import { Formula } from './types';
 import { formatVersion } from '../../lib/formatters';
 
@@ -14,34 +14,40 @@ export default function ProporcaoCard({ formula, onClick }: ProporcaoCardProps) 
   return (
     <div
       onClick={onClick}
-      className="bg-white rounded-[64px] border border-slate-200 p-12 hover:shadow-[0_45px_100px_rgba(32,46,172,0.12)] hover:border-[#202eac]/60 transition-all cursor-pointer group relative overflow-hidden ring-1 ring-slate-100 active:scale-[0.98]"
+      className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group cursor-pointer"
     >
-      <div className="absolute -right-12 -bottom-12 opacity-[0.04] group-hover:scale-[1.15] group-hover:rotate-12 transition-all duration-700">
-        <Calculator className="w-56 h-56 text-[#202eac]" />
+      <div className="p-4 border-b border-slate-100">
+        <div className="flex justify-between items-start mb-2">
+          <div>
+            {formula.lm_code && (
+              <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-0.5 block">
+                {formula.lm_code}
+              </span>
+            )}
+            <h3 className="text-base font-bold text-slate-800 leading-tight group-hover:text-[#202eac] transition-colors">
+              {formula.name}
+            </h3>
+          </div>
+          <span className="text-[9px] font-bold bg-gradient-to-r from-[#202eac] to-[#4b5ce8] text-white px-1.5 py-0.5 rounded shadow-sm">
+            {badge.toUpperCase()}
+          </span>
+        </div>
+
+        <div className="flex items-center gap-3 mt-3 text-xs">
+          <div className="flex items-center gap-1 text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+            <Beaker className="w-3.5 h-3.5 text-blue-500" />
+            <span className="font-semibold">{formula.base_volume}L</span>
+          </div>
+          <div className="flex items-center gap-1 text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
+            <Scale className="w-3.5 h-3.5 text-emerald-500" />
+            <span className="font-semibold">{formula.formula_ingredients?.length || 0} itens</span>
+          </div>
+        </div>
       </div>
-      <div className="flex items-center justify-between mb-10">
-        <span className="text-[11px] bg-[#202eac] text-white px-4 py-1.5 rounded-full font-black shadow-lg shadow-blue-100">
-          {badge}
-        </span>
-        <span className="text-[10px] text-slate-400 font-black uppercase tracking-widest">
-          {formula.lm_code || 'LABORD'}
-        </span>
-      </div>
-      <h3 className="text-3xl font-black text-slate-900 group-hover:text-[#202eac] mb-4 leading-tight transition-colors">
-        {formula.name}
-      </h3>
-      <div className="flex items-center gap-6 text-[11px] font-black text-slate-400 mb-12 uppercase">
-        <span className="flex items-center gap-2.5">
-          <Beaker className="w-5 h-5 text-emerald-500" /> {formula.base_volume}L
-        </span>
-        <span className="flex items-center gap-2.5">
-          <Scale className="w-5 h-5 text-[#202eac]" /> {formula.formula_ingredients?.length || 0} Itens
-        </span>
-      </div>
-      <div className="p-6 bg-slate-50 rounded-[32px] group-hover:bg-[#202eac] transition-all flex items-center justify-center gap-4 font-black group-hover:text-white group-hover:translate-y-[-6px] shadow-sm group-hover:shadow-2xl group-hover:shadow-blue-200">
-        <Calculator className="w-6 h-6" />
-        <span className="uppercase tracking-widest text-[11px]">Dimensionar</span>
-        <ChevronRight className="w-5 h-5 group-hover:translate-x-2 transition-all" />
+
+      <div className="p-3 border-t border-slate-100 bg-slate-50/50 flex items-center justify-between">
+        <span className="text-xs text-slate-500 font-medium">Clique para calcular</span>
+        <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#202eac] transition-colors" />
       </div>
     </div>
   );
