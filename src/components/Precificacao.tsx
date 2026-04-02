@@ -605,12 +605,15 @@ export default function Precificacao() {
     return {
       totalIngCost, costPerLiter, liquidCost, rendimento,
       pkgCost, labelCost, custoUnidade, custoTotal,
-      varejoLucro, varejoMargem, varejoMarkup,
-      atacadoLucro, atacadoMargem, atacadoMarkup,
+      varejoPrice: varejoPrice, varejoLucro, varejoMargem, varejoMarkup,
+      atacadoPrice: atacadoPrice, atacadoLucro, atacadoMargem, atacadoMarkup,
       custoFardo, fardoTotal, fardoLucro, fardoMargem, fardoMarkup,
       margemMedia, pontoEquilibrio, atacadoDesc,
     };
   }, [selectedFormula, selectedCapacity, varejoPrice, atacadoPrice, fardoPrice, fardoQty, fixedCostsPerUnit, packagingOptions, calcIngredientCost]);
+
+  const retailPrice = detailCalc?.varejoPrice || 0;
+  const wholesalePrice = detailCalc?.atacadoPrice || 0;
 
   // ─── Import / Export ────────────────────────────────────────
 
@@ -1099,6 +1102,23 @@ export default function Precificacao() {
                       <MetricBlock label="Custo Fardo" value={fmt(detailCalc.custoFardo)} colorClass="bg-slate-50" />
                       <MetricBlock label="Markup" value={`${detailCalc.fardoMarkup.toFixed(1)}%`} colorClass={`${detailCalc.fardoMarkup >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.fardoMarkup >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                       <MetricBlock label="Lucro Total" value={fmt(detailCalc.fardoLucro)} colorClass="bg-purple-50 !text-purple-700 font-black" />
+                    </div>
+                  </div>
+                  {/* Comparison Blocks */}
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <div className="flex gap-3">
+                      <div className="flex-1 bg-blue-50 rounded-xl p-3 text-center">
+                        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wide">Unit.</div>
+                        <div className="text-lg font-black text-blue-700">{fmt(fardoPrice / fardoQty)}</div>
+                      </div>
+                      <div className="flex-1 bg-emerald-50 rounded-xl p-3 text-center">
+                        <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-wide">vs Varejo</div>
+                        <div className="text-lg font-black text-emerald-700">-{fmt(retailPrice - (fardoPrice / fardoQty))}</div>
+                      </div>
+                      <div className="flex-1 bg-amber-50 rounded-xl p-3 text-center">
+                        <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wide">vs Atacado</div>
+                        <div className="text-lg font-black text-amber-700">-{fmt(wholesalePrice - (fardoPrice / fardoQty))}</div>
+                      </div>
                     </div>
                   </div>
                 </div>

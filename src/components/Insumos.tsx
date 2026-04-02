@@ -409,15 +409,30 @@ export default function Insumos() {
         variants: []
       });
 
-      // Fetch variants
+      // Fetch variants - suporta tanto Supabase quanto LocalStorage
       if (ingredient.tem_variantes) {
         try {
-          const { data: variantsData, error: variantsError } = await supabase
-            .from('ingredient_variants')
-            .select('*')
-            .eq('ingredient_id', ingredient.id);
-
-          if (!variantsError && variantsData) {
+          let variantsData = [];
+          if (mode === 'supabase') {
+            // Busca do Supabase
+            const { data, error } = await supabase
+              .from('ingredient_variants')
+              .select('*')
+              .eq('ingredient_id', ingredient.id);
+            if (!error && data) {
+              variantsData = data;
+            }
+          } else {
+            // Busca do LocalStorage
+            const localIngredients = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
+            const localIng = localIngredients.find((i: any) => i.id === ingredient.id);
+            if (localIng && localIng.variants) {
+              variantsData = localIng.variants;
+              console.log('[Insumos] Carregando variantes do LocalStorage:', variantsData);
+            }
+          }
+          
+          if (variantsData.length > 0) {
             setFormData(prev => ({ ...prev, variants: variantsData }));
           }
         } catch (err) {
@@ -575,25 +590,48 @@ export default function Insumos() {
         }
       } else {
         // Local Logic
+        console.log('[Insumos] Salvando localmente - editingId:', editingId);
+        console.log('[Insumos] Variantes antes do map:', formData.variants);
+        
         const localIngredients = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
+        
         const ingredientData = {
           ...payload,
           id: editingId || generateId(),
           created_at: editingId ? (localIngredients.find((i: any) => i.id === editingId)?.created_at || new Date().toISOString()) : new Date().toISOString(),
-          variants: formData.variants.map(v => ({
-            ...v,
-            id: v.id || generateId(),
-            cost_per_unit: typeof v.cost_per_unit === 'string' ? parseFloat(v.cost_per_unit.replace(/\./g, '').replace(',', '.')) || 0 : v.cost_per_unit || 0
-          }))
+          variants: formData.variants.map(v => {
+            const variantId = v.id || generateId();
+            const costValue = typeof v.cost_per_unit === 'string' 
+              ? parseFloat(v.cost_per_unit.replace(/\./g, '').replace(',', '.')) || 0 
+              : v.cost_per_unit || 0;
+            console.log(`[Insumos] Processando variante: ${v.name}, id: ${variantId}, custo: ${costValue}`);
+            return {
+              ...v,
+              id: variantId,
+              cost_per_unit: costValue
+            };
+          })
         };
+
+        console.log('[Insumos] IngredientData a ser salvo:', ingredientData);
 
         if (editingId) {
           const index = localIngredients.findIndex((i: any) => i.id === editingId);
-          if (index >= 0) localIngredients[index] = ingredientData;
+          console.log('[Insumos] Índice encontrado:', index);
+          if (index >= 0) {
+            localIngredients[index] = ingredientData;
+            console.log('[Insumos] Atualizando insumo existente no índice', index);
+          } else {
+            console.log('[Insumos] ID não encontrado, adicionando como novo');
+            localIngredients.push(ingredientData);
+          }
         } else {
+          console.log('[Insumos] Novo insumo sendo adicionado');
           localIngredients.push(ingredientData);
         }
+        
         localStorage.setItem('local_ingredients', JSON.stringify(localIngredients));
+        console.log('[Insumos] Salvo no LocalStorage com sucesso');
       }
 
       handleCloseModal();
