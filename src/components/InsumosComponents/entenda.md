@@ -6,146 +6,176 @@ O módulo **Insumos** gerencia todas as matérias-primas, embalagens e produtos 
 
 ---
 
-## Arquivos e Suas Funções
+## Arquitetura Refatorada (v2)
+
+O módulo foi refatorado de um arquivo monolítico de 2130 linhas para uma arquitetura modular com componentes separados.
+
+### Árvore de Arquivos
+
+```
+InsumosComponents/
+├── types.ts                    # Interfaces TypeScript
+├── useInsumosData.ts           # Hook de dados (CRUD + estoque + Supabase)
+├── InsumoCard.tsx              # Card do grid view (legado, mantido para compatibilidade)
+├── InsumoStats.tsx             # Cards de estatísticas
+├── InsumoFilters.tsx           # Barra de busca, filtros, ordenação e view mode
+├── InsumoTable.tsx             # Tabela de insumos (list view)
+├── InsumoGrid.tsx              # Grid de cards (grid view)
+├── InsumoModal.tsx             # Modal completo (4 tabs: geral, técnicas, estoque, uso)
+├── InsumoPagination.tsx        # Paginação com seletor de itens por página
+├── StockMovementPanel.tsx      # Painel de movimentação de estoque
+├── DeleteConfirmDialog.tsx     # Diálogo de confirmação de exclusão
+├── index.ts                    # Barrel exports
+└── entende.md                  # Esta documentação
+```
+
+---
+
+## Componentes e Suas Funções
 
 ### types.ts
-
-**O que faz:** Define todas as interfaces TypeScript do módulo.
-
-**Interfaces principais:**
-- `Ingredient` - Insumo completo com todas as propriedades
-- `Variant` - Variação de insumo (ex: diferentes tamanhos de embalagem)
-- `Supplier` - Fornecedor
-- `ViewMode` - Modo de visualização: 'list' | 'grid'
-- `SortField` - Campo para ordenação
-- `SortOrder` - Ordem: 'asc' | 'desc'
-
----
+**Interfaces:** `Ingredient` (20+ campos), `Variant`, `Supplier`, `ViewMode`, `SortField`, `SortOrder`
 
 ### useInsumosData.ts
+**Hook principal** com dual storage (Supabase + localStorage):
+- `fetchIngredients()` - Carrega insumos ordenados por sort_order + name
+- `saveIngredient()` - CRUD com variantes
+- `deleteIngredient()` - Remove com verificação de fórmulas
+- `updateStock()` - Atualiza estoque direto
+- `addStockMovement()` - **Agora integrado com `inventory_logs` do Supabase**
+- `getStockMovements()` - **Com suporte a filtro por data**
+- `exportStockMovements()` - **Export CSV de movimentações**
 
-**O que faz:** Hook para gestão completa de insumos.
+### InsumoStats.tsx
+Cards de estatísticas: total, estoque baixo, valor em estoque, produtos químicos
 
-**Funções principais:**
-- `fetchIngredients()` - Carrega todos os insumos
-- `saveIngredient()` - Salva ou atualiza insumo com variantes
-- `deleteIngredient()` - Remove insumo
-- `updateStock()` - Atualiza estoque do insumo
+### InsumoFilters.tsx
+Busca, filtros (tipo/fornecedor/estoque), view mode toggle, ordenação
 
-**Retorna:**
-```typescript
-{
-  ingredients: Ingredient[];
-  suppliers: Supplier[];
-  isLoading: boolean;
-  fetchIngredients: () => Promise<void>;
-  saveIngredient: (ingredient) => Promise<boolean>;
-  deleteIngredient: (id) => Promise<boolean>;
-  updateStock: (id, quantity) => Promise<boolean>;
-}
-```
+### InsumoTable.tsx
+Tabela completa com drag-and-drop, ordenação por coluna, ações hover
 
----
+### InsumoGrid.tsx
+Grid responsivo de cards com variantes e barra de estoque
 
-### InsumoCard.tsx
+### InsumoModal.tsx
+Modal com 4 tabs:
+- **Geral**: nome, código, apelido, unidade, custo, fornecedor, validade, estoque, variantes
+- **Informações Técnicas**: peso específico, pH, temperatura, viscosidade, solubilidade, risco
+- **Movimentação**: saldo atual, registrar entrada/saída, histórico com filtro por data
+- **Uso em Fórmulas**: lista de fórmulas que utilizam o insumo
 
-**O que faz:** Card visual de insumo na galeria.
+### InsumoPagination.tsx
+Paginação com seletor de itens por página (10, 25, 50, 100)
 
-**Props:**
-```typescript
-interface InsumoCardProps {
-  ingredient: Ingredient;
-  onClick: () => void;
-}
-```
+### StockMovementPanel.tsx
+Painel de movimentação com formulário, histórico, filtro por período e export CSV
 
-**Visual:**
-- Ícone区分化学品/embalagem
-- Nome e apelido
-- Custo unitário
-- Estoque atual
-- Alerta de estoque baixo
-- Indicador de variantes
+### DeleteConfirmDialog.tsx
+Diálogo de confirmação com verificação de uso em fórmulas
 
 ---
 
-## Funcionalidades Principais
+## Schema do Banco (Supabase)
 
-### 1. Galeria de Insumos
-- Visualização em grid ou lista
-- Busca por nome ou código
-- Ordenação por diversos campos
-- Filtragem por tipo (químico/embalagem)
+### Tabela `ingredients`
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid | PK |
+| `name` | text | NOT NULL |
+| `codigo` | text | |
+| `apelido` | text | |
+| `unit` | text | NOT NULL |
+| `cost_per_unit` | numeric | default 0 |
+| `fornecedor` | text | |
+| `supplier_id` | uuid | FK → suppliers (novo) |
+| `validade_indeterminada` | boolean | default true |
+| `expiry_date` | date | |
+| `estoque_atual` | numeric | default 0 |
+| `estoque_minimo` | numeric | default 0 |
+| `produto_quimico` | boolean | default true |
+| `tem_variantes` | boolean | default false |
+| `peso_especifico` | text | |
+| `ph` | text | |
+| `temperatura` | text | |
+| `viscosidade` | text | |
+| `solubilidade` | text | |
+| `risco` | text | |
+| `sort_order` | integer | default 0 (novo) |
+| `created_at` | timestamptz | |
 
-### 2. Cadastro de Insumos
-- Dados gerais (nome, código, custo)
-- Especificações técnicas (pH, viscosidade, etc)
-- Controle de estoque (mínimo e atual)
-- Validade e informações de risco
-- Gerenciamento de variantes
-
-### 3. Controle de Estoque
-- Estoque atual e mínimo
-- Alerta automático de estoque baixo
-- Atualização de estoque
-
-### 4. Import/Export
-- Backup em JSON
-- Importação de insumos
+### Tabela `inventory_logs`
+| Coluna | Tipo | Notas |
+|---|---|---|
+| `id` | uuid | PK |
+| `ingredient_id` | uuid | FK → ingredients |
+| `variant_id` | uuid | FK → ingredient_variants |
+| `quantity` | numeric | |
+| `type` | text | 'in', 'out', 'adjust' |
+| `reference_id` | uuid | |
+| `notes` | text | |
+| `created_at` | timestamptz | |
 
 ---
 
-## Fluxo de Dados
+## Melhorias Aplicadas (v2 - 03/04/2026)
 
-```
-┌─────────────────┐
-│  useInsumosData│
-│       ()        │
-└────────┬────────┘
-         │
-         ▼
-┌─────────────────┐     ┌──────────────────┐
-│  Supabase /    │────▶│   UI Display     │
-│  localStorage  │     │  (Grid, Editor)  │
-└─────────────────┘     └──────────────────┘
-```
+| # | Melhoria | Status |
+|---|---|---|
+| 1 | Refatoração em 9 subcomponentes | ✅ |
+| 2 | Integração `inventory_logs` Supabase | ✅ |
+| 3 | Migrations para colunas faltantes | ✅ |
+| 4 | Seletor de itens por página (10/25/50/100) | ✅ |
+| 5 | Filtro de movimentações por período | ✅ |
+| 6 | Export CSV de movimentações | ✅ |
+| 7 | Coluna `sort_order` para drag-and-drop no Supabase | ✅ |
+| 8 | Logging de erros nos catch blocks | ✅ |
+| 9 | Coluna `supplier_id` FK para suppliers | ✅ |
+| 10 | Alerta de custo zero | ✅ |
 
 ---
 
-## Benefícios da Reorganização
+## Atalhos de Teclado
 
-| Aspecto | Antes | Depois |
-|---------|-------|--------|
-| Sistema de Notificação | Componente inline | useToast() global |
-| Reutilização | 0 componentes | 2 componentes |
-| Lógica de Dados | Misturado com UI | Hook separado |
-| Manutenção | Difícil | Alterações localizáveis |
+| Atalho | Ação |
+|---|---|
+| `Ctrl+N` | Novo insumo |
+| `Ctrl+F` | Focar busca |
+| `Esc` | Fechar modal |
 
 ---
 
 ## Como Usar
 
 ```tsx
-import { useToast } from './dashboard/Toast';
 import {
   useInsumosData,
-  InsumoCard,
+  InsumoStats,
+  InsumoFilters,
+  InsumoTable,
+  InsumoGrid,
+  InsumoModal,
+  InsumoPagination,
+  StockMovementPanel,
+  DeleteConfirmDialog,
 } from './InsumosComponents';
 
-export default function Insumos() {
-  const { showToast } = useToast();
-  const { ingredients, isLoading, saveIngredient, deleteIngredient } = useInsumosData();
-
-  // Render...
-}
+// Hook de dados
+const {
+  ingredients, suppliers, isLoading,
+  fetchIngredients, saveIngredient, deleteIngredient,
+  addStockMovement, getStockMovements, exportStockMovements,
+} = useInsumosData();
 ```
 
 ---
 
-## Notas Técnicas
+## Migration Necessária
 
-1. **LocalStorage:** Dados também salvos localmente quando offline
-2. **Variantes:** Insumos podem ter múltiplas variantes (ex: diferentes tamanhos)
-3. **Estoque:** Controle automático de estoque com alerta de mínimo
-4. **Categorização:** Automaticamente diferencia químicos de embalagens
-5. **Modo Offline:** Funciona com localStorage quando Supabase não está configurado
+Execute no Supabase SQL Editor:
+
+```sql
+-- Arquivo: supabase/migrations/20260403_v3_insumos_improvements.sql
+```
+
+Isso adiciona as colunas faltantes (`apelido`, `tem_variantes`, `peso_especifico`, `ph`, `temperatura`, `viscosidade`, `solubilidade`, `risco`, `sort_order`, `supplier_id`) e índices de performance.

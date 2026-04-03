@@ -1,0 +1,17 @@
+{
+    "$schema": "https://opencode.ai/config.json",
+    "instructions": [
+        "docs/⚠️-leia-primeiro.md",
+        "docs/estabilidade.md",
+        "docs/global.md",
+        "docs/persistencia-local.md",
+        "docs/modulos/00-index.md",
+        "docs/modulos/insumos.md",
+        "docs/modulos/formulas.md",
+        "docs/modulos/proporcao.md",
+        "docs/modulos/precificacao.md",
+        "docs/modulos/fornecedores.md",
+        "docs/modulos/relatorios.md",
+        "docs/modulos/configuracoes.md"
+    ]
+}

@@ -1,8 +1,9 @@
-import React, { useState, useEffect, useMemo, Component, ReactNode } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, Component, ReactNode } from 'react';
 import {
   Scale,
   Search,
   Beaker,
+  ChevronLeft,
   ChevronRight,
   ArrowLeft,
   Calculator,
@@ -15,10 +16,12 @@ import {
   X,
   ArrowDownAZ,
   ArrowUpZA,
+  Keyboard,
 } from 'lucide-react';
 
 import { useToast } from './dashboard/Toast';
 import { formatCurrency, formatVersion } from '../lib/formatters';
+import { generateId } from '../lib/id';
 import {
   useProporcaoData,
   useSimulation,
@@ -47,12 +50,11 @@ class ErrorBoundary extends Component<{children: ReactNode}, ErrorBoundaryState>
   }
 
   static getDerivedStateFromError(error: Error): ErrorBoundaryState {
-    console.error('[ErrorBoundary] Erro capturado:', error.message, error.stack);
     return { hasError: true, error };
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error('[ErrorBoundary] Erro detalhado:', error, errorInfo.componentStack);
+    // Error logged silently
   }
 
   render() {
@@ -98,9 +100,20 @@ export default function Proporcao() {
   const [batchSizeUnits, setBatchSizeUnits] = useState<string>('10');
   const [selectedPackagingKeys, setSelectedPackagingKeys] = useState<string[]>([]);
   const [calculationMode, setCalculationMode] = useState<CalculationMode>('volume');
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    try {
+      const saved = localStorage.getItem('proporcaoViewMode');
+      return (saved as 'list' | 'grid') || 'list';
+    } catch {
+      return 'list';
+    }
+  });
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [sortField, setSortField] = useState<'name' | 'lm_code' | 'base_volume' | 'version'>('name');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showAllSimulations, setShowAllSimulations] = useState(false);
+  const [allSimulations, setAllSimulations] = useState<Simulation[]>([]);
 
   const currentBatchSize = calculationMode === 'volume' ? batchSizeVolume : batchSizeUnits;
 
@@ -162,6 +175,13 @@ export default function Proporcao() {
       });
   }, [formulas, searchTerm, sortOrder, sortField, hiddenFormulas]);
 
+  const ITEMS_PER_PAGE = 10;
+  const totalPages = Math.ceil(filteredFormulas.length / ITEMS_PER_PAGE);
+  const paginatedFormulas = filteredFormulas.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE
+  );
+
   const handleSort = (field: typeof sortField) => {
     if (sortField === field) {
       setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
@@ -171,27 +191,14 @@ export default function Proporcao() {
     }
   };
 
-  useEffect(() => {
-    if (selectedFormula) {
-      fetchSimulations(selectedFormula.id);
-    }
-  }, [selectedFormula, fetchSimulations]);
-
-  useEffect(() => {
-    if (!selectedFormula || calculation.assemblyOptions.length === 0 || selectedPackagingKeys.length > 0)
-      return;
-    handleSelectOption(calculation.assemblyOptions[0]);
-  }, [currentBatchSize, selectedFormula, calculation.assemblyOptions]);
-
   const handleSelectFormula = (f: Formula) => {
     setSelectedFormula(f);
     setBatchSizeVolume(f.base_volume.toString());
     setBatchSizeUnits('10');
     setSelectedPackagingKeys([]);
-    setCalculationMode('volume');
   };
 
-  const handleSelectOption = (opt: { items: { capacity: number; quantity: number }[] }) => {
+  const handleSelectOption = useCallback((opt: { items: { capacity: number; quantity: number }[] }) => {
     const keys: string[] = [];
     opt.items.forEach(item => {
       calculation.packagingOptionsByCapacity[item.capacity]?.forEach(p =>
@@ -199,21 +206,66 @@ export default function Proporcao() {
       );
     });
     setSelectedPackagingKeys(keys);
+  }, [calculation.packagingOptionsByCapacity]);
+
+  useEffect(() => {
+    if (selectedFormula) {
+      fetchSimulations(selectedFormula.id);
+      const raw = localStorage.getItem('local_proportions');
+      const all = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(all)) {
+        setAllSimulations(
+          all
+            .filter((p: Simulation) => p.formulaId === selectedFormula.id)
+            .sort((a: Simulation, b: Simulation) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+        );
+      }
+    }
+  }, [selectedFormula, fetchSimulations]);
+
+  useEffect(() => {
+    if (!selectedFormula || calculation.assemblyOptions.length === 0 || selectedPackagingKeys.length > 0)
+      return;
+    handleSelectOption(calculation.assemblyOptions[0]);
+  }, [selectedFormula, calculation.assemblyOptions, selectedPackagingKeys, handleSelectOption]);
+
+  useEffect(() => {
+    localStorage.setItem('proporcaoViewMode', viewMode);
+  }, [viewMode]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && (e.key === 'f' || e.key === 'F')) {
+        e.preventDefault();
+        document.querySelector<HTMLInputElement>('input[placeholder="Buscar fórmula..."]')?.focus();
+      }
+      if (e.key === 'Escape' && selectedFormula) {
+        setSelectedFormula(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [selectedFormula]);
+
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    setCurrentPage(1);
   };
 
-  const handleSaveProportion = () => {
+  const handleSaveProportion = async () => {
     if (!selectedFormula || calculation.currentBatchSize <= 0) return;
+    setIsSaving(true);
     try {
-      const ingredientsData = [
-        ...calculation.calculationResult.ingredients.map((fi: any) => ({
-          id: fi.id,
-          name: fi.ingredients.name,
+      const ingredientsData: Simulation['ingredients'] = [
+        ...calculation.calculationResult.ingredients.map((fi) => ({
+          id: fi.id || generateId(),
+          name: fi.ingredients.name || '',
           quantity: fi.calculatedQuantity,
-          unit: fi.ingredients.unit,
+          unit: fi.ingredients.unit || '',
           cost: fi.calculatedQuantity * ((fi.variants?.cost_per_unit ?? fi.ingredients.cost_per_unit) || 0),
           isChemical: true,
         })),
-        ...calculation.calculationResult.nonChemicalCosts.map((item: any) => ({
+        ...calculation.calculationResult.nonChemicalCosts.map((item) => ({
           id: `pkg_${item.name}`,
           name: item.name,
           quantity: item.quantity,
@@ -223,7 +275,7 @@ export default function Proporcao() {
         })),
       ];
       const versionStr = (selectedFormula.version || 'v1.0').toLowerCase();
-      const sim = {
+      const sim: Omit<Simulation, 'id' | 'createdAt'> = {
         formulaId: selectedFormula.id,
         formulaName: selectedFormula.name,
         formulaVersion: versionStr,
@@ -232,10 +284,13 @@ export default function Proporcao() {
         displayName: `${selectedFormula.name} -- ${calculation.currentBatchSize.toLocaleString('pt-BR')}L -- ${versionStr}`,
         ingredients: ingredientsData,
       };
-      saveSimulation(sim as any);
+      saveSimulation(sim);
+      fetchSimulations(selectedFormula.id);
       showToast('success', 'Simulação Arquivada!', 'Os dados foram persistidos no seu Memorial de Cálculo com sucesso.');
-    } catch (err: any) {
+    } catch {
       showToast('error', 'Erro ao Salvar', 'Não foi possível salvar a simulação.');
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -269,10 +324,20 @@ export default function Proporcao() {
             </div>
             <button
               onClick={handleSaveProportion}
-              className="px-5 py-2.5 bg-[#202eac] hover:bg-blue-800 text-white font-medium rounded-xl transition-colors flex items-center gap-2 shadow-sm"
+              disabled={isSaving}
+              className="px-5 py-2.5 bg-[#202eac] hover:bg-blue-800 text-white font-medium rounded-xl transition-colors flex items-center gap-2 shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <FileText className="w-4 h-4" />
-              Salvar Simulação
+              {isSaving ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  Salvando...
+                </>
+              ) : (
+                <>
+                  <FileText className="w-4 h-4" />
+                  Salvar Simulação
+                </>
+              )}
             </button>
           </div>
 
@@ -313,7 +378,7 @@ export default function Proporcao() {
                       </h4>
                     </div>
                     <div className="space-y-3">
-                      {recentSimulations.map((sim: Simulation) => (
+                      {(showAllSimulations ? allSimulations : recentSimulations).map((sim: Simulation) => (
                         <div
                           key={sim.id}
                           className="p-4 bg-slate-50 border border-slate-100 rounded-3xl flex items-center justify-between hover:bg-white hover:shadow-lg transition-all border-l-4 border-l-[#202eac] group"
@@ -332,6 +397,15 @@ export default function Proporcao() {
                         </div>
                       ))}
                     </div>
+                    {allSimulations.length > 5 && (
+                      <button
+                        type="button"
+                        onClick={() => setShowAllSimulations(prev => !prev)}
+                        className="w-full mt-3 text-xs font-medium text-[#202eac] hover:underline text-center py-2"
+                      >
+                        {showAllSimulations ? 'Ver menos' : `Ver todas (${allSimulations.length})`}
+                      </button>
+                    )}
                   </div>
                 )}
               </div>
@@ -374,6 +448,9 @@ export default function Proporcao() {
                   Proporção
                 </h2>
                 <span className="text-sm text-slate-500">{formulas.length} fórmulas ativas</span>
+                <span className="text-xs text-slate-400 flex items-center gap-1" title="Ctrl+F: Buscar | Esc: Voltar">
+                  <Keyboard className="w-3.5 h-3.5" /> Atalhos
+                </span>
               </div>
             </div>
 
@@ -435,14 +512,14 @@ export default function Proporcao() {
               {/* View Mode */}
               <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
                 <button
-                  onClick={() => setViewMode('list')}
+                  onClick={() => handleViewModeChange('list')}
                   className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
                   title="Lista"
                 >
                   <List className="w-4 h-4" />
                 </button>
                 <button
-                  onClick={() => setViewMode('grid')}
+                  onClick={() => handleViewModeChange('grid')}
                   className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
                   title="Blocos"
                 >
@@ -466,83 +543,126 @@ export default function Proporcao() {
                   <p className="text-slate-600 font-medium">Nenhuma fórmula encontrada</p>
                   <p className="text-slate-400 text-sm mt-1">Certifique-se de ter fórmulas ativas cadastradas</p>
                 </div>
-              ) : viewMode === 'grid' ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-6">
-                  {filteredFormulas.map(f => (
-                    <ProporcaoCard key={f.id} formula={f} onClick={() => handleSelectFormula(f)} />
-                  ))}
-                </div>
-              ) : viewMode === 'list' ? (
-                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-                  <table className="w-full">
-                    <thead className="bg-slate-50 border-b border-slate-200">
-                      <tr>
-                        <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('name')}>
-                          <div className="flex items-center gap-1">
-                            Fórmula
-                            {sortField === 'name' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3 h-3" /> : <ArrowUpZA className="w-3 h-3" />)}
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('lm_code')}>
-                          <div className="flex items-center gap-1">
-                            LM
-                            {sortField === 'lm_code' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3 h-3" /> : <ArrowUpZA className="w-3 h-3" />)}
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-right text-xs font-bold text-slate-500 uppercase cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('base_volume')}>
-                          <div className="flex items-center justify-end gap-1">
-                            Volume
-                            {sortField === 'base_volume' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3 h-3" /> : <ArrowUpZA className="w-3 h-3" />)}
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-center text-xs font-bold text-slate-500 uppercase cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('version')}>
-                          <div className="flex items-center justify-center gap-1">
-                            Versão
-                            {sortField === 'version' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3 h-3" /> : <ArrowUpZA className="w-3 h-3" />)}
-                          </div>
-                        </th>
-                        <th className="py-3 px-4 text-center text-xs font-bold text-slate-500 uppercase">
-                          Insumos
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {filteredFormulas.map((f) => (
-                        <tr 
-                          key={f.id} 
-                          className="hover:bg-slate-50 transition-colors cursor-pointer group"
-                          onClick={() => handleSelectFormula(f)}
-                        >
-                          <td className="py-3 px-4">
-                            <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors">{f.name}</div>
-                          </td>
-                          <td className="py-3 px-4 text-slate-600 font-mono text-sm">
-                            {f.lm_code || '-'}
-                          </td>
-                          <td className="py-3 px-4 text-slate-600 font-medium text-right">
-                            {f.base_volume}L
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="text-[10px] font-bold bg-gradient-to-r from-[#202eac] to-[#4b5ce8] text-white px-1.5 py-0.5 rounded shadow-sm">
-                              {(f.version || 'v1.0').toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-bold">
-                              {f.formula_ingredients?.length || 0} itens
-                            </span>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-6">
-                  {filteredFormulas.map(f => (
-                    <ProporcaoCard key={f.id} formula={f} onClick={() => handleSelectFormula(f)} />
-                  ))}
-                </div>
+                <>
+                  {viewMode === 'list' ? (
+                    <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                      <table className="w-full">
+                        <thead className="bg-slate-50 border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('name')}>
+                              <div className="flex items-center gap-1">
+                                Fórmula
+                                {sortField === 'name' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3 h-3" /> : <ArrowUpZA className="w-3 h-3" />)}
+                              </div>
+                            </th>
+                            <th className="py-3 px-4 text-left text-xs font-bold text-slate-500 uppercase cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('lm_code')}>
+                              <div className="flex items-center gap-1">
+                                LM
+                                {sortField === 'lm_code' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3 h-3" /> : <ArrowUpZA className="w-3 h-3" />)}
+                              </div>
+                            </th>
+                            <th className="py-3 px-4 text-right text-xs font-bold text-slate-500 uppercase cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('base_volume')}>
+                              <div className="flex items-center justify-end gap-1">
+                                Volume
+                                {sortField === 'base_volume' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3 h-3" /> : <ArrowUpZA className="w-3 h-3" />)}
+                              </div>
+                            </th>
+                            <th className="py-3 px-4 text-center text-xs font-bold text-slate-500 uppercase cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('version')}>
+                              <div className="flex items-center justify-center gap-1">
+                                Versão
+                                {sortField === 'version' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3 h-3" /> : <ArrowUpZA className="w-3 h-3" />)}
+                              </div>
+                            </th>
+                            <th className="py-3 px-4 text-center text-xs font-bold text-slate-500 uppercase">
+                              Insumos
+                            </th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {paginatedFormulas.map((f) => (
+                            <tr 
+                              key={f.id} 
+                              className="hover:bg-slate-50 transition-colors cursor-pointer group"
+                              onClick={() => handleSelectFormula(f)}
+                            >
+                              <td className="py-3 px-4">
+                                <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors">{f.name}</div>
+                              </td>
+                              <td className="py-3 px-4 text-slate-600 font-mono text-sm">
+                                {f.lm_code || '-'}
+                              </td>
+                              <td className="py-3 px-4 text-slate-600 font-medium text-right">
+                                {f.base_volume}L
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="text-[10px] font-bold bg-gradient-to-r from-[#202eac] to-[#4b5ce8] text-white px-1.5 py-0.5 rounded shadow-sm">
+                                  {(f.version || 'v1.0').toUpperCase()}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-center">
+                                <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                  {f.formula_ingredients?.length || 0} itens
+                                </span>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 p-6">
+                      {paginatedFormulas.map(f => (
+                        <ProporcaoCard key={f.id} formula={f} onClick={() => handleSelectFormula(f)} />
+                      ))}
+                    </div>
+                  )}
+
+                  {totalPages > 1 && (
+                    <div className="flex items-center justify-between bg-slate-50 border-t border-slate-200 px-4 py-3">
+                      <span className="text-sm text-slate-500">
+                        Mostrando {(currentPage - 1) * ITEMS_PER_PAGE + 1}–{Math.min(currentPage * ITEMS_PER_PAGE, filteredFormulas.length)} de {filteredFormulas.length}
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <button
+                          onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                          disabled={currentPage === 1}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                        </button>
+                        {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                          let page: number;
+                          if (totalPages <= 5) {
+                            page = i + 1;
+                          } else if (currentPage <= 3) {
+                            page = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            page = totalPages - 4 + i;
+                          } else {
+                            page = currentPage - 2 + i;
+                          }
+                          return (
+                            <button
+                              key={page}
+                              onClick={() => setCurrentPage(page)}
+                              className={`w-8 h-8 rounded-lg text-sm font-medium transition-colors ${currentPage === page ? 'bg-[#202eac] text-white' : 'text-slate-600 hover:bg-slate-100'}`}
+                            >
+                              {page}
+                            </button>
+                          );
+                        })}
+                        <button
+                          onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                          disabled={currentPage === totalPages}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-100 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                        >
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </>
               )}
             </div>
           </div>

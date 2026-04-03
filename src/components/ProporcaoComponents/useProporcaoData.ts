@@ -58,8 +58,8 @@ export function useProporcaoData(): UseProporcaoDataReturn {
         if (!map[b] || compareVersions(f.version, map[b].version) > 0) map[b] = f;
       });
       setFormulas(Object.values(map));
-    } catch (err) {
-      console.error('Error fetching formulas:', err);
+    } catch {
+      // Silently handle fetch error
     } finally {
       setIsLoading(false);
     }
@@ -114,8 +114,8 @@ export function useProporcaoData(): UseProporcaoDataReturn {
           .forEach(processIng);
       }
       setPackagingOptions(flattened);
-    } catch (e) {
-      console.error('Error fetching packaging:', e);
+    } catch {
+      // Silently handle packaging fetch error
     }
   }, [mode]);
 
@@ -233,27 +233,25 @@ export function useCalculation(
   }, [packagingOptions]);
 
   const uniqueCapacities = useMemo(
-    () => Object.keys(packagingOptionsByCapacity).map(Number).sort((a, b) => b - a),
+    () => Object.keys(packagingOptionsByCapacity).map(Number).sort((a, b) => a - b),
     [packagingOptionsByCapacity]
   );
 
   const assemblyOptions = useMemo(() => {
-    const val = parseFloat(batchSize.replace(',', '.')) || 0;
-    if (val <= 0 || uniqueCapacities.length === 0) return [];
+    const val = parseFloat(batchSize.replace(',', '.'));
+    if (isNaN(val) || val <= 0 || uniqueCapacities.length === 0) return [];
 
-    if (calculationMode === 'volume') {
-      const options: { items: { capacity: number; quantity: number }[] }[] = [];
-      
-      const sortedCaps = [...uniqueCapacities].sort((a, b) => a - b);
-      
-      for (const cap of sortedCaps) {
-        const qty = Math.round(val / cap);
-        const remainder = val - (qty * cap);
+      if (calculationMode === 'volume') {
+        const options: { items: { capacity: number; quantity: number }[] }[] = [];
         
-        if (Math.abs(remainder) < 0.001 && qty > 0) {
-          options.push({ items: [{ capacity: cap, quantity: qty }] });
+        for (const cap of uniqueCapacities) {
+          const qty = Math.round(val / cap);
+          const remainder = val - (qty * cap);
+          
+          if (Math.abs(remainder) < 0.001 && qty > 0) {
+            options.push({ items: [{ capacity: cap, quantity: qty }] });
+          }
         }
-      }
 
       if (options.length === 0) {
         return [{
@@ -290,7 +288,9 @@ export function useCalculation(
 
     if (selectedCaps.length > 0) {
       if (calculationMode === 'volume') {
-        let rem = parseFloat(batchSize.replace(',', '.')) || 0;
+        const parsed = parseFloat(batchSize.replace(',', '.'));
+        if (isNaN(parsed) || parsed <= 0) return alloc;
+        let rem = parsed;
         selectedCaps
           .sort((a, b) => b - a)
           .forEach((cap, idx) => {
@@ -312,7 +312,10 @@ export function useCalculation(
   }, [batchSize, selectedPackagingKeys, uniqueCapacities, calculationMode, packagingOptionsByCapacity]);
 
   const currentBatchSize = useMemo(() => {
-    if (calculationMode === 'volume') return parseFloat(batchSize.replace(',', '.')) || 0;
+    if (calculationMode === 'volume') {
+      const parsed = parseFloat(batchSize.replace(',', '.'));
+      return isNaN(parsed) ? 0 : parsed;
+    }
     let t = 0;
     Object.entries(packagingAllocation).forEach(([c, q]) => {
       t += Number(c) * q;

@@ -13,6 +13,7 @@ export interface Ingredient {
   unit: string;
   cost_per_unit: number;
   fornecedor?: string;
+  supplier_id?: string;
   validade_indeterminada?: boolean;
   expiry_date?: string;
   estoque_atual?: number;
@@ -25,6 +26,7 @@ export interface Ingredient {
   viscosidade?: string;
   solubilidade?: string;
   risco?: string;
+  sort_order?: number;
   created_at: string;
   variants?: Variant[];
 }
@@ -32,6 +34,9 @@ export interface Ingredient {
 export interface Supplier {
   id: string;
   name: string;
+  contact?: string;
+  email?: string;
+  phone?: string;
 }
 
 export type ViewMode = 'list' | 'grid';

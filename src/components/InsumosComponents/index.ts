@@ -1,3 +1,12 @@
 export * from './types';
 export { useInsumosData } from './useInsumosData';
+export type { StockMovement } from './useInsumosData';
 export { default as InsumoCard } from './InsumoCard';
+export { default as InsumoStats } from './InsumoStats';
+export { default as InsumoFilters } from './InsumoFilters';
+export { default as InsumoTable } from './InsumoTable';
+export { default as InsumoGrid } from './InsumoGrid';
+export { default as InsumoModal } from './InsumoModal';
+export { default as InsumoPagination } from './InsumoPagination';
+export { default as StockMovementPanel } from './StockMovementPanel';
+export { default as DeleteConfirmDialog } from './DeleteConfirmDialog';
