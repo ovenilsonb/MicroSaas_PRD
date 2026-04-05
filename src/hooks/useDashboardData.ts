@@ -59,7 +59,7 @@ export function useDashboardData(): UseDashboardDataReturn {
           supabase.from('formulas').select('id, name, created_at'),
           supabase.from('production_orders').select('status'),
           supabase.from('quality_controls').select('status'),
-          supabase.from('customers').select('id'),
+          supabase.from('clients').select('id'),
           supabase.from('suppliers').select('id'),
         ]);
 
@@ -93,7 +93,7 @@ export function useDashboardData(): UseDashboardDataReturn {
         const localForms = JSON.parse(localStorage.getItem('local_formulas') || '[]');
         const localOrders = JSON.parse(localStorage.getItem('local_production_orders') || '[]');
         const localQCs = JSON.parse(localStorage.getItem('local_quality_controls') || '[]');
-        const localClientes = JSON.parse(localStorage.getItem('local_customers') || '[]');
+        const localClientes = JSON.parse(localStorage.getItem('local_clients') || '[]');
         const localFornecedores = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
 
         totalInsumos = localIngs.length;

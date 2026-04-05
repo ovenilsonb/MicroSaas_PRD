@@ -21,9 +21,19 @@
     to { transform: translateX(0); opacity: 1; }
   }
 
+  @keyframes slide-in-from-bottom {
+    from { transform: translateY(8px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+
   @keyframes progress {
     from { width: 100%; }
     to { width: 0%; }
+  }
+
+  @keyframes spin-slow {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
   }
 
   .animate-in {
@@ -36,9 +46,43 @@
     animation-name: slide-in-right;
   }
 
+  .slide-in-from-bottom-4 {
+    animation-name: slide-in-from-bottom;
+  }
+
   .animate-progress {
     animation-name: progress;
     animation-timing-function: linear;
     animation-fill-mode: forwards;
+  }
+
+  .animate-spin-slow {
+    animation-name: spin-slow;
+    animation-duration: 2s;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+  }
+
+  /* Custom scrollbar */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 4px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 10px;
+  }
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.4);
+  }
+
+  /* Left scrollbar workaround for RTL */
+  .left-scrollbar {
+    direction: rtl;
+  }
+  .left-scrollbar > * {
+    direction: ltr;
   }
 }

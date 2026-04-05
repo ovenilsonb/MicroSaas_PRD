@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { useToast } from './dashboard/Toast';
+import FormulaCard from './FormulasComponents/FormulaCard';
 
 interface Group {
   id: string;
@@ -1787,109 +1788,16 @@ export default function Formulas() {
                 </div>
               ) : viewMode === 'grid' ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredFormulas.map((formula) => {
-                const totalCost = calculateTotalCost(formula.formula_ingredients || []);
-                const ingredients = formula.formula_ingredients || [];
-                const topIngredients = ingredients.slice(0, 3); // Show top 3
-
-                return (
-                  <div key={formula.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group cursor-pointer" onClick={() => handleOpenEditor(formula)}>
-                    <div className="p-4 border-b border-slate-100">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          {formula.groups?.name && (
-                            <span className="text-[9px] font-bold uppercase tracking-wider text-slate-500 mb-0.5 block">
-                              {formula.groups.name}
-                            </span>
-                          )}
-                          <h3 className="text-base font-bold text-slate-800 leading-tight group-hover:text-[#202eac] transition-colors">{formula.name}</h3>
-                          {formula.lm_code && (
-                            <span className="text-[10px] text-slate-400 font-mono mt-0.5 block">LM: {formula.lm_code}</span>
-                          )}
-                        </div>
-                        <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${getStatusColor(formula.status)}`}>
-                          {getStatusText(formula.status)}
-                        </span>
-                      </div>
-
-                      <div className="flex items-center gap-3 mt-3 text-xs">
-                        <div className="flex items-center gap-1 text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
-                          <Beaker className="w-3.5 h-3.5 text-blue-500" />
-                          <span className="font-semibold">{(formula.base_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L</span>
-                        </div>
-                        <div className="flex items-center gap-1 text-slate-600 bg-slate-50 px-2 py-0.5 rounded-lg border border-slate-100">
-                          <DollarSign className="w-3.5 h-3.5 text-emerald-500" />
-                          <span className="font-bold text-emerald-700">{formatCurrency(totalCost)}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Ingredients Preview Block */}
-                    <div className="p-4 flex-1 bg-slate-50/50">
-                      <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2 flex items-center gap-2">
-                        <Package className="w-3 h-3" /> Composição ({ingredients.length})
-                      </h4>
-
-                      {ingredients.length > 0 ? (
-                        <div className="space-y-1.5">
-                          {topIngredients.map((ing, idx) => (
-                            <div key={idx} className="flex justify-between items-center text-xs">
-                              <span className="text-slate-700 truncate pr-2 flex items-center gap-1.5">
-                                <div className={`w-1 h-1 rounded-full ${ing.ingredients?.produto_quimico ? 'bg-amber-400' : 'bg-blue-400'}`}></div>
-                                {ing.ingredients?.name}
-                              </span>
-                              <span className="text-slate-500 font-mono text-[10px] whitespace-nowrap">
-                                {formatQuantity(ing.quantity)} {ing.ingredients?.unit?.toUpperCase()}
-                              </span>
-                            </div>
-                          ))}
-                          {ingredients.length > 3 && (
-                            <div className="text-[10px] text-slate-400 font-medium pt-0.5 italic">
-                              + {ingredients.length - 3} outros insumos...
-                            </div>
-                          )}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-slate-400 italic">Nenhum insumo cadastrado.</p>
-                      )}
-                    </div>
-
-                    <div className="p-3 border-t border-slate-100 bg-white flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setDeleteModal({ isOpen: true, id: formula.id, name: formula.name });
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                          title="Excluir"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleDuplicateFormula(formula);
-                          }}
-                          className="p-1.5 text-slate-400 hover:text-[#202eac] hover:bg-blue-50 rounded-lg transition-colors"
-                          title="Duplicar / Nova Versão"
-                        >
-                          <Copy className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenEditor(formula);
-                        }}
-                        className="flex-1 py-1.5 bg-slate-100 hover:bg-[#202eac] text-[#202eac] hover:text-white font-bold rounded-lg transition-colors flex items-center justify-center gap-2 text-xs"
-                      >
-                        Editar Receita <ChevronRight className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                );
-              })}
+              {filteredFormulas.map((formula) => (
+                <FormulaCard
+                  key={formula.id}
+                  formula={formula}
+                  onClick={() => handleOpenEditor(formula)}
+                  onEdit={() => handleOpenEditor(formula)}
+                  onDuplicate={() => handleDuplicateFormula(formula)}
+                  onDelete={() => setDeleteModal({ isOpen: true, id: formula.id, name: formula.name })}
+                />
+              ))}
             </div>
           ) : (
             <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">

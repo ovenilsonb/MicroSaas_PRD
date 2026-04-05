@@ -9,7 +9,8 @@ import {
   TrendingUp, Percent, Calculator, AlertCircle,
   ShoppingCart, Store, PackageCheck, BarChart3,
   Download, Upload, CheckCircle2, AlertTriangle, Info, X,
-  LayoutGrid, List, Plus, Minus, Save, RotateCcw, ArrowDownAZ, ArrowUpZA, GripVertical, Settings, Package
+  LayoutGrid, List, Plus, Minus, Save, RotateCcw, ArrowDownAZ, ArrowUpZA, GripVertical, Settings, Package,
+  Eraser
 } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { useToast } from './dashboard/Toast';
@@ -92,7 +93,19 @@ const fmt = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', curren
 const parseCost = (v: any): number => {
   if (v === null || v === undefined) return 0;
   if (typeof v === 'number') return v;
-  return parseFloat(String(v).replace(/\./g, '').replace(',', '.')) || 0;
+  const s = String(v).trim();
+  if (!s) return 0;
+  if (s.includes(',')) {
+    // Brazilian format: dots are thousands, comma is decimal
+    return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  }
+  // No comma — dots are likely thousands separators (e.g. "10.500" = 10500)
+  // If it's a simple decimal (e.g. "10.50") there's only one dot, parseFloat handles it
+  const dotCount = (s.match(/\./g) || []).length;
+  if (dotCount > 1) {
+    return parseFloat(s.replace(/\./g, '')) || 0;
+  }
+  return parseFloat(s) || 0;
 };
 
 const getFormulaCategory = (name: string): string => {
@@ -356,6 +369,7 @@ export default function Precificacao() {
   // Detail view state
   const [selectedFormula, setSelectedFormula] = useState<Formula | null>(null);
   const [selectedCapacity, setSelectedCapacity] = useState<number>(0);
+  const [selectedPriceType, setSelectedPriceType] = useState<'varejo' | 'atacado' | 'fardo'>('varejo');
 
   // Editable prices for current formula+capacity
   const [varejoPrice, setVarejoPrice] = useState(0);
@@ -364,6 +378,7 @@ export default function Precificacao() {
   const [fardoQty, setFardoQty] = useState(6);
   const [fixedCostsPerUnit, setFixedCostsPerUnit] = useState(0);
   const [showIngredients, setShowIngredients] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
 
   // Saved pricing data
   const [savedPricing, setSavedPricing] = useState<PricingEntry[]>(() => {
@@ -542,6 +557,60 @@ export default function Precificacao() {
     showToast('info', 'Descartado', 'As alterações foram revertidas.');
   };
 
+  // ─── Reset / Zerar ────────────────────────────────────────
+
+  const setPriceForType = (price: number) => {
+    if (selectedPriceType === 'varejo') setVarejoPrice(price);
+    else if (selectedPriceType === 'atacado') setAtacadoPrice(price);
+    else setFardoPrice(price);
+  };
+
+  const handleResetCurrent = () => {
+    if (!selectedFormula) return;
+    setSavedPricing(prev => {
+      const next = prev.filter(e => !(e.formulaId === selectedFormula.id && e.capacityKey === String(selectedCapacity)));
+      localStorage.setItem('precificacao_entries', JSON.stringify(next));
+      return next;
+    });
+    setPriceForType(0);
+    showToast('success', 'Resetado', `Preço ${selectedPriceType} — ${formatCapacity(selectedCapacity)} foi zerado.`);
+    setShowResetModal(false);
+  };
+
+  const handleResetAllOfType = () => {
+    if (!selectedFormula) return;
+    setSavedPricing(prev => {
+      const hasTypePrice = (e: PricingEntry) => {
+        if (selectedPriceType === 'varejo') return e.varejoPrice > 0;
+        if (selectedPriceType === 'atacado') return e.atacadoPrice > 0;
+        return e.fardoPrice > 0;
+      };
+      const next = prev.filter(e => {
+        if (e.formulaId !== selectedFormula.id) return true;
+        return !hasTypePrice(e);
+      });
+      localStorage.setItem('precificacao_entries', JSON.stringify(next));
+      return next;
+    });
+    setPriceForType(0);
+    showToast('success', 'Resetado', `Todos os preços de ${selectedPriceType} foram zerados para esta fórmula.`);
+    setShowResetModal(false);
+  };
+
+  const handleResetAllFormula = () => {
+    if (!selectedFormula) return;
+    setSavedPricing(prev => {
+      const next = prev.filter(e => e.formulaId !== selectedFormula.id);
+      localStorage.setItem('precificacao_entries', JSON.stringify(next));
+      return next;
+    });
+    setVarejoPrice(0);
+    setAtacadoPrice(0);
+    setFardoPrice(0);
+    showToast('success', 'Resetado', `Todas as precificações de "${selectedFormula.name}" foram zeradas.`);
+    setShowResetModal(false);
+  };
+
   // ─── Calculations for Detail View ──────────────────────────
 
   const detailCalc = useMemo(() => {
@@ -597,9 +666,13 @@ export default function Precificacao() {
     const fardoMargem = fardoTotal > 0 ? (fardoLucro / fardoTotal) * 100 : 0;
     const fardoMarkup = custoFardo > 0 ? ((fardoTotal - custoFardo) / custoFardo) * 100 : 0;
 
-    // Executive summary
-    const margemMedia = (varejoMargem + atacadoMargem + fardoMargem) / 3;
-    const pontoEquilibrio = custoTotal; // break-even is the cost
+    // Executive summary — average only channels with prices > 0
+    const margins = [
+      varejoPrice > 0 ? varejoMargem : null,
+      atacadoPrice > 0 ? atacadoMargem : null,
+      fardoPrice > 0 ? fardoMargem : null,
+    ].filter((m): m is number => m !== null);
+    const margemMedia = margins.length > 0 ? margins.reduce((a, b) => a + b, 0) / margins.length : 0;
     const atacadoDesc = varejoPrice > 0 ? ((1 - atacadoPrice / varejoPrice) * 100) : 0;
 
     return {
@@ -607,8 +680,8 @@ export default function Precificacao() {
       pkgCost, labelCost, custoUnidade, custoTotal,
       varejoPrice: varejoPrice, varejoLucro, varejoMargem, varejoMarkup,
       atacadoPrice: atacadoPrice, atacadoLucro, atacadoMargem, atacadoMarkup,
-      custoFardo, fardoTotal, fardoLucro, fardoMargem, fardoMarkup,
-      margemMedia, pontoEquilibrio, atacadoDesc,
+      custoFardo, fardoTotal, fardoLucro, fardoMargem, fardoMarkup, fardoPricePerUnit: fardoQty > 0 ? fardoPrice / fardoQty : 0,
+      margemMedia, atacadoDesc,
     };
   }, [selectedFormula, selectedCapacity, varejoPrice, atacadoPrice, fardoPrice, fardoQty, fixedCostsPerUnit, packagingOptions, calcIngredientCost]);
 
@@ -868,8 +941,8 @@ export default function Precificacao() {
         {/* Header */}
         <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
-            <button onClick={() => setSelectedFormula(null)} className="p-2 hover:bg-slate-100 rounded-xl text-slate-500 transition-colors">
-              <ArrowLeft className="w-5 h-5" />
+            <button onClick={() => setSelectedFormula(null)} className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all border border-slate-200 shadow-sm">
+              <ArrowLeft className="w-4 h-4" /> Voltar
             </button>
             <div>
               <h1 className="text-xl font-bold text-slate-800">
@@ -884,6 +957,33 @@ export default function Precificacao() {
         </header>
 
         <div className="flex-1 overflow-auto">
+          {/* Price Type Tabs */}
+          <div className="px-8 pt-6 pb-2 flex items-center justify-between gap-3 flex-wrap border-b border-slate-200">
+            <div className="flex items-center gap-3 flex-wrap">
+              <span className="text-sm font-bold text-slate-600 mr-2">Tipo de Preço:</span>
+              <button onClick={() => setSelectedPriceType('varejo')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'varejo' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-400 hover:text-emerald-600'}`}>
+                <ShoppingCart className="w-4 h-4" /> Varejo
+              </button>
+              <button onClick={() => setSelectedPriceType('atacado')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'atacado' ? 'bg-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-white text-slate-600 border border-slate-200 hover:border-amber-400 hover:text-amber-600'}`}>
+                <Store className="w-4 h-4" /> Atacado
+              </button>
+              <button onClick={() => setSelectedPriceType('fardo')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'fardo' ? 'bg-purple-500 text-white shadow-lg shadow-purple-200' : 'bg-white text-slate-600 border border-slate-200 hover:border-purple-400 hover:text-purple-600'}`}>
+                <PackageCheck className="w-4 h-4" /> Fardo
+              </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <button onClick={() => setShowResetModal(true)} className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2" title="Zerar preços">
+                <Eraser className="w-4 h-4" /> Zerar
+              </button>
+              <button onClick={discardChanges} className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2">
+                <RotateCcw className="w-4 h-4" /> Descartar
+              </button>
+              <button onClick={savePricing} className="px-5 py-2 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200 transition-all flex items-center gap-2">
+                <Save className="w-4 h-4" /> Salvar
+              </button>
+            </div>
+          </div>
+
           {/* Volume Tabs with saved indicators */}
           <div className="px-8 pt-6 pb-2 flex items-center gap-3 flex-wrap">
             <span className="text-sm font-bold text-slate-600 mr-2">Volume:</span>
@@ -908,6 +1008,69 @@ export default function Precificacao() {
               );
             })}
           </div>
+
+          {/* ─── Reset Modal ─────────────────────────────────────── */}
+          {showResetModal && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+              <div className="max-w-lg w-full">
+                <div className="bg-white rounded-2xl border border-red-200 shadow-xl overflow-hidden">
+                  <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Eraser className="w-5 h-5 text-red-600" />
+                      <h3 className="text-lg font-bold text-red-800">Zerar Preços</h3>
+                    </div>
+                    <button onClick={() => setShowResetModal(false)} className="p-1 hover:bg-red-100 rounded-lg transition-colors">
+                      <X className="w-5 h-5 text-red-600" />
+                    </button>
+                  </div>
+                  <div className="p-6 space-y-3">
+                    <p className="text-sm text-slate-600">
+                      Selecione o que deseja zerar:
+                    </p>
+
+                    {/* Option 1: Current selection only */}
+                    <button
+                      onClick={handleResetCurrent}
+                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition-colors text-left group"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-slate-800 group-hover:text-red-700">Preço Atual Apenas</span>
+                      </div>
+                      <div className="text-xs text-slate-500 group-hover:text-red-600">
+                        Zerar <strong>{selectedPriceType}</strong> do volume <strong>{formatCapacity(selectedCapacity)}</strong>
+                      </div>
+                    </button>
+
+                    {/* Option 2: All of this price type for this formula */}
+                    <button
+                      onClick={handleResetAllOfType}
+                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-amber-300 hover:bg-amber-50 transition-colors text-left group"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-slate-800 group-hover:text-amber-700">Tipo {selectedPriceType} (todos os volumes)</span>
+                      </div>
+                      <div className="text-xs text-slate-500 group-hover:text-amber-600">
+                        Zerar todos os preços de <strong>{selectedPriceType}</strong> para <strong>{selectedFormula.name}</strong>
+                      </div>
+                    </button>
+
+                    {/* Option 3: All pricing for this formula */}
+                    <button
+                      onClick={handleResetAllFormula}
+                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-red-400 hover:bg-red-50 transition-colors text-left group"
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="font-bold text-sm text-slate-800 group-hover:text-red-700">Todas Precificações da Fórmula</span>
+                      </div>
+                      <div className="text-xs text-slate-500 group-hover:text-red-600">
+                        Zerar <strong>varejo, atacado e fardo</strong> de todos os volumes para <strong>{selectedFormula.name}</strong>
+                      </div>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
 
           <div className="p-8 pt-4">
             <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -1033,94 +1196,78 @@ export default function Precificacao() {
                   </div>
                 </div>
 
-                {/* Pricing Cards Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                  {/* Varejo Card */}
-                  <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
-                          <ShoppingCart className="w-4 h-4 text-emerald-600" />
+                {/* Pricing Cards Grid - Only show selected price type */}
+                <div className="grid grid-cols-1 gap-5">
+                  {selectedPriceType === 'varejo' && (
+                    <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
+                            <ShoppingCart className="w-4 h-4 text-emerald-600" />
+                          </div>
+                          <h4 className="font-bold text-slate-700">Preço Varejo</h4>
                         </div>
-                        <h4 className="font-bold text-slate-700">Preço Varejo</h4>
+                        <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md">x{detailCalc.varejoMarkup.toFixed(0)}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md">x{detailCalc.varejoMarkup.toFixed(0)}</span>
+                      <PriceAdjuster value={varejoPrice} onChange={setVarejoPrice} cents={95} color="green" />
+                      <div className="flex gap-2 mt-5">
+                        <MetricBlock label="Markup" value={`${detailCalc.varejoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
+                        <MetricBlock label="Margem" value={`${detailCalc.varejoMargem.toFixed(1)}%`} colorClass={`${detailCalc.varejoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.varejoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
+                        <MetricBlock label="Lucro" value={fmt(detailCalc.varejoLucro)} colorClass="bg-emerald-50 !text-emerald-700 font-black" />
+                      </div>
                     </div>
-                    <PriceAdjuster value={varejoPrice} onChange={setVarejoPrice} cents={95} color="green" />
-                    <div className="flex gap-2 mt-5">
-                      <MetricBlock label="Markup" value={`${detailCalc.varejoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
-                      <MetricBlock label="Margem" value={`${detailCalc.varejoMargem.toFixed(1)}%`} colorClass={`${detailCalc.varejoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.varejoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
-                      <MetricBlock label="Lucro" value={fmt(detailCalc.varejoLucro)} colorClass="bg-emerald-50 !text-emerald-700 font-black" />
-                    </div>
-                  </div>
+                  )}
 
-                  {/* Atacado Card */}
-                  <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                          <Store className="w-4 h-4 text-amber-600" />
+                  {selectedPriceType === 'atacado' && (
+                    <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
+                            <Store className="w-4 h-4 text-amber-600" />
+                          </div>
+                          <h4 className="font-bold text-slate-700">Preço Atacado</h4>
                         </div>
-                        <h4 className="font-bold text-slate-700">Preço Atacado</h4>
+                        <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md">x{detailCalc.atacadoMarkup.toFixed(0)}</span>
                       </div>
-                      <span className="text-[10px] text-slate-400 font-bold bg-slate-100 px-2 py-1 rounded-md">x{detailCalc.atacadoMarkup.toFixed(0)}</span>
+                      <PriceAdjuster value={atacadoPrice} onChange={setAtacadoPrice} cents={90} color="orange" />
+                      <div className="flex gap-2 mt-5">
+                        <MetricBlock label="Markup" value={`${detailCalc.atacadoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
+                        <MetricBlock label="Margem" value={`${detailCalc.atacadoMargem.toFixed(1)}%`} colorClass={`${detailCalc.atacadoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.atacadoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
+                        <MetricBlock label="Lucro" value={fmt(detailCalc.atacadoLucro)} colorClass="bg-amber-50 !text-amber-700 font-black" />
+                      </div>
                     </div>
-                    <PriceAdjuster value={atacadoPrice} onChange={setAtacadoPrice} cents={90} color="orange" />
-                    <div className="flex gap-2 mt-5">
-                      <MetricBlock label="Markup" value={`${detailCalc.atacadoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
-                      <MetricBlock label="Margem" value={`${detailCalc.atacadoMargem.toFixed(1)}%`} colorClass={`${detailCalc.atacadoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.atacadoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
-                      <MetricBlock label="Lucro" value={fmt(detailCalc.atacadoLucro)} colorClass="bg-amber-50 !text-amber-700 font-black" />
-                    </div>
-                  </div>
-                </div>
+                  )}
 
-                {/* Fardo Card (full width) */}
-                <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
-                      <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <PackageCheck className="w-4 h-4 text-purple-600" />
+                  {selectedPriceType === 'fardo' && (
+                    <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
+                            <PackageCheck className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <h4 className="font-bold text-slate-700">Preço Fardo</h4>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button onClick={() => setFardoQty(Math.max(1, fardoQty - 1))} className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
+                            <Minus className="w-3 h-3" />
+                          </button>
+                          <span className="text-sm font-black text-slate-700 w-8 text-center">{fardoQty}</span>
+                          <span className="text-xs text-slate-400 font-semibold">un</span>
+                          <button onClick={() => setFardoQty(fardoQty + 1)} className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
+                            <Plus className="w-3 h-3" />
+                          </button>
+                        </div>
                       </div>
-                      <h4 className="font-bold text-slate-700">Preço Fardo</h4>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button onClick={() => setFardoQty(Math.max(1, fardoQty - 1))}
-                        className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
-                        <Minus className="w-3 h-3" />
-                      </button>
-                      <span className="text-sm font-black text-slate-700 w-8 text-center">{fardoQty}</span>
-                      <span className="text-xs text-slate-400 font-semibold">un</span>
-                      <button onClick={() => setFardoQty(fardoQty + 1)}
-                        className="w-7 h-7 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 hover:bg-slate-50 transition-colors">
-                        <Plus className="w-3 h-3" />
-                      </button>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-6 flex-wrap">
-                    <PriceAdjuster value={fardoPrice} onChange={setFardoPrice} cents={80} color="purple" />
-                    <div className="flex-1 flex gap-2">
-                      <MetricBlock label="Custo Fardo" value={fmt(detailCalc.custoFardo)} colorClass="bg-slate-50" />
-                      <MetricBlock label="Markup" value={`${detailCalc.fardoMarkup.toFixed(1)}%`} colorClass={`${detailCalc.fardoMarkup >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.fardoMarkup >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
-                      <MetricBlock label="Lucro Total" value={fmt(detailCalc.fardoLucro)} colorClass="bg-purple-50 !text-purple-700 font-black" />
-                    </div>
-                  </div>
-                  {/* Comparison Blocks */}
-                  <div className="mt-4 pt-4 border-t border-slate-100">
-                    <div className="flex gap-3">
-                      <div className="flex-1 bg-blue-50 rounded-xl p-3 text-center">
-                        <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wide">Unit.</div>
-                        <div className="text-lg font-black text-blue-700">{fmt(fardoPrice / fardoQty)}</div>
-                      </div>
-                      <div className="flex-1 bg-emerald-50 rounded-xl p-3 text-center">
-                        <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-wide">vs Varejo</div>
-                        <div className="text-lg font-black text-emerald-700">-{fmt(retailPrice - (fardoPrice / fardoQty))}</div>
-                      </div>
-                      <div className="flex-1 bg-amber-50 rounded-xl p-3 text-center">
-                        <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wide">vs Atacado</div>
-                        <div className="text-lg font-black text-amber-700">-{fmt(wholesalePrice - (fardoPrice / fardoQty))}</div>
+                      <div className="flex items-center gap-6 flex-wrap">
+                        <PriceAdjuster value={fardoPrice} onChange={setFardoPrice} cents={80} color="purple" />
+                        <div className="flex-1 flex gap-2">
+                          <MetricBlock label="Custo/Un" value={fmt(detailCalc.custoTotal)} colorClass="bg-slate-50" />
+                          <MetricBlock label="Markup" value={`${detailCalc.fardoMarkup.toFixed(1)}%`} colorClass={`${detailCalc.fardoMarkup >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.fardoMarkup >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
+                          <MetricBlock label="Lucro/Un" value={fmt(detailCalc.fardoLucro / fardoQty)} colorClass="bg-purple-50 !text-purple-700 font-black" />
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               </div>
 
@@ -1185,8 +1332,8 @@ export default function Precificacao() {
                   <h4 className="font-black text-[11px] uppercase tracking-widest text-slate-300 mb-4">Resumo Executivo</h4>
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <span className="text-sm text-slate-400">Ponto de Equilíbrio</span>
-                      <span className="text-sm font-black text-white">{fmt(detailCalc.pontoEquilibrio)}</span>
+                      <span className="text-sm text-slate-400">Custo Total/Unidade</span>
+                      <span className="text-sm font-black text-white">{fmt(detailCalc.custoTotal)}</span>
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-slate-400">Margem Média</span>
@@ -1201,18 +1348,6 @@ export default function Precificacao() {
                   </div>
                 </div>
               </div>
-            </div>
-
-            {/* Footer Actions */}
-            <div className="max-w-7xl mx-auto mt-8 flex items-center justify-end gap-4 pb-8">
-              <button onClick={discardChanges}
-                className="px-6 py-3 rounded-xl text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2">
-                <RotateCcw className="w-4 h-4" /> Descartar
-              </button>
-              <button onClick={savePricing}
-                className="px-8 py-3 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200 transition-all flex items-center gap-2">
-                <Save className="w-4 h-4" /> Salvar Alterações
-              </button>
             </div>
           </div>
         </div>

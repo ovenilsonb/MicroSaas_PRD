@@ -54,7 +54,7 @@ class ErrorBoundary extends Component<{children: ReactNode}, ErrorBoundaryState>
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    // Error logged silently
+    console.error('[Proporcao ErrorBoundary]', error, errorInfo);
   }
 
   render() {

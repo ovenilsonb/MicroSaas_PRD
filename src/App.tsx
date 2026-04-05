@@ -4,8 +4,10 @@ import {
   Download, Upload, Database, Copy, CheckCircle2,
 } from 'lucide-react';
 import { useStorageMode } from './contexts/StorageModeContext';
-import { isSupabaseConfigured, supabase } from './lib/supabase';
-import { ToastProvider } from './components/dashboard/Toast';
+import { isSupabaseConfigured } from './lib/supabase';
+import { ToastProvider, useToast } from './components/dashboard/Toast';
+import { exportToJson, importFromJson, getBackupFilename } from './lib/backupUtils';
+import Header, { getModuleConfig } from './components/Header';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const Insumos = lazy(() => import('./components/Insumos'));
@@ -20,7 +22,7 @@ const Qualidade = lazy(() => import('./components/Qualidade'));
 const Estoque = lazy(() => import('./components/Estoque'));
 
 import Sidebar from './components/Sidebar';
-import Header from './components/Header';
+import SettingsBackup from './components/SettingsBackup';
 
 function LoadingFallback() {
   return (
@@ -80,6 +82,7 @@ create table if not exists public.ingredients (
   validade_indeterminada boolean default true,
   estoque_atual numeric default 0,
   estoque_minimo numeric default 0,
+  sort_order integer default 0,
   produto_quimico boolean default true,
   tem_variantes boolean default false,
   peso_especifico text,
@@ -161,7 +164,7 @@ insert into public.ingredients (name, unit, cost_per_unit, produto_quimico, forn
 on conflict do nothing;
 
 -- 11. Criar tabela de Clientes
-create table if not exists public.customers (
+create table if not exists public.clients (
   id uuid default uuid_generate_v4() primary key,
   name text not null,
   type text check (type in ('PF', 'PJ')),
@@ -323,27 +326,6 @@ create table if not exists public.inventory_logs (
 
   return (
     <ToastProvider>
-      <style>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 4px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(255, 255, 255, 0.2);
-          border-radius: 10px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(255, 255, 255, 0.4);
-        }
-        .left-scrollbar {
-          direction: rtl;
-        }
-        .left-scrollbar > * {
-          direction: ltr;
-        }
-      `}</style>
       <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
 
       {/* Sidebar Navigation - Modern Refactored */}
@@ -358,18 +340,22 @@ create table if not exists public.inventory_logs (
 
       {/* Main Content Area */}
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
-        {activeMenu !== 'insumos' && activeMenu !== 'formulas' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && (
-          <Header 
-            title={activeMenu.charAt(0).toUpperCase() + activeMenu.slice(1)}
-            subtitle={
-              activeMenu === 'dashboard' ? 'Visão geral do seu sistema' :
-              activeMenu === 'formulas' ? 'Gestão de formulações e versões' :
-              activeMenu === 'insumos' ? 'Catálogo de matérias-primas e custos' :
-              activeMenu === 'producao' ? 'Controle de ordens de fabricação' :
-              'Gerenciamento de módulos do MicroSaaS'
-            }
-          />
-        )}
+        {activeMenu !== 'insumos' && activeMenu !== 'formulas' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && (() => {
+          const hc = getModuleConfig(activeMenu);
+          return (
+            <Header
+              title={(activeMenu.charAt(0).toUpperCase() + activeMenu.slice(1))
+                .replace('Producao', 'Produção')
+              }
+              subtitle={
+                activeMenu === 'dashboard' ? 'Visão geral do seu sistema' :
+                activeMenu === 'producao' ? 'Controle de ordens de fabricação' :
+                'Gerenciamento de módulos do MicroSaaS'
+              }
+              color={hc.color}
+            />
+          );
+        })()}
 
         <div className="flex-1 overflow-auto custom-scrollbar">
           <Suspense fallback={<LoadingFallback />}>
@@ -409,54 +395,7 @@ create table if not exists public.inventory_logs (
 
             <div className="p-8 max-w-4xl mx-auto space-y-8">
 
-              {/* Backup & Restore Section */}
-              <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-6 border-b border-slate-200 bg-slate-50/50">
-                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <Database className="w-5 h-5 text-[#202eac]" /> Backup e Restauração
-                  </h2>
-                  <p className="text-sm text-slate-500 mt-1">
-                    Mantenha seus dados seguros. Exporte suas fórmulas, insumos e relatórios para um arquivo seguro ou restaure dados de um backup anterior.
-                  </p>
-                </div>
-
-                <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Export */}
-                  <div className="border border-slate-200 rounded-xl p-5 hover:border-[#202eac]/30 transition-colors">
-                    <div className="w-10 h-10 bg-blue-50 text-[#202eac] rounded-lg flex items-center justify-center mb-4">
-                      <Download className="w-5 h-5" />
-                    </div>
-                    <h3 className="font-bold text-slate-800 mb-2">Exportar Dados (Backup)</h3>
-                    <p className="text-sm text-slate-500 mb-6">
-                      Gera um arquivo contendo todas as suas fórmulas, histórico de preços e cadastro de insumos.
-                    </p>
-                    <button className="w-full py-2.5 bg-white border-2 border-[#202eac] text-[#202eac] hover:bg-blue-50 font-bold rounded-lg transition-colors flex items-center justify-center gap-2">
-                      <Download className="w-4 h-4" /> Gerar Arquivo de Backup
-                    </button>
-                  </div>
-
-                  {/* Import */}
-                  <div className="border border-slate-200 rounded-xl p-5 hover:border-[#202eac]/30 transition-colors">
-                    <div className="w-10 h-10 bg-emerald-50 text-emerald-600 rounded-lg flex items-center justify-center mb-4">
-                      <Upload className="w-5 h-5" />
-                    </div>
-                    <h3 className="font-bold text-slate-800 mb-2">Restaurar Dados</h3>
-                    <p className="text-sm text-slate-500 mb-6">
-                      Importe um arquivo de backup gerado anteriormente. <strong className="text-amber-600">Atenção:</strong> isso substituirá os dados atuais.
-                    </p>
-                    <button className="w-full py-2.5 bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                      <Upload className="w-4 h-4" /> Selecionar Arquivo
-                    </button>
-                  </div>
-                </div>
-
-                <div className="bg-amber-50 border-t border-amber-100 p-4 flex gap-3">
-                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
-                  <p className="text-sm text-amber-800">
-                    <strong>Recomendação de Segurança:</strong> É aconselhável realizar o backup dos seus dados semanalmente. No futuro, poderemos automatizar este processo para a nuvem.
-                  </p>
-                </div>
-              </section>
+              <SettingsBackup />
 
               {/* SQL Script Section */}
               <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -505,7 +444,14 @@ create table if not exists public.inventory_logs (
         )}
 
         {/* Placeholder for other menus */}
-        {activeMenu !== 'dashboard' && activeMenu !== 'formulas' && activeMenu !== 'configuracoes' && activeMenu !== 'insumos' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && activeMenu !== 'relatorios' && activeMenu !== 'producao' && activeMenu !== 'fornecedores' && activeMenu !== 'estoque' && activeMenu !== 'qualidade' && activeMenu !== 'clientes' && (
+        {(() => {
+          const implementedMenus = [
+            'dashboard', 'insumos', 'formulas', 'proporcao', 'precificacao',
+            'fornecedores', 'clientes', 'relatorios', 'producao', 'qualidade',
+            'estoque', 'configuracoes'
+          ];
+          if (implementedMenus.includes(activeMenu)) return null;
+          return (
           <div className="flex-1 flex items-center justify-center bg-slate-50">
             <div className="text-center">
               <div className="w-16 h-16 bg-blue-100 text-[#202eac] rounded-2xl flex items-center justify-center mx-auto mb-4">
@@ -515,7 +461,8 @@ create table if not exists public.inventory_logs (
               <p className="text-slate-500 mt-2">A tela de <strong className="capitalize">{activeMenu}</strong> será implementada em breve.</p>
             </div>
           </div>
-        )}
+          );
+        })()}
 
       </main>
     </div>

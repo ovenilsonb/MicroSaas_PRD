@@ -6,7 +6,16 @@ import { Formula, PackagingOption, PricingEntry } from './types';
 const parseCost = (v: any): number => {
   if (v === null || v === undefined) return 0;
   if (typeof v === 'number') return v;
-  return parseFloat(String(v).replace(/\./g, '').replace(',', '.')) || 0;
+  const s = String(v).trim();
+  if (!s) return 0;
+  if (s.includes(',')) {
+    return parseFloat(s.replace(/\./g, '').replace(',', '.')) || 0;
+  }
+  const dotCount = (s.match(/\./g) || []).length;
+  if (dotCount > 1) {
+    return parseFloat(s.replace(/\./g, '')) || 0;
+  }
+  return parseFloat(s) || 0;
 };
 
 const compareVersions = (v1: string, v2: string) => {
