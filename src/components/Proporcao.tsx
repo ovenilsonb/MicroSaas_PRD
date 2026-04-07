@@ -114,6 +114,7 @@ export default function Proporcao() {
   const [isSaving, setIsSaving] = useState(false);
   const [showAllSimulations, setShowAllSimulations] = useState(false);
   const [allSimulations, setAllSimulations] = useState<Simulation[]>([]);
+  const [selectedAssemblyOptionId, setSelectedAssemblyOptionId] = useState<string | null>(null);
 
   const currentBatchSize = calculationMode === 'volume' ? batchSizeVolume : batchSizeUnits;
 
@@ -140,11 +141,13 @@ export default function Proporcao() {
       setBatchSizeUnits(value);
     }
     setSelectedPackagingKeys([]);
+    setSelectedAssemblyOptionId(null);
   };
 
   const handleCalculationModeChange = (mode: CalculationMode) => {
     setCalculationMode(mode);
     setSelectedPackagingKeys([]);
+    setSelectedAssemblyOptionId(null);
   };
 
   const filteredFormulas = useMemo(() => {
@@ -198,15 +201,34 @@ export default function Proporcao() {
     setSelectedPackagingKeys([]);
   };
 
-  const handleSelectOption = useCallback((opt: { items: { capacity: number; quantity: number }[] }) => {
+  const handleSelectOption = useCallback((opt: { id: string; items: { capacity: number; quantity: number }[] }) => {
+    setSelectedAssemblyOptionId(opt.id);
     const keys: string[] = [];
+    
+    // Auto-selecionar os primeiros itens para não preencher com todas as caixas erradas,
+    // ou limpar para o usuário forçar a escolha fina, mas para conveniência, selecionamos todos os compatíveis
+    // que não tenham "caixa" no nome se for modo unitário e capacidade pequena?
+    // Melhor approach: por padrão não seleciona nada, obrigando usuário a marcar os checkboxes exatos que quer.
+    // Mas para facilitar, vamos apenas definir a opção ativa e manter as keys vazias inicialmente até o usuário marcar!
+    // Assim não mistura caixas e rótulos errados sem querer.
+    
+    // Opcional: Auto-selecionar o primeiro de cada capacidade para agir como um default
     opt.items.forEach(item => {
-      calculation.packagingOptionsByCapacity[item.capacity]?.forEach(p =>
-        keys.push(`${p.id}_${p.variant_id || 'base'}`)
-      );
+      const pkgs = calculation.packagingOptionsByCapacity[item.capacity] || [];
+      if (pkgs.length > 0) {
+        keys.push(`${pkgs[0].id}_${pkgs[0].variant_id || pkgs[0].name}`);
+      }
     });
+
     setSelectedPackagingKeys(keys);
   }, [calculation.packagingOptionsByCapacity]);
+
+  const handleTogglePackagingKey = useCallback((key: string) => {
+    setSelectedPackagingKeys(prev => {
+      if (prev.includes(key)) return prev.filter(k => k !== key);
+      return [...prev, key];
+    });
+  }, []);
 
   useEffect(() => {
     if (selectedFormula) {
@@ -256,6 +278,7 @@ export default function Proporcao() {
     if (!selectedFormula || calculation.currentBatchSize <= 0) return;
     setIsSaving(true);
     try {
+      const totalChemQty = calculation.calculationResult.ingredients.reduce((sum, fi) => sum + fi.calculatedQuantity, 0) || 1;
       const ingredientsData: Simulation['ingredients'] = [
         ...calculation.calculationResult.ingredients.map((fi) => ({
           id: fi.id || generateId(),
@@ -264,6 +287,7 @@ export default function Proporcao() {
           unit: fi.ingredients.unit || '',
           cost: fi.calculatedQuantity * ((fi.variants?.cost_per_unit ?? fi.ingredients.cost_per_unit) || 0),
           isChemical: true,
+          percentage: (fi.calculatedQuantity / totalChemQty) * 100,
         })),
         ...calculation.calculationResult.nonChemicalCosts.map((item) => ({
           id: `pkg_${item.name}`,
@@ -272,6 +296,7 @@ export default function Proporcao() {
           unit: 'un',
           cost: item.total,
           isChemical: false,
+          percentage: 0,
         })),
       ];
       const versionStr = (selectedFormula.version || 'v1.0').toLowerCase();
@@ -366,6 +391,10 @@ export default function Proporcao() {
                   <AssemblySuggestions
                     assemblyOptions={calculation.assemblyOptions}
                     onSelectOption={handleSelectOption}
+                    selectedOptionId={selectedAssemblyOptionId}
+                    packagingOptionsByCapacity={calculation.packagingOptionsByCapacity}
+                    selectedPackagingKeys={selectedPackagingKeys}
+                    onTogglePackagingKey={handleTogglePackagingKey}
                   />
                 </div>
 

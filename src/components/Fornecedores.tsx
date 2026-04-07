@@ -18,9 +18,13 @@ import {
   LayoutGrid,
   List,
   Download,
-  Upload
+  Upload,
+  TrendingUp,
+  Database,
+  AlertTriangle
 } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
+import { useInsumosData } from './InsumosComponents/useInsumosData';
 
 interface Supplier {
   id: string;
@@ -32,6 +36,7 @@ interface Supplier {
   city: string | null;
   state: string | null;
   notes: string | null;
+  tags?: string[];
   created_at: string;
 }
 
@@ -45,7 +50,9 @@ export default function Fornecedores() {
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<'geral' | 'insumos'>('geral');
   const [editingId, setEditingId] = useState<string | null>(null);
+  const { ingredients } = useInsumosData();
   const [formData, setFormData] = useState<Partial<Supplier>>({
     name: '',
     cnpj: '',
@@ -54,7 +61,8 @@ export default function Fornecedores() {
     address: '',
     city: '',
     state: '',
-    notes: ''
+    notes: '',
+    tags: []
   });
 
   useEffect(() => {
@@ -97,6 +105,54 @@ export default function Fornecedores() {
     );
   }, [suppliers, searchTerm]);
 
+  // Dashboard Stats
+  const stats = useMemo(() => {
+    const totalSuppliers = suppliers.length;
+    let totalStockValue = 0;
+    const suppliersInCrisis = new Set<string>();
+    const categoryCounts: Record<string, number> = {};
+
+    suppliers.forEach(s => {
+      // Tags/Categories count
+      s.tags?.forEach(tag => {
+        categoryCounts[tag] = (categoryCounts[tag] || 0) + 1;
+      });
+
+      // Calculate stock and crisis for this supplier
+      ingredients.forEach(ing => {
+        const isParentSupplier = ing.supplier_id === s.id || (s.name && ing.fornecedor === s.name);
+        
+        if (ing.tem_variantes && ing.variants && ing.variants.length > 0) {
+          ing.variants.forEach(v => {
+            const isVariantSupplier = v.supplier_id === s.id || (!v.supplier_id && isParentSupplier);
+            if (isVariantSupplier) {
+              const cost = typeof v.cost_per_unit === 'number' ? v.cost_per_unit : 0;
+              totalStockValue += (v.estoque_atual || 0) * cost;
+              if ((v.estoque_atual || 0) <= (v.estoque_minimo || 0)) {
+                suppliersInCrisis.add(s.id);
+              }
+            }
+          });
+        } else if (isParentSupplier) {
+          const cost = typeof ing.cost_per_unit === 'number' ? ing.cost_per_unit : 0;
+          totalStockValue += (ing.estoque_atual || 0) * cost;
+          if ((ing.estoque_atual || 0) <= (ing.estoque_minimo || 0)) {
+            suppliersInCrisis.add(s.id);
+          }
+        }
+      });
+    });
+
+    const topCategory = Object.entries(categoryCounts).sort((a,b) => b[1] - a[1])[0]?.[0] || 'N/A';
+
+    return {
+      totalSuppliers,
+      totalStockValue,
+      criticalCount: suppliersInCrisis.size,
+      topCategory
+    };
+  }, [suppliers, ingredients]);
+
   const handleOpenModal = (supplier?: Supplier) => {
     if (supplier) {
       setEditingId(supplier.id);
@@ -111,9 +167,11 @@ export default function Fornecedores() {
         address: '',
         city: '',
         state: '',
-        notes: ''
+        notes: '',
+        tags: []
       });
     }
+    setActiveTab('geral');
     setIsModalOpen(true);
   };
 
@@ -295,6 +353,54 @@ export default function Fornecedores() {
 
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-6xl mx-auto space-y-6">
+          
+          {/* Dashboard Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-[#202eac]/30 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <Building2 className="w-6 h-6 text-[#202eac]" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total de Fornecedores</p>
+                <p className="text-2xl font-bold text-slate-800">{stats.totalSuppliers}</p>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-emerald-200 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <TrendingUp className="w-6 h-6 text-emerald-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Investimento em Estabilid.</p>
+                <p className="text-2xl font-bold text-slate-800">
+                  {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.totalStockValue)}
+                </p>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-red-200 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <AlertTriangle className="w-6 h-6 text-red-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Estoques Críticos</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold text-slate-800">{stats.criticalCount}</p>
+                  <span className="text-[10px] text-slate-400 font-medium">FORNECEDORES</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-purple-200 transition-all">
+              <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+                <Database className="w-6 h-6 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Especialidade Principal</p>
+                <p className="text-xl font-bold text-slate-800 line-clamp-1">{stats.topCategory}</p>
+              </div>
+            </div>
+          </div>
 
           <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
             <div className="relative flex-1 flex items-center gap-3">
@@ -396,6 +502,15 @@ export default function Fornecedores() {
                         <span className="truncate">{supplier.city}{supplier.city && supplier.state ? ' - ' : ''}{supplier.state}</span>
                       </div>
                     )}
+                    {supplier.tags && supplier.tags.length > 0 && (
+                      <div className="pt-3 mt-3 border-t border-slate-100 flex flex-wrap gap-1">
+                        {supplier.tags.map(tag => (
+                          <span key={tag} className="px-2 py-0.5 text-[10px] font-medium bg-slate-100 text-slate-600 rounded-md">
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -487,115 +602,253 @@ export default function Fornecedores() {
               </button>
             </div>
 
-            <form onSubmit={handleSave} className="p-6 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Razão Social / Nome *</label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name || ''}
-                    onChange={e => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
-                    placeholder="Nome da empresa"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">CNPJ / CPF</label>
-                  <input
-                    type="text"
-                    value={formData.cnpj || ''}
-                    onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-mono text-sm"
-                    placeholder="00.000.000/0000-00"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Telefone</label>
-                  <input
-                    type="text"
-                    value={formData.phone || ''}
-                    onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
-                    placeholder="(00) 00000-0000"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">E-mail</label>
-                  <input
-                    type="email"
-                    value={formData.email || ''}
-                    onChange={e => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
-                    placeholder="contato@empresa.com.br"
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Endereço</label>
-                  <input
-                    type="text"
-                    value={formData.address || ''}
-                    onChange={e => setFormData({ ...formData, address: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
-                    placeholder="Rua, Número, Bairro"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cidade</label>
-                  <input
-                    type="text"
-                    value={formData.city || ''}
-                    onChange={e => setFormData({ ...formData, city: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
-                    placeholder="Cidade"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Estado (UF)</label>
-                  <input
-                    type="text"
-                    value={formData.state || ''}
-                    onChange={e => setFormData({ ...formData, state: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all uppercase"
-                    placeholder="SP"
-                    maxLength={2}
-                  />
-                </div>
-
-                <div className="col-span-2">
-                  <label className="block text-sm font-semibold text-slate-700 mb-1.5">Observações</label>
-                  <textarea
-                    value={formData.notes || ''}
-                    onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all resize-none h-24"
-                    placeholder="Informações adicionais sobre o fornecedor..."
-                  />
-                </div>
-              </div>
-
-              <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
+            <div className="flex border-b border-slate-100 bg-slate-50 px-6">
+              <button
+                onClick={() => setActiveTab('geral')}
+                className={`py-3 px-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'geral' ? 'border-[#202eac] text-[#202eac]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
+              >
+                Dados Gerais
+              </button>
+              {editingId && (
                 <button
-                  type="button"
-                  onClick={handleCloseModal}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 font-medium rounded-lg transition-colors"
+                  onClick={() => setActiveTab('insumos')}
+                  className={`py-3 px-4 font-medium text-sm transition-colors border-b-2 ${activeTab === 'insumos' ? 'border-[#202eac] text-[#202eac]' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
                 >
-                  Cancelar
+                  Insumos Fornecidos
                 </button>
-                <button
-                  type="submit"
-                  className="px-6 py-2 bg-[#202eac] text-white font-medium rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2 shadow-sm shadow-blue-200"
-                >
-                  <Save className="w-4 h-4" />
-                  Salvar Fornecedor
-                </button>
-              </div>
-            </form>
+              )}
+            </div>
+
+            <div className="p-6">
+              {activeTab === 'geral' ? (
+                <form onSubmit={handleSave} className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Razão Social / Nome *</label>
+                      <input
+                        type="text"
+                        required
+                        value={formData.name || ''}
+                        onChange={e => setFormData({ ...formData, name: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        placeholder="Nome da empresa"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">CNPJ / CPF</label>
+                      <input
+                        type="text"
+                        value={formData.cnpj || ''}
+                        onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-mono text-sm"
+                        placeholder="00.000.000/0000-00"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Telefone</label>
+                      <input
+                        type="text"
+                        value={formData.phone || ''}
+                        onChange={e => setFormData({ ...formData, phone: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        placeholder="(00) 00000-0000"
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">E-mail</label>
+                      <input
+                        type="email"
+                        value={formData.email || ''}
+                        onChange={e => setFormData({ ...formData, email: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        placeholder="contato@empresa.com.br"
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Endereço</label>
+                      <input
+                        type="text"
+                        value={formData.address || ''}
+                        onChange={e => setFormData({ ...formData, address: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        placeholder="Rua, Número, Bairro"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Cidade</label>
+                      <input
+                        type="text"
+                        value={formData.city || ''}
+                        onChange={e => setFormData({ ...formData, city: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        placeholder="Cidade"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Estado (UF)</label>
+                      <input
+                        type="text"
+                        value={formData.state || ''}
+                        onChange={e => setFormData({ ...formData, state: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all uppercase"
+                        placeholder="SP"
+                        maxLength={2}
+                      />
+                    </div>
+
+                    <div className="col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Observações</label>
+                      <textarea
+                        value={formData.notes || ''}
+                        onChange={e => setFormData({ ...formData, notes: e.target.value })}
+                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all resize-none h-24"
+                        placeholder="Informações adicionais sobre o fornecedor..."
+                      />
+                    </div>
+                    
+                    <div className="col-span-2">
+                      <label className="block text-sm font-semibold text-slate-700 mb-1.5">Tags / Categorias</label>
+                      <div className="flex flex-wrap gap-2">
+                        {['Química', 'Embalagens', 'Rótulos', 'Serviços', 'Revenda'].map(tag => {
+                          const isSelected = formData.tags?.includes(tag);
+                          return (
+                            <button
+                              key={tag}
+                              type="button"
+                              onClick={() => {
+                                const currentTags = formData.tags || [];
+                                if (isSelected) {
+                                  setFormData({ ...formData, tags: currentTags.filter(t => t !== tag) });
+                                } else {
+                                  setFormData({ ...formData, tags: [...currentTags, tag] });
+                                }
+                              }}
+                              className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-all ${
+                                isSelected 
+                                  ? 'bg-[#202eac] border-[#202eac] text-white' 
+                                  : 'bg-white border-slate-200 text-slate-600 hover:border-[#202eac] hover:text-[#202eac]'
+                              }`}
+                            >
+                              {tag}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-6 border-t border-slate-100 flex justify-end gap-3">
+                    <button
+                      type="button"
+                      onClick={handleCloseModal}
+                      className="px-4 py-2 text-slate-600 hover:bg-slate-100 font-medium rounded-lg transition-colors"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="px-6 py-2 bg-[#202eac] text-white font-medium rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2 shadow-sm shadow-blue-200"
+                    >
+                      <Save className="w-4 h-4" />
+                      Salvar Fornecedor
+                    </button>
+                  </div>
+                </form>
+              ) : (
+                <div className="space-y-4">
+                  {(() => {
+                     // Calculate supplied items (ingredients and specific variants)
+                     const suppliedItems: { name: string; codigo: string; estoque: number; unit: string; custo: number; isVariant?: boolean }[] = [];
+                     
+                     ingredients.forEach(ing => {
+                       const isParentSupplier = ing.supplier_id === editingId || ing.fornecedor === formData.name;
+                       
+                       if (ing.tem_variantes && ing.variants && ing.variants.length > 0) {
+                         ing.variants.forEach(v => {
+                           const isVariantSupplier = v.supplier_id === editingId || (!v.supplier_id && isParentSupplier);
+                           if (isVariantSupplier) {
+                             suppliedItems.push({
+                               name: `${ing.name} - ${v.name}`,
+                               codigo: v.codigo || ing.codigo || '',
+                               estoque: v.estoque_atual || 0,
+                               unit: ing.unit,
+                               custo: typeof v.cost_per_unit === 'number' ? v.cost_per_unit : 0,
+                               isVariant: true
+                             });
+                           }
+                         });
+                       } else if (isParentSupplier) {
+                         suppliedItems.push({
+                           name: ing.name,
+                           codigo: ing.codigo || '',
+                           estoque: ing.estoque_atual || 0,
+                           unit: ing.unit,
+                           custo: typeof ing.cost_per_unit === 'number' ? ing.cost_per_unit : 0
+                         });
+                       }
+                     });
+
+                     const totalInvested = suppliedItems.reduce((acc, item) => acc + (item.estoque * item.custo), 0);
+
+                     if (suppliedItems.length === 0) {
+                       return (
+                         <div className="text-center py-12 text-slate-500">
+                           <p>Nenhum insumo ou variante vinculado a este fornecedor.</p>
+                         </div>
+                       );
+                     }
+
+                     return (
+                       <>
+                         <div className="flex items-center justify-between mb-4 bg-blue-50 p-3 rounded-lg border border-blue-100">
+                           <span className="font-medium text-slate-700">Total de Itens: <span className="font-bold text-[#202eac]">{suppliedItems.length}</span></span>
+                           <span className="font-medium text-slate-700">Valor em Estoque: <span className="font-bold text-emerald-600">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(totalInvested)}</span></span>
+                         </div>
+                         <div className="overflow-y-auto max-h-80 border border-slate-200 rounded-lg">
+                           <table className="w-full text-left text-sm">
+                             <thead className="bg-slate-50 border-b border-slate-200 sticky top-0">
+                               <tr>
+                                 <th className="px-4 py-2 text-slate-600 font-semibold">Insumo / Variante</th>
+                                 <th className="px-4 py-2 text-slate-600 font-semibold">Código</th>
+                                 <th className="px-4 py-2 text-slate-600 font-semibold text-right">Estoque</th>
+                                 <th className="px-4 py-2 text-slate-600 font-semibold text-right">Custo Un.</th>
+                               </tr>
+                             </thead>
+                             <tbody className="divide-y divide-slate-100">
+                               {suppliedItems.map((item, idx) => (
+                                 <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                                   <td className="px-4 py-3">
+                                      <div className="flex flex-col">
+                                        <span className="font-medium text-slate-800">{item.name}</span>
+                                        {item.isVariant && <span className="text-[10px] text-blue-500 font-bold uppercase">Variante</span>}
+                                      </div>
+                                   </td>
+                                   <td className="px-4 py-3 font-mono text-slate-500 text-xs">{item.codigo || '-'}</td>
+                                   <td className="px-4 py-3 text-right">
+                                     <span className="font-semibold text-slate-700">
+                                       {item.estoque} {item.unit}
+                                     </span>
+                                   </td>
+                                   <td className="px-4 py-3 text-right font-medium text-emerald-600">
+                                      {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.custo)}
+                                   </td>
+                                 </tr>
+                               ))}
+                             </tbody>
+                           </table>
+                         </div>
+                       </>
+                     );
+                  })()}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

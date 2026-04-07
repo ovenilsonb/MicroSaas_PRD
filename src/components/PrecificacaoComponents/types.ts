@@ -43,6 +43,10 @@ export interface PricingEntry {
   fardoPrice: number;
   fardoQty: number;
   fixedCosts: number;
+  notAvailable?: boolean;
+  varejoDisabled?: boolean;
+  atacadoDisabled?: boolean;
+  fardoDisabled?: boolean;
 }
 
 export interface PriceCalculation {

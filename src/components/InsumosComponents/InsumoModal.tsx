@@ -50,12 +50,19 @@ export default function InsumoModal({
   const [activeTab, setActiveTab] = useState<'geral' | 'tecnicas' | 'estoque' | 'uso'>('geral');
   const [formData, setFormData] = useState({
     name: '', codigo: '', apelido: '', unit: 'L', cost_per_unit: '',
-    fornecedor: '', validade_indeterminada: true, expiry_date: '',
+    fornecedor: '', supplier_id: '', validade_indeterminada: true, expiry_date: '',
     estoque_atual: '0,000', estoque_minimo: '0,000', produto_quimico: true,
     tem_variantes: false, peso_especifico: '', ph: '', temperatura: '',
     viscosidade: '', solubilidade: '', risco: '', variants: [] as Variant[]
   });
-  const [newVariant, setNewVariant] = useState({ name: '', codigo: '', cost_per_unit: '' });
+  const [newVariant, setNewVariant] = useState({ 
+    name: '', 
+    codigo: '', 
+    cost_per_unit: '', 
+    supplier_id: '',
+    estoque_atual: '',
+    estoque_minimo: ''
+  });
   const [movementForm, setMovementForm] = useState({
     type: 'entrada' as 'entrada' | 'saida', quantity: '', note: '', batch: '',
   });
@@ -66,7 +73,7 @@ export default function InsumoModal({
         name: ingredient.name || '', codigo: ingredient.codigo || '', apelido: ingredient.apelido || '',
         unit: ingredient.unit || 'L',
         cost_per_unit: ingredient.cost_per_unit ? ingredient.cost_per_unit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '',
-        fornecedor: ingredient.fornecedor || '', validade_indeterminada: ingredient.validade_indeterminada ?? true,
+        fornecedor: ingredient.fornecedor || '', supplier_id: ingredient.supplier_id || '', validade_indeterminada: ingredient.validade_indeterminada ?? true,
         expiry_date: ingredient.expiry_date || '',
         estoque_atual: ingredient.estoque_atual ? ingredient.estoque_atual.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '0,000',
         estoque_minimo: ingredient.estoque_minimo ? ingredient.estoque_minimo.toLocaleString('pt-BR', { minimumFractionDigits: 3, maximumFractionDigits: 3 }) : '0,000',
@@ -86,7 +93,7 @@ export default function InsumoModal({
     } else {
       setFormData({
         name: '', codigo: '', apelido: '', unit: 'L', cost_per_unit: '',
-        fornecedor: '', validade_indeterminada: true, expiry_date: '',
+        fornecedor: '', supplier_id: '', validade_indeterminada: true, expiry_date: '',
         estoque_atual: '0,000', estoque_minimo: '0,000', produto_quimico: true,
         tem_variantes: false, peso_especifico: '', ph: '', temperatura: '',
         viscosidade: '', solubilidade: '', risco: '', variants: []
@@ -111,7 +118,7 @@ export default function InsumoModal({
     const payload = {
       id: ingredient?.id || undefined,
       name: formData.name, codigo: formData.codigo, apelido: formData.apelido, unit: formData.unit,
-      cost_per_unit: cost, fornecedor: formData.fornecedor, validade_indeterminada: formData.validade_indeterminada,
+      cost_per_unit: cost, fornecedor: formData.fornecedor, supplier_id: formData.supplier_id || null, validade_indeterminada: formData.validade_indeterminada,
       expiry_date: formData.validade_indeterminada ? null : formData.expiry_date || null,
       estoque_atual: parseFloat(formData.estoque_atual.replace(/\./g, '').replace(',', '.')) || 0,
       estoque_minimo: parseFloat(formData.estoque_minimo.replace(/\./g, '').replace(',', '.')) || 0,
@@ -250,12 +257,20 @@ export default function InsumoModal({
                     <div>
                       <label className="block text-sm font-semibold text-slate-700 mb-1.5">Fornecedor Principal</label>
                       <div className="relative">
-                        <select value={formData.fornecedor}
-                          onChange={e => setFormData({ ...formData, fornecedor: e.target.value })}
+                        <select value={formData.supplier_id || formData.fornecedor || ''}
+                          onChange={e => {
+                            const selectedValue = e.target.value;
+                            const selectedSupplier = suppliers.find(s => s.id === selectedValue || s.name === selectedValue);
+                            setFormData({ 
+                              ...formData, 
+                              supplier_id: selectedSupplier ? selectedSupplier.id : '',
+                              fornecedor: selectedSupplier ? selectedSupplier.name : selectedValue
+                            });
+                          }}
                           className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all appearance-none">
                           <option value="">Selecione um fornecedor...</option>
                           {suppliers.map(supplier => (
-                            <option key={supplier.id} value={supplier.name}>{supplier.name}</option>
+                            <option key={supplier.id} value={supplier.id}>{supplier.name}</option>
                           ))}
                         </select>
                         <div className="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
@@ -341,14 +356,33 @@ export default function InsumoModal({
                                   </div>
                                 </div>
                                 <div className="mt-2 flex items-end justify-between">
-                                  <span className="font-bold text-[#202eac] text-sm">
-                                    R$ {typeof v.cost_per_unit === 'number' ? v.cost_per_unit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v.cost_per_unit || '0,00'}
-                                  </span>
+                                  <div className="flex flex-col">
+                                    <span className="font-bold text-[#202eac] text-sm">
+                                      R$ {typeof v.cost_per_unit === 'number' ? v.cost_per_unit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v.cost_per_unit || '0,00'}
+                                    </span>
+                                    {v.supplier_id && (
+                                      <span className="text-[10px] text-slate-400 truncate max-w-[100px]">
+                                        {suppliers.find(s => s.id === v.supplier_id)?.name || 'Fornecedor'}
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="text-right">
+                                    <span className={`text-xs font-bold ${Number(v.estoque_atual) <= Number(v.estoque_minimo || 0) ? 'text-red-500' : 'text-slate-600'}`}>
+                                      {v.estoque_atual || '0'} {formData.unit}
+                                    </span>
+                                  </div>
                                 </div>
                                 <div className="absolute -top-2 -right-2 opacity-0 group-hover:opacity-100 transition-opacity bg-white border border-slate-200 rounded-lg shadow-md flex items-center p-1 gap-1">
                                   <button type="button" title="Editar Variante"
                                     onClick={() => {
-                                      setNewVariant({ name: v.name, codigo: v.codigo || '', cost_per_unit: typeof v.cost_per_unit === 'number' ? v.cost_per_unit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v.cost_per_unit?.toString() || '' });
+                                      setNewVariant({ 
+                                        name: v.name, 
+                                        codigo: v.codigo || '', 
+                                        cost_per_unit: typeof v.cost_per_unit === 'number' ? v.cost_per_unit.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : v.cost_per_unit?.toString() || '',
+                                        supplier_id: v.supplier_id || '',
+                                        estoque_atual: v.estoque_atual?.toString() || '',
+                                        estoque_minimo: v.estoque_minimo?.toString() || ''
+                                      });
                                       const updated = [...formData.variants];
                                       const originalIdx = formData.variants.findIndex(orig => orig.name === v.name && orig.codigo === v.codigo);
                                       if (originalIdx !== -1) { updated.splice(originalIdx, 1); setFormData({ ...formData, variants: updated }); }
@@ -375,24 +409,75 @@ export default function InsumoModal({
                             ))}
                           </div>
                         )}
-                        <div className="flex gap-3">
-                          <input type="text" placeholder="Nome" value={newVariant.name}
-                            onChange={e => setNewVariant({ ...newVariant, name: e.target.value })}
-                            className="flex-1 px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]" />
-                          <input type="text" placeholder="Código" value={newVariant.codigo}
-                            onChange={e => setNewVariant({ ...newVariant, codigo: e.target.value })}
-                            className="w-24 px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]" />
-                          <input type="text" placeholder="0,00" value={newVariant.cost_per_unit}
-                            onChange={e => setNewVariant({ ...newVariant, cost_per_unit: formatInputCurrency(e.target.value) })}
-                            className="w-24 px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]" />
-                          <button type="button" onClick={() => {
-                            if (newVariant.name) {
-                              setFormData({ ...formData, variants: [...formData.variants, { ...newVariant }] });
-                              setNewVariant({ name: '', codigo: '', cost_per_unit: '' });
-                            }
-                          }} className="px-4 py-2 bg-[#202eac] text-white text-sm font-medium rounded-lg hover:bg-blue-800 transition-colors">
-                            Adicionar
-                          </button>
+                        <div className="space-y-3 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                          <div className="flex gap-3">
+                            <div className="flex-1">
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Nome da Variante</label>
+                              <input type="text" placeholder="Ex: Fragrância Lavanda" value={newVariant.name}
+                                onChange={e => setNewVariant({ ...newVariant, name: e.target.value })}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]" />
+                            </div>
+                            <div className="w-28">
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Código</label>
+                              <input type="text" placeholder="SKU-001" value={newVariant.codigo}
+                                onChange={e => setNewVariant({ ...newVariant, codigo: e.target.value })}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]" />
+                            </div>
+                            <div className="w-28">
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Custo Un.</label>
+                              <input type="text" placeholder="0,00" value={newVariant.cost_per_unit}
+                                onChange={e => setNewVariant({ ...newVariant, cost_per_unit: formatInputCurrency(e.target.value) })}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]" />
+                            </div>
+                          </div>
+                          <div className="flex gap-3 items-end">
+                            <div className="flex-1">
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Fornecedor da Variante</label>
+                              <select 
+                                value={newVariant.supplier_id}
+                                onChange={e => setNewVariant({ ...newVariant, supplier_id: e.target.value })}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]"
+                              >
+                                <option value="">Mesmo do Insumo Pai</option>
+                                {suppliers.map(s => (
+                                  <option key={s.id} value={s.id}>{s.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            <div className="w-24">
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Estoque</label>
+                              <input type="text" placeholder="0" value={newVariant.estoque_atual}
+                                onChange={e => setNewVariant({ ...newVariant, estoque_atual: formatInputQuantity(e.target.value, formData.produto_quimico) })}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]" />
+                            </div>
+                            <div className="w-24">
+                              <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1 ml-1">Mínimo</label>
+                              <input type="text" placeholder="0" value={newVariant.estoque_minimo}
+                                onChange={e => setNewVariant({ ...newVariant, estoque_minimo: formatInputQuantity(e.target.value, formData.produto_quimico) })}
+                                className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]" />
+                            </div>
+                            <button type="button" onClick={() => {
+                              if (newVariant.name) {
+                                // Convert numeric values back to numbers for the Variant interface
+                                const vCost = typeof newVariant.cost_per_unit === 'string' ? parseFloat(newVariant.cost_per_unit.replace(/\./g, '').replace(',', '.')) || 0 : 0;
+                                const vStock = typeof newVariant.estoque_atual === 'string' ? parseFloat(newVariant.estoque_atual.replace(/\./g, '').replace(',', '.')) || 0 : 0;
+                                const vMin = typeof newVariant.estoque_minimo === 'string' ? parseFloat(newVariant.estoque_minimo.replace(/\./g, '').replace(',', '.')) || 0 : 0;
+                                
+                                setFormData({ 
+                                  ...formData, 
+                                  variants: [...formData.variants, { 
+                                    ...newVariant, 
+                                    cost_per_unit: vCost,
+                                    estoque_atual: vStock,
+                                    estoque_minimo: vMin
+                                  } as Variant] 
+                                });
+                                setNewVariant({ name: '', codigo: '', cost_per_unit: '', supplier_id: '', estoque_atual: '', estoque_minimo: '' });
+                              }
+                            }} className="h-[38px] px-4 bg-[#202eac] text-white text-sm font-bold rounded-lg hover:bg-blue-800 transition-colors shadow-sm shadow-blue-100 shrink-0">
+                              Adicionar
+                            </button>
+                          </div>
                         </div>
                       </div>
                     )}

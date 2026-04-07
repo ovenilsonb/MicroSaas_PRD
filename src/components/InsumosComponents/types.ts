@@ -3,6 +3,9 @@ export interface Variant {
   name: string;
   codigo: string;
   cost_per_unit?: number | string;
+  supplier_id?: string;
+  estoque_atual?: number;
+  estoque_minimo?: number;
 }
 
 export interface Ingredient {
@@ -37,6 +40,7 @@ export interface Supplier {
   contact?: string;
   email?: string;
   phone?: string;
+  tags?: string[];
 }
 
 export type ViewMode = 'list' | 'grid';

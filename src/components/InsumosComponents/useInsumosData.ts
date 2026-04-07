@@ -131,6 +131,9 @@ export function useInsumosData(): UseInsumosDataReturn {
               name: variant.name,
               codigo: variant.codigo,
               cost_per_unit: variant.cost_per_unit,
+              supplier_id: variant.supplier_id,
+              estoque_atual: variant.estoque_atual,
+              estoque_minimo: variant.estoque_minimo,
             });
           }
         } else {

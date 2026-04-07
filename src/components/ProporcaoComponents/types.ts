@@ -62,6 +62,7 @@ export interface SimulationIngredient {
   unit: string;
   cost: number;
   isChemical: boolean;
+  percentage?: number;
 }
 
 export interface CalculatedIngredient extends FormulaIngredient {

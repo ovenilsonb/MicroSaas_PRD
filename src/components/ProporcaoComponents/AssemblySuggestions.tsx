@@ -12,11 +12,19 @@ interface AssemblyOption {
 interface AssemblySuggestionsProps {
   assemblyOptions: AssemblyOption[];
   onSelectOption: (opt: AssemblyOption) => void;
+  selectedOptionId?: string | null;
+  packagingOptionsByCapacity?: Record<number, PackagingOption[]>;
+  selectedPackagingKeys?: string[];
+  onTogglePackagingKey?: (key: string) => void;
 }
 
 export default function AssemblySuggestions({
   assemblyOptions,
   onSelectOption,
+  selectedOptionId,
+  packagingOptionsByCapacity = {},
+  selectedPackagingKeys = [],
+  onTogglePackagingKey,
 }: AssemblySuggestionsProps) {
   if (assemblyOptions.length === 0) return null;
 
@@ -40,25 +48,67 @@ export default function AssemblySuggestions({
             </span>
           </div>
         ) : (
-          validOptions.map(opt => (
-            <button
-              key={opt.id}
-              onClick={() => onSelectOption(opt)}
-              className="w-full p-3 border border-slate-200 hover:border-[#202eac] hover:bg-slate-50 rounded-lg text-left flex items-center justify-between transition-all"
-            >
-              <div className="flex flex-col">
-                <span className="text-sm font-medium text-slate-800">
-                  {opt.name}
-                  {opt.isSuggested && (
-                    <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">
-                      Exato
+          validOptions.map(opt => {
+            const isSelected = selectedOptionId === opt.id;
+            
+            return (
+              <div key={opt.id} className="space-y-2 relative">
+                <button
+                  onClick={() => onSelectOption(opt)}
+                  className={`w-full p-3 border rounded-lg text-left flex items-center justify-between transition-all ${
+                    isSelected ? 'border-[#202eac] bg-blue-50/50 shadow-sm shadow-blue-100' : 'border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                  }`}
+                >
+                  <div className="flex flex-col">
+                    <span className={`text-sm font-medium ${isSelected ? 'text-[#202eac] font-bold' : 'text-slate-800'}`}>
+                      {opt.name}
+                      {opt.isSuggested && (
+                        <span className="ml-2 text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded">
+                          Exato
+                        </span>
+                      )}
                     </span>
-                  )}
-                </span>
+                  </div>
+                  <ChevronRight className={`w-4 h-4 transition-transform ${isSelected ? 'text-[#202eac] rotate-90' : 'text-slate-400'}`} />
+                </button>
+                
+                {isSelected && packagingOptionsByCapacity && onTogglePackagingKey && (
+                  <div className="bg-white border border-[#202eac]/20 rounded-lg p-3 mt-2 shadow-sm animate-in slide-in-from-top-2">
+                    <h5 className="text-[10px] uppercase font-bold text-slate-500 mb-2 px-1">Selecione os Insumos Desejados:</h5>
+                    <div className="space-y-1.5 max-h-48 overflow-y-auto px-1 pr-2 custom-scrollbar">
+                      {opt.items.map(item => {
+                        const pkgsForCapacity = packagingOptionsByCapacity[item.capacity] || [];
+                        if (pkgsForCapacity.length === 0) return null;
+                        
+                        return (
+                          <div key={item.capacity} className="space-y-1">
+                            {pkgsForCapacity.map(pkg => {
+                              const key = `${pkg.id}_${pkg.variant_id || pkg.name}`;
+                              const isChecked = selectedPackagingKeys.includes(key);
+                              return (
+                                <label key={key} className="flex items-start gap-2 p-1.5 hover:bg-slate-50 rounded cursor-pointer group">
+                                  <input
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => onTogglePackagingKey(key)}
+                                    className="mt-0.5 w-3.5 h-3.5 text-[#202eac] border-slate-300 rounded focus:ring-[#202eac]"
+                                  />
+                                  <div className="flex flex-col flex-1">
+                                    <span className={`text-xs font-medium line-clamp-1 ${isChecked ? 'text-slate-800' : 'text-slate-500'}`}>{pkg.name}</span>
+                                    <span className="text-[10px] text-slate-400 font-mono">Qtd: {item.quantity}</span>
+                                  </div>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
               </div>
-              <ChevronRight className="w-4 h-4 text-slate-400" />
-            </button>
-          ))
+            );
+          })
         )}
       </div>
     </div>

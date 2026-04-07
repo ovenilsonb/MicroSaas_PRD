@@ -38,6 +38,7 @@ interface Ingredient {
   cost_per_unit: number;
   expiry_date: string | null;
   validade_indeterminada: boolean;
+  produto_quimico?: boolean;
 }
 
 interface Formula {
@@ -68,6 +69,10 @@ export default function Relatorios() {
   const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [savedProportions, setSavedProportions] = useState<any[]>([]);
   const [selectedProportionId, setSelectedProportionId] = useState<string>('');
+  const [pricingEntries, setPricingEntries] = useState<any[]>([]);
+  const [selectedPricingFormulaId, setSelectedPricingFormulaId] = useState<string>('');
+  const [selectedPricingCapacity, setSelectedPricingCapacity] = useState<string>('');
+  const [selectedPricingType, setSelectedPricingType] = useState<'varejo' | 'atacado' | 'fardo'>('varejo');
 
   useEffect(() => {
     fetchData();
@@ -130,6 +135,14 @@ export default function Relatorios() {
       } catch {
         setSavedProportions([]);
       }
+
+      // Carregar dados de precificação
+      try {
+        const rawPricing = localStorage.getItem('precificacao_entries');
+        setPricingEntries(rawPricing ? JSON.parse(rawPricing) : []);
+      } catch {
+        setPricingEntries([]);
+      }
     } catch (err) {
       console.error('Erro ao buscar dados para relatórios:', err);
     } finally {
@@ -139,7 +152,7 @@ export default function Relatorios() {
 
   const handleDeleteProportion = (id: string) => {
     if (!window.confirm('Deseja realmente excluir esta simulação?')) return;
-    
+
     try {
       const remaining = savedProportions.filter(p => p.id !== id);
       localStorage.setItem('local_proportions', JSON.stringify(remaining));
@@ -152,7 +165,7 @@ export default function Relatorios() {
 
   const handleClearAllProportions = () => {
     if (!window.confirm('Deseja realmente apagar TODAS as simulações arquivadas? Esta ação não pode ser desfeita.')) return;
-    
+
     try {
       localStorage.removeItem('local_proportions');
       setSavedProportions([]);
@@ -210,11 +223,11 @@ export default function Relatorios() {
     const completedOrders = orders.filter(o => o.status === 'completed');
     const cancelledOrders = orders.filter(o => o.status === 'cancelled');
     const totalVolume = completedOrders.reduce((sum, o) => sum + (Number(o.planned_volume) || 0), 0);
-    
+
     const decidedQC = qualityControls.filter(q => q.status === 'approved' || q.status === 'rejected');
     const approvedQC = decidedQC.filter(q => q.status === 'approved');
     const rejectedQC = decidedQC.filter(q => q.status === 'rejected');
-    
+
     return {
       completedOrdersCount: completedOrders.length,
       cancelledOrdersCount: cancelledOrders.length,
@@ -234,10 +247,10 @@ export default function Relatorios() {
     const iframe = document.createElement('iframe');
     iframe.style.display = 'none';
     document.body.appendChild(iframe);
-    
+
     iframe.contentDocument?.write(htmlContent);
     iframe.contentDocument?.close();
-    
+
     setTimeout(() => {
       iframe.contentWindow?.focus();
       iframe.contentWindow?.print();
@@ -248,28 +261,162 @@ export default function Relatorios() {
   };
 
   const cssPrintStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
-    body { font-family: 'Inter', sans-serif; color: #1e293b; padding: 40px; margin: 0; background: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    .header-block { border: 2px dashed #cbd5e1; padding: 30px; text-align: center; border-radius: 8px; margin-bottom: 30px; background: #f8fafc; }
-    .header-block h2 { margin: 0; color: #94a3b8; font-size: 14px; text-transform: uppercase; letter-spacing: 1.5px; }
-    .title { font-size: 24px; font-weight: 800; color: #0f172a; margin-bottom: 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 3px solid #202eac; padding-bottom: 12px; }
-    .meta-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 35px; background: #f8fafc; padding: 20px; border-radius: 8px; border: 1px solid #e2e8f0; }
-    .meta-box { display: flex; flex-direction: column; }
-    .meta-label { font-size: 10px; font-weight: 800; color: #64748b; text-transform: uppercase; margin-bottom: 4px; letter-spacing: 0.5px; }
-    .meta-value { font-size: 15px; font-weight: 700; color: #0f172a; }
-    section { margin-bottom: 35px; }
-    section h3 { font-size: 16px; font-weight: 800; color: #202eac; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: -0.5px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 15px; }
-    th { background: #f1f5f9; text-align: left; padding: 12px 14px; font-size: 11px; font-weight: 800; color: #475569; text-transform: uppercase; border-bottom: 2px solid #cbd5e1; white-space: nowrap; }
-    td { padding: 12px 14px; font-size: 13px; color: #334155; border-bottom: 1px solid #e2e8f0; }
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    
+    @page { margin: 15mm; size: auto; }
+    
+    body { 
+      font-family: 'Inter', sans-serif; 
+      color: #1e293b; 
+      margin: 0; 
+      padding: 0;
+      line-height: 1.4;
+      background: white; 
+      -webkit-print-color-adjust: exact; 
+      print-color-adjust: exact; 
+    }
+
+    /* Layout de Blocos (Cards) */
+    .card {
+      border: 1px solid #e2e8f0;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      background: #f8fafc;
+      page-break-inside: avoid;
+    }
+
+    .card-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #202eac;
+      padding-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 20px;
+      font-weight: 900;
+      color: #0f172a;
+      text-transform: uppercase;
+      letter-spacing: -0.5px;
+    }
+
+    /* Grid de Metadados */
+    .grid {
+      display: grid;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .grid-3 { grid-template-columns: repeat(3, 1fr); }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+
+    .data-item { display: flex; flex-direction: column; }
+    .data-label { 
+      font-size: 9px; 
+      font-weight: 800; 
+      color: #64748b; 
+      text-transform: uppercase; 
+      margin-bottom: 4px; 
+      letter-spacing: 0.8px;
+    }
+    .data-value { 
+      font-size: 14px; 
+      font-weight: 700; 
+      color: #0f172a; 
+    }
+
+    /* Tabelas Profissionais */
+    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 20px; }
+    th { 
+      background: #f1f5f9; 
+      text-align: left; 
+      padding: 12px 14px; 
+      font-size: 10px; 
+      font-weight: 800; 
+      color: #475569; 
+      text-transform: uppercase; 
+      border-bottom: 2px solid #cbd5e1;
+    }
+    td { 
+      padding: 10px 14px; 
+      font-size: 12px; 
+      color: #334155; 
+      border-bottom: 1px solid #f1f5f9; 
+    }
+    .row-highlight { font-weight: 700; color: #0f172a; }
+    .row-sub { font-size: 10px; color: #64748b; }
+
+    /* Destaques e Alertas */
+    .badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 10px;
+      font-weight: 800;
+      text-transform: uppercase;
+    }
+    .badge-primary { background: #e0e7ff; color: #202eac; }
+    .badge-success { background: #dcfce7; color: #166534; }
+    
+    /* Blocos de Observação e Assinaturas */
+    .note-block {
+      background: #fffbeb;
+      border: 1px dashed #fcd34d;
+      padding: 15px;
+      border-radius: 8px;
+      font-size: 11px;
+      color: #92400e;
+      margin-top: 20px;
+    }
+
+    .signature-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 60px;
+      margin-top: 60px;
+      page-break-inside: avoid;
+    }
+    .signature-box {
+      border-top: 1px solid #cbd5e1;
+      padding-top: 10px;
+      text-align: center;
+      font-size: 10px;
+      font-weight: 700;
+      color: #64748b;
+    }
+
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 100px;
+      font-weight: 900;
+      color: rgba(32, 46, 172, 0.03);
+      z-index: -1;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
     .text-right { text-align: right; }
     .text-center { text-align: center; }
-    .bg-blue { background: #e0e7ff; color: #312e81; font-weight: 800; border-left: 1px solid #c7d2fe; border-right: 1px solid #c7d2fe; }
-    .total-row { background: #f8fafc; font-weight: 800; }
-    .footer-signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 50px; margin-top: 80px; }
-    .signature-line { border-top: 1px solid #cbd5e1; padding-top: 8px; text-align: center; font-size: 12px; font-weight: 700; color: #64748b; margin-top: 50px;}
-    .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 120px; font-weight: 900; color: rgba(32, 46, 172, 0.02); z-index: -1; white-space: nowrap; pointer-events: none; }
-    .brand-accent { color: #202eac; }
+    .font-bold { font-weight: 700; }
+    .text-primary { color: #202eac; }
+    
+    .footer {
+      position: fixed;
+      bottom: 10mm;
+      left: 0;
+      right: 0;
+      text-align: center;
+      font-size: 9px;
+      color: #94a3b8;
+      border-top: 1px solid #f1f5f9;
+      padding-top: 10px;
+    }
   `;
 
   const handlePrintFormula = () => {
@@ -306,65 +453,77 @@ export default function Relatorios() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Fórmula - ${formula.name}</title>
+        <title>Ficha Técnica - ${formula.name}</title>
         <style>${cssPrintStyles}</style>
       </head>
       <body>
-        <div class="watermark">RECEITA INDUSTRIAL</div>
-        <div class="header-block">
-          <h2>(Espaço Reservado - Cabeçalho e Logo da Empresa)</h2>
-        </div>
+        <div class="watermark">FICHA TÉCNICA P&D</div>
         
-        <div class="title">
-          <span>RELATÓRIO TÉCNICO E PRECIFICAÇÃO DE FÓRMULA</span>
-          <span style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Emissão: ${new Date().toLocaleDateString('pt-BR')}</span>
+        <div class="card">
+          <div class="card-header" style="border-bottom-color: #202eac;">
+            <span class="card-title">Relatório de Precisão e Ficha Técnica</span>
+            <span class="badge badge-primary">GESTÃO DE P&D</span>
+          </div>
+
+          <div class="grid grid-4 text-center">
+            <div class="data-item">
+              <span class="data-label">Produto</span>
+              <span class="data-value text-primary">${formula.name}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Versão Operacional</span>
+              <span class="data-value">${(formula.version || 'v1.0').toLowerCase()}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Lote Base</span>
+              <span class="data-value">${formatVol(formula.base_volume)} L/Kg</span>
+            </div>
+             <div class="data-item">
+              <span class="data-label">Data de Revisão</span>
+              <span class="data-value">${new Date().toLocaleDateString('pt-BR')}</span>
+            </div>
+          </div>
         </div>
 
-        <div class="meta-grid">
-          <div class="meta-box"><span class="meta-label">Produto</span><span class="meta-value brand-accent">${formula.name}</span></div>
-          <div class="meta-box"><span class="meta-label">Versão Operacional</span><span class="meta-value">${(formula.version || 'v1.0').toLowerCase()}</span></div>
-          <div class="meta-box"><span class="meta-label">Volume Lote Base</span><span class="meta-value">${formatVol(formula.base_volume)} L/Kg</span></div>
-          <div class="meta-box"><span class="meta-label">Status</span><span class="meta-value" style="text-transform: uppercase;">${formula.status === 'active' ? 'Ativa' : formula.status}</span></div>
-        </div>
-
-        <section>
-          <h3>1. Composição Química & Proporções</h3>
+        <div class="card">
+          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            1. Análise de Composição Química (BOM)
+          </div>
           <table>
             <thead>
               <tr>
-                <th>Insumo Químico (BOM)</th>
+                <th>Insumo Químico</th>
                 <th class="text-right">Quantidade</th>
                 <th class="text-center">Unid.</th>
-                <th class="text-center bg-blue">Proporção (%)</th>
+                <th class="text-right">Proporção (%)</th>
                 <th class="text-right">Custo Unitário</th>
                 <th class="text-right">Subtotal</th>
               </tr>
             </thead>
             <tbody>
-              ${chemicals.map(c => {
-                const perc = (c.qty / totalVolume) * 100;
-                return `
+              ${chemicals.map(c => `
                 <tr>
-                  <td><strong>${c.name}</strong></td>
+                  <td class="font-bold">${c.name}</td>
                   <td class="text-right">${formatVol(c.qty)}</td>
-                  <td class="text-center text-xs" style="color: #64748b;">${c.unit.toUpperCase()}</td>
-                  <td class="text-center bg-blue">${perc.toFixed(2)}%</td>
+                  <td class="text-center">${c.unit.toUpperCase()}</td>
+                  <td class="text-right text-primary font-bold">${((c.qty / totalVolume) * 100).toFixed(2)}%</td>
                   <td class="text-right" style="color: #64748b;">${formatBRL(c.cost)}</td>
                   <td class="text-right font-bold">${formatBRL(c.subtotal)}</td>
                 </tr>
-                `;
-              }).join('')}
+              `).join('')}
             </tbody>
           </table>
-        </section>
+        </div>
 
         ${packaging.length > 0 ? `
-        <section>
-          <h3>2. Materiais de Embalagem Secundária</h3>
+        <div class="card">
+          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+            2. Materiais de Embalagem e Acondicionamento
+          </div>
           <table>
             <thead>
               <tr>
-                <th>Item (Frascos, Tampas, Rótulos, Caixas)</th>
+                <th>Item</th>
                 <th class="text-right">Quantidade</th>
                 <th class="text-center">Unid.</th>
                 <th class="text-right">Custo Unitário</th>
@@ -374,41 +533,47 @@ export default function Relatorios() {
             <tbody>
               ${packaging.map(p => `
                 <tr>
-                  <td><strong>${p.name}</strong></td>
+                  <td class="font-bold">${p.name}</td>
                   <td class="text-right">${formatVol(p.qty)}</td>
-                  <td class="text-center text-xs" style="color: #64748b;">${p.unit.toUpperCase()}</td>
+                  <td class="text-center">${p.unit.toUpperCase()}</td>
                   <td class="text-right" style="color: #64748b;">${formatBRL(p.cost)}</td>
                   <td class="text-right font-bold">${formatBRL(p.subtotal)}</td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
-        </section>
+        </div>
         ` : ''}
 
-        <section style="margin-top: 50px; border-top: 3px solid #e2e8f0; padding-top: 30px;">
-          <div style="display: flex; justify-content: flex-end; gap: 60px;">
-            <div class="text-right">
-              <div class="meta-label" style="font-size: 12px;">Custo Parametrizado por Litro/Kg</div>
-              <div style="font-size: 24px; font-weight: 800; color: #475569;">${formatBRL(totalCost / formula.base_volume)}</div>
-            </div>
-            <div class="text-right">
-              <div class="meta-label" style="font-size: 12px; color: #202eac;">Custo Total Previsto (Lote)</div>
-              <div style="font-size: 32px; font-weight: 900; color: #202eac;">${formatBRL(totalCost)}</div>
+        <div class="grid grid-2">
+          <div class="card" style="background: #f1f5f9; border: none;">
+            <div class="data-label">Precificação Estrutural</div>
+            <div class="grid grid-2" style="margin-top: 15px;">
+              <div>
+                <span class="data-label">Custo/Litro</span>
+                <div class="data-value text-primary" style="font-size: 20px;">${formatBRL(totalCost / formula.base_volume)}</div>
+              </div>
+              <div>
+                <span class="data-label">Custo/Lote</span>
+                <div class="data-value" style="font-size: 20px;">${formatBRL(totalCost)}</div>
+              </div>
             </div>
           </div>
-        </section>
-
-        <section style="margin-top: 40px;">
-          <h3>3. Modo de Preparo & Observações Laboratoriais</h3>
-          <div style="padding: 25px; background: #fffbeb; border: 2px dashed #fcd34d; border-radius: 8px;">
-            <p style="margin: 0; font-size: 13px; color: #92400e; line-height: 1.6; white-space: pre-wrap;">${formula.instructions || 'Nenhuma instrução operacional padrão (POP) registrada para este produto.'}</p>
+          <div class="card" style="margin-bottom:0;">
+            <div class="data-label">Instruções de Manipulação</div>
+            <div style="font-size: 11px; color: #334155; margin-top: 10px; line-height: 1.6; font-style: italic;">
+              ${formula.instructions || 'Nenhuma instrução operacional padrão (POP) registrada para este produto.'}
+            </div>
           </div>
-        </section>
+        </div>
 
-        <div class="footer-signatures">
-          <div><div class="signature-line">Gestor de P&D / Responsável Técnico</div></div>
-          <div><div class="signature-line">Diretoria Industrial / Qualidade</div></div>
+        <div class="signature-grid">
+          <div class="signature-box">Gestor de P&D / Responsável Técnico</div>
+          <div class="signature-box">Diretoria Industrial / Qualidade</div>
+        </div>
+
+        <div class="footer">
+          Ohana Clean Planner — Relatório Gerencial de Engenharia de Produto — Confidencial
         </div>
       </body>
       </html>
@@ -420,104 +585,112 @@ export default function Relatorios() {
     const prop = savedProportions.find(p => p.id === selectedProportionId);
     if (!prop) return;
 
+    const formatVol = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+
     const html = `
       <!DOCTYPE html>
-      <html lang="pt-BR">
+      <html>
       <head>
-        <meta charset="UTF-8">
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
-          body { font-family: 'Inter', sans-serif; padding: 40px; color: #1e293b; line-height: 1.5; }
-          .header { display: flex; justify-content: space-between; border-bottom: 3px solid #f1f5f9; padding-bottom: 20px; margin-bottom: 30px; }
-          .title-area h1 { margin: 0; font-size: 24px; font-weight: 900; color: #202eac; text-transform: uppercase; }
-          .title-area p { margin: 5px 0 0; font-size: 12px; color: #64748b; font-weight: bold; }
-          .info-grid { display: grid; grid-template-cols: repeat(3, 1fr); gap: 20px; margin-bottom: 30px; background: #f8fafc; padding: 20px; border-radius: 12px; }
-          .info-item label { display: block; font-size: 10px; font-weight: bold; color: #94a3b8; text-transform: uppercase; margin-bottom: 5px; }
-          .info-item span { font-size: 14px; font-weight: 700; color: #1e293b; }
-          table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-          th { background: #f1f5f9; text-align: left; padding: 12px; font-size: 11px; font-weight: bold; text-transform: uppercase; color: #475569; border-bottom: 2px solid #e2e8f0; }
-          td { padding: 12px; font-size: 12px; border-bottom: 1px solid #f1f5f9; }
-          .total-row { background: #f8fafc; font-weight: bold; }
-          .cost-card { margin-top: 30px; padding: 20px; border: 2px solid #e2e8f0; border-radius: 12px; display: inline-block; min-width: 250px; }
-          .cost-card label { display: block; font-size: 10px; font-weight: bold; color: #94a3b8; text-transform: uppercase; }
-          .cost-card .value { font-size: 24px; font-weight: 900; color: #202eac; }
-          .footer { margin-top: 80px; border-top: 1px solid #e2e8f0; padding-top: 20px; font-size: 10px; color: #94a3b8; text-align: center; }
-          .signature { margin-top: 60px; display: flex; justify-content: space-between; gap: 40px; }
-          .sig-box { flex: 1; border-top: 1px solid #cbd5e1; text-align: center; padding-top: 10px; font-size: 11px; font-weight: bold; color: #64748b; }
-        </style>
+        <title>Proporção - ${prop.formulaName}</title>
+        <style>${cssPrintStyles}</style>
       </head>
       <body>
-        <div class="header">
-          <div class="title-area">
-            <h1>Simulação das Proporção</h1>
-            <p>MEMORIAL DE CÁLCULO E ESCALONAMENTO TÉCNICO</p>
+        <div class="watermark">MEMORIAL DE CÁLCULO</div>
+        
+        <div class="card">
+          <div class="card-header">
+            <span class="card-title">Instrução de Proporção (Operacional)</span>
+            <span class="badge badge-primary">ID: ${prop.id.slice(0, 8).toUpperCase()}</span>
           </div>
-          <div style="text-align: right;">
-            <div style="font-size: 10px; font-weight: bold; color: #94a3b8;">DATA DE EMISSÃO</div>
-            <div style="font-size: 14px; font-weight: bold;">${new Date(prop.createdAt).toLocaleDateString('pt-BR')}</div>
+
+          <div class="grid grid-4 text-center">
+            <div class="data-item">
+              <span class="data-label">Data Emissão</span>
+              <span class="data-value">${new Date(prop.createdAt).toLocaleDateString('pt-BR')}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Produto Alvo</span>
+              <span class="data-value text-primary">${prop.formulaName}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Versão Base</span>
+              <span class="data-value">${prop.formulaVersion || 'v1.0'}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Meta de Produção</span>
+              <span class="data-value" style="font-size: 18px;">${formatVol(prop.targetVolume)} L/Kg</span>
+            </div>
           </div>
         </div>
 
-        <div class="info-grid">
-          <div class="info-item">
-            <label>Produto / Fórmula</label>
-            <span>${prop.formulaName}</span>
+        <div class="card" style="background: white; border-color: #cbd5e1;">
+          <div style="font-size: 12px; font-weight: 900; color: #475569; margin-bottom: 15px; border-left: 4px solid #202eac; padding-left: 10px;">
+            LISTA DE ESCALONAMENTO DE INSUMOS
           </div>
-          <div class="info-item">
-            <label>Versão</label>
-            <span>V${prop.formulaVersion.replace(/^v/i, '')}</span>
-          </div>
-          <div class="info-item">
-            <label>Volume Planejado</label>
-            <span>${prop.targetVolume.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L/Kg</span>
-          </div>
-        </div>
-
-        <h3>Composição Escalonda</h3>
-        <table>
-          <thead>
-            <tr>
-              <th>Insumo / Componente</th>
-              <th>Tipo</th>
-              <th style="text-align: right;">Quantidade</th>
-              <th style="text-align: right;">Custo (R$)</th>
-              <th style="text-align: right;">Part. (%)</th>
-            </tr>
-          </thead>
-          <tbody>
-            ${prop.ingredients.map((ing: any) => `
+          <table>
+            <thead>
               <tr>
-                <td style="font-weight: bold;">${ing.name}</td>
-                <td style="font-size: 10px;">${ing.isChemical ? 'QUÍMICO' : 'EMBALAGEM'}</td>
-                <td style="text-align: right;">${ing.quantity.toLocaleString('pt-BR', { maximumFractionDigits: 3 })} ${ing.unit}</td>
-                <td style="text-align: right;">${formatCurrency(ing.cost)}</td>
-                <td style="text-align: right; color: #94a3b8;">${ing.percentage.toFixed(2)}%</td>
+                <th>Componente / Insumo</th>
+                <th>Origem</th>
+                <th class="text-right">Quantidade</th>
+                <th class="text-center">Unidade</th>
+                <th class="text-right">Part. (%)</th>
               </tr>
-            `).join('')}
-          </tbody>
-          <tfoot>
-            <tr class="total-row">
-              <td colspan="3">CUSTO TOTAL DA PRODUÇÃO</td>
-              <td style="text-align: right; color: #202eac;">${formatCurrency(prop.totalCost)}</td>
-              <td></td>
-            </tr>
-          </tfoot>
-        </table>
+            </thead>
+            <tbody>
+              ${(() => {
+        const totalChem = prop.ingredients.reduce((sum: number, i: any) => i.isChemical ? sum + i.quantity : sum, 0) || 1;
+        return prop.ingredients.map((ing: any) => {
+          const percentage = ing.percentage ?? (ing.isChemical ? (ing.quantity / totalChem) * 100 : 0);
+          return `
+                    <tr>
+                      <td>
+                        <div class="row-highlight">${ing.name}</div>
+                        <div class="row-sub">${ing.isChemical ? 'Produto de Base Química' : 'Componente de Envase/Logística'}</div>
+                      </td>
+                      <td class="text-center">
+                        <span class="badge ${ing.isChemical ? 'badge-primary' : 'badge-success'}">${ing.isChemical ? 'Químico' : 'Embalagem'}</span>
+                      </td>
+                      <td class="text-right font-bold" style="font-size: 15px;">${formatVol(ing.quantity)}</td>
+                      <td class="text-center">${ing.unit.toUpperCase()}</td>
+                      <td class="text-right" style="color: #64748b;">${Number(percentage || 0).toFixed(2)}%</td>
+                    </tr>
+                  `;
+        }).join('');
+      })()}
+            </tbody>
+            <tfoot>
+              <tr style="background: #f8fafc; font-weight: 900;">
+                <td colspan="4" class="text-right text-primary">VALOR TOTAL DO LOTE (PREVISTO)</td>
+                <td class="text-right" style="font-size: 16px; color: #202eac;">${formatCurrency(prop.totalCost)}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
 
-        <div style="display: flex; gap: 20px; align-items: flex-end;">
-          <div class="cost-card">
-            <label>Custo por Litro / Unidade</label>
-            <div class="value">${formatCurrency(prop.targetVolume > 0 ? prop.totalCost / prop.targetVolume : 0)}</div>
+        <div class="grid grid-2">
+          <div class="card" style="margin-bottom:0;">
+            <div class="data-label">Custo Médio Unitário</div>
+            <div class="data-value" style="font-size: 24px; color: #202eac;">${formatCurrency(prop.targetVolume > 0 ? prop.totalCost / prop.targetVolume : 0)} <span style="font-size: 12px; color: #64748b; font-weight: 400;">/ L-Kg</span></div>
+          </div>
+          <div class="card" style="margin-bottom:0; background: #fffbeb; border-color: #fcd34d;">
+             <div class="data-label" style="color: #92400e;">Observações Críticas do Operador</div>
+             <div style="height: 60px; border: 1px dashed #fcd34d; margin-top: 10px; border-radius: 4px;"></div>
+             <div class="row-sub" style="margin-top: 5px;">Anotar desvios de pH, densidade ou temperatura se houver.</div>
           </div>
         </div>
 
-        <div class="signature">
-          <div class="sig-box">Responsável Técnico / Químico</div>
-          <div class="sig-box">Aprovação Administrativa</div>
+        <div class="note-block">
+          <strong>Atenção ao Operador:</strong> Certifique-se de que todos os equipamentos de proteção individual (EPIs) estejam sendo utilizados conforme o FISPQ de cada insumo. O memorial de cálculo acima é baseado nas proporções técnicas aprovadas pelo laboratório.
+        </div>
+
+        <div class="signature-grid">
+          <div class="signature-box">Responsável pela Pesagem / Preparo</div>
+          <div class="signature-box">Conferência Técnica / Qualidade</div>
         </div>
 
         <div class="footer">
-          Gerado automaticamente pelo Sistema Ohana Clean - Microsaas Planner
+          Gerado via Ohana Clean Planner — Tecnologias de Gestão para Microssaas Industrial — Documento Operacional Interno
         </div>
       </body>
       </html>
@@ -532,7 +705,7 @@ export default function Relatorios() {
 
     const formulaId = order.formula_id;
     const formula = formulas.find(f => f.id === formulaId);
-    
+
     // Proporcionamento (Escala)
     const baseVol = formula?.base_volume || 1;
     const scale = (order.planned_volume || 0) / baseVol;
@@ -545,7 +718,7 @@ export default function Relatorios() {
       const costRaw = variant?.cost_per_unit ?? ing?.cost_per_unit ?? 0;
       const cost = typeof costRaw === 'string' ? parseFloat(costRaw.replace(/\./g, '').replace(',', '.')) || 0 : costRaw;
       const scaledQty = fi.quantity * scale;
-      
+
       const batchUsed = (order.ingredientBatches || []).find((b: any) => b.ingredientId === fi.ingredient_id);
 
       return {
@@ -562,7 +735,7 @@ export default function Relatorios() {
     const chemicals = items.filter(i => i.isChem);
     let packaging = items.filter(i => !i.isChem);
     const totalVolume = chemicals.reduce((sum, i) => sum + i.qty, 0) || order.planned_volume || 1;
-    
+
     // Substituir pela embalagem parametrizada se houver distribuição de envase
     const planPacks = order.packagingPlan || [];
     if (planPacks.length > 0) {
@@ -583,100 +756,349 @@ export default function Relatorios() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Ordem de Produção - ${order.batch_number}</title>
-        <style>${cssPrintStyles} .bg-emerald { background: #dcfce7; color: #166534; font-weight: 800; border-left: 1px solid #bbf7d0; border-right: 1px solid #bbf7d0; }</style>
+        <title>OF - ${order.batch_number}</title>
+        <style>${cssPrintStyles}</style>
       </head>
       <body>
-        <div class="watermark" style="color: rgba(16, 185, 129, 0.03);">PRODUÇÃO ${order.batch_number}</div>
-        <div class="header-block">
-          <h2>(Espaço Reservado - Cabeçalho e Logo da Empresa)</h2>
-        </div>
+        <div class="watermark">ORDEM DE FABRICAÇÃO</div>
         
-        <div class="title" style="border-bottom-color: #10b981;">
-          <span>RELATÓRIO DE ORDEM DE FABRICAÇÃO (OF)</span>
-          <span style="font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase;">Impresso em: ${new Date().toLocaleDateString('pt-BR')}</span>
+        <div class="card" style="border-left: 8px solid #10b981;">
+          <div class="card-header" style="border-bottom-color: #10b981;">
+            <span class="card-title" style="color: #065f46;">Registro Autenticado de Produção (OF)</span>
+            <span class="badge badge-success">Lote: ${order.batch_number}</span>
+          </div>
+
+          <div class="grid grid-3 text-center">
+            <div class="data-item">
+              <span class="data-label">Produto / Fórmula</span>
+              <span class="data-value">${formula?.name || 'Fórmula Desconhecida'}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Volume do Lote</span>
+              <span class="data-value" style="font-size: 18px; color: #10b981;">${formatVol(order.planned_volume)} L/Kg</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Data de Fabricação</span>
+              <span class="data-value">${order.end_date ? new Date(order.end_date).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')}</span>
+            </div>
+          </div>
+          
+          <div class="grid grid-3 text-center" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
+            <div class="data-item">
+              <span class="data-label">Operador Responsável</span>
+              <span class="data-value">${order.operatorName || 'Não Informado'}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Status Final</span>
+              <span class="badge ${order.status === 'completed' ? 'badge-success' : 'badge-primary'}" style="align-self: center; margin-top: 4px;">
+                ${order.status === 'completed' ? 'FINALIZADO' : 'EM PROCESSAMENTO'}
+              </span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">ID Único do Sistema</span>
+              <span class="data-value" style="font-family: monospace; font-size: 10px;">${order.id}</span>
+            </div>
+          </div>
         </div>
 
-        <div class="meta-grid" style="grid-template-columns: repeat(3, 1fr); gap: 20px;">
-          <div class="meta-box"><span class="meta-label">Lote Registrado (OF)</span><span class="meta-value" style="color:#10b981;">${order.batch_number}</span></div>
-          <div class="meta-box"><span class="meta-label">Fórmula Destino</span><span class="meta-value">${formula?.name || 'Desconhecida'}</span></div>
-          <div class="meta-box"><span class="meta-label">Volume Total (Lote)</span><span class="meta-value">${formatVol(order.planned_volume)} L/Kg</span></div>
-          <div class="meta-box"><span class="meta-label">Operador Responsável</span><span class="meta-value">${order.operatorName || '-'}</span></div>
-          <div class="meta-box"><span class="meta-label">Status do Lote</span><span class="meta-value" style="text-transform: uppercase;">${order.status === 'completed' ? 'Finalizado/Concluído' : 'Processamento'}</span></div>
-          <div class="meta-box"><span class="meta-label">Data Limite / Término</span><span class="meta-value">${order.end_date ? new Date(order.end_date).toLocaleDateString() : '-'}</span></div>
-        </div>
-
-        <section>
-          <h3>1. Rastreabilidade de Incompatibilidades Químicas</h3>
+        <div class="card">
+          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 12px; text-transform: uppercase;">
+            1. Rastreabilidade de Insumos Químicos
+          </div>
           <table>
             <thead>
               <tr>
                 <th>Elemento Químico Consumido</th>
                 <th class="text-right">Volume Escalonado</th>
                 <th class="text-center">Unid.</th>
-                <th class="text-center bg-emerald">Conc. Lote (%)</th>
-                <th style="padding-left: 30px;">Lote de Origem (Fornecedor)</th>
+                <th class="text-right">Concentração (%)</th>
+                <th style="padding-left: 20px;">Lote Original (Fornecedor)</th>
               </tr>
             </thead>
             <tbody>
-              ${chemicals.map(c => {
-                const perc = (c.qty / totalVolume) * 100;
-                return `
+              ${chemicals.map(c => `
                 <tr>
-                  <td><strong>${c.name}</strong></td>
-                  <td class="text-right">${formatVol(c.qty)}</td>
-                  <td class="text-center text-xs" style="color:#64748b;">${c.unit.toUpperCase()}</td>
-                  <td class="text-center bg-emerald">${perc.toFixed(2)}%</td>
-                  <td style="font-family: monospace; font-size: 14px; padding-left: 30px;">
-                    ${c.supplierBatch !== '-' ? `<strong>${c.supplierBatch}</strong>` : '<span style="color:#cbd5e1">-</span>'}
-                  </td>
-                </tr>
-                `;
-              }).join('')}
-            </tbody>
-          </table>
-        </section>
-
-        ${packaging.length > 0 ? `
-        <section>
-          <h3>2. Rastreamento de Embalagem & Acondicionamento</h3>
-          <table>
-            <thead>
-              <tr>
-                <th>Equipamento Secundário</th>
-                <th class="text-right">Volume Escalonado</th>
-                <th class="text-center">Unid.</th>
-                <th class="text-center" style="background:#f1f5f9; color:#94a3b8;">Conc. Lote (%)</th>
-                <th style="padding-left: 30px;">Lote de Origem (Fornecedor)</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${packaging.map(p => `
-                <tr>
-                  <td><strong>${p.name}</strong></td>
-                  <td class="text-right">${formatVol(p.qty)}</td>
-                  <td class="text-center text-xs" style="color:#64748b;">${p.unit.toUpperCase()}</td>
-                  <td class="text-center" style="color:#94a3b8; font-weight:normal;">N/A</td>
-                  <td style="font-family: monospace; font-size: 14px; padding-left: 30px;">
-                    ${p.supplierBatch !== '-' ? `<strong>${p.supplierBatch}</strong>` : '<span style="color:#cbd5e1">-</span>'}
+                  <td class="font-bold">${c.name}</td>
+                  <td class="text-right font-bold">${formatVol(c.qty)}</td>
+                  <td class="text-center">${c.unit.toUpperCase()}</td>
+                  <td class="text-right" style="color: #64748b;">${((c.qty / totalVolume) * 100).toFixed(2)}%</td>
+                  <td style="padding-left: 20px;">
+                    ${c.supplierBatch !== '-' ? `<span class="badge badge-primary">${c.supplierBatch}</span>` : '<span style="color:#cbd5e1">—</span>'}
                   </td>
                 </tr>
               `).join('')}
             </tbody>
           </table>
-        </section>
+        </div>
+
+        ${packaging.length > 0 ? `
+        <div class="card">
+          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 12px; text-transform: uppercase;">
+            2. Lista de Envase e Rastreamento de Embalagem
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>Componente Logístico</th>
+                <th class="text-right">Quantidade</th>
+                <th class="text-center">Unid.</th>
+                <th style="padding-left: 20px;">Lote (Fornecedor)</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${packaging.map(p => `
+                <tr>
+                  <td class="font-bold">${p.name}</td>
+                  <td class="text-right font-bold">${formatVol(p.qty)}</td>
+                  <td class="text-center">${p.unit.toUpperCase()}</td>
+                  <td style="padding-left: 20px;">
+                    ${p.supplierBatch !== '-' ? `<span class="badge badge-success">${p.supplierBatch}</span>` : '<span style="color:#cbd5e1">—</span>'}
+                  </td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+        </div>
         ` : ''}
 
-        <section style="margin-top: 40px;">
-          <h3>3. Controle de Ocorrências Laboratoriais</h3>
-          <div style="min-height: 120px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc; padding: 15px;">
-            <p style="margin:0; font-size:11px; color:#94a3b8; font-style:italic;">Use este espaço para relatar discrepâncias, desvios de processo, ajustes de pH ou informações vitais de manufatura.</p>
+        <div class="card">
+          <div class="data-label">3. Relatório de Ocorrências e Desvios de Processo</div>
+          <div style="min-height: 100px; border: 1px dashed #cbd5e1; margin-top: 10px; border-radius: 8px; padding: 15px; font-size: 10px; color: #94a3b8; font-style: italic;">
+            Descreva qualquer anormalidade durante a mistura, variações de temperatura, tempo de agitação ou intercorrências mecânicas.
           </div>
-        </section>
+        </div>
 
-        <div class="footer-signatures" style="margin-top: 60px;">
-          <div><div class="signature-line">Rubrica Operador Principal</div></div>
-          <div><div class="signature-line">Check CQA (Controle de Qualidade)</div></div>
+        <div class="signature-grid">
+          <div class="signature-box">Rubrica Operador Principal</div>
+          <div class="signature-box">Visto Qualidade (CQA)</div>
+        </div>
+
+        <div class="footer">
+          Ohana Clean Planner — Sistema Industrial de Rastreabilidade — OF Emitida em ${new Date().toLocaleString('pt-BR')}
+        </div>
+      </body>
+      </html>
+    `;
+  };
+
+  const handlePrintPricing = () => {
+    if (!selectedPricingFormulaId || !selectedPricingCapacity || !selectedPricingType) return;
+
+    const formula = formulas.find(f => f.id === selectedPricingFormulaId);
+    const entry = pricingEntries.find(e =>
+      e.formulaId === selectedPricingFormulaId &&
+      String(e.capacityKey) === String(selectedPricingCapacity)
+    );
+
+    if (!formula || !entry) return;
+
+    // Calcular custos
+    const calcRawCost = (f: any) =>
+      f.formula_ingredients?.reduce((sum: number, item: any) => {
+        const ing = Array.isArray(item.ingredients) ? item.ingredients[0] : item.ingredients;
+        const variant = Array.isArray(item.variants) ? item.variants[0] : item.variants;
+        const costRaw = variant?.cost_per_unit ?? ing?.cost_per_unit ?? 0;
+        const cost = typeof costRaw === 'string' ? parseFloat(costRaw.replace(/\./g, '').replace(',', '.')) || 0 : costRaw;
+        return sum + item.quantity * cost;
+      }, 0) || 0;
+
+    const rawCostTotal = calcRawCost(formula);
+    const capacity = parseFloat(selectedPricingCapacity);
+    const rawCostPerUnit = (rawCostTotal / (formula.base_volume || 1)) * capacity;
+    
+    // Obter custos isolados de embalagem e rótulo
+    const embalagemItems = ingredients.filter(ing => 
+      !ing.produto_quimico && 
+      (ing.name.toLowerCase().includes('embalagem') || ing.name.toLowerCase().includes('frasco') || ing.name.toLowerCase().includes('galão') || ing.name.toLowerCase().includes('garrafa'))
+    );
+    
+    const rotuloItems = ingredients.filter(ing => 
+      !ing.produto_quimico && 
+      (ing.name.toLowerCase().includes('rótulo') || ing.name.toLowerCase().includes('etiqueta'))
+    );
+
+    const calcCategoryCost = (items: any[]) => items.reduce((sum, ing) => {
+        // Tenta capturar volume com unidade (ex: 2L, 500ml) ou número isolado no fim (ex: Frasco 2)
+        const m = ing.name.match(/(\d+[.,]?\d*)\s*(L|ml|LT|g|kg)?$/i) || ing.name.match(/(\d+[.,]?\d*)\s*(L|ml|LT|g|kg)/i);
+        let cap = 0;
+        if (m) { 
+          cap = parseFloat(m[1].replace(',', '.')); 
+          const unit = (m[2] || '').toLowerCase();
+          if (unit === 'ml' || unit === 'g') cap /= 1000; 
+        }
+        
+        if (cap > 0 && Math.abs(cap - capacity) < 0.001) {
+            const cost = typeof ing.cost_per_unit === 'string' 
+              ? parseFloat(String(ing.cost_per_unit).replace(/\./g, '').replace(',', '.')) || 0 
+              : (Number(ing.cost_per_unit) || 0);
+            return sum + cost;
+        }
+        return sum;
+    }, 0);
+
+    const costEmbalagem = calcCategoryCost(embalagemItems);
+    const costRotulo = calcCategoryCost(rotuloItems);
+
+    // Soma de outros insumos não químicos que não se encaixam nas categorias acima mas batem com a capacidade
+    const otherNonChemicalCost = ingredients.filter(ing => 
+      !ing.produto_quimico && 
+      !embalagemItems.find(e => e.id === ing.id) && 
+      !rotuloItems.find(r => r.id === ing.id)
+    ).reduce((sum, ing) => {
+        const m = ing.name.match(/(\d+[.,]?\d*)\s*(L|ml|LT|g|kg)/i);
+        let cap = 0;
+        if (m) { 
+          cap = parseFloat(m[1].replace(',', '.')); 
+          const unit = m[2].toLowerCase();
+          if (unit === 'ml' || unit === 'g') cap /= 1000; 
+        }
+        if (cap > 0 && Math.abs(cap - capacity) < 0.001) {
+            const costRaw = ing.cost_per_unit;
+            const cost = typeof costRaw === 'string' ? parseFloat(String(costRaw).replace(/\./g, '').replace(',', '.')) || 0 : (Number(costRaw) || 0);
+            return sum + cost;
+        }
+        return sum;
+    }, 0);
+
+    const packagingCostTotal = costEmbalagem + costRotulo + otherNonChemicalCost;
+
+    const fixedCosts = entry.fixedCosts || 0;
+    const totalCost = rawCostPerUnit + packagingCostTotal + fixedCosts;
+
+    let sellPrice = 0;
+    let label = '';
+    if (selectedPricingType === 'varejo') { sellPrice = entry.varejoPrice; label = 'Varejo (Consumidor Final)'; }
+    else if (selectedPricingType === 'atacado') { sellPrice = entry.atacadoPrice; label = 'Atacado (Revenda)'; }
+    else { sellPrice = entry.fardoPrice / (entry.fardoQty || 1); label = `Fardo/Caixa (Unitário de ${entry.fardoQty}un)`; }
+
+    const marginVal = sellPrice - totalCost;
+    const marginPerc = (marginVal / (sellPrice || 1)) * 100;
+    const markupPerc = totalCost > 0 ? ((sellPrice / totalCost) - 1) * 100 : 0;
+    const custoMinVenda = totalCost * 1.5;
+
+    const formatCurrency = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+    const html = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Precificação - ${formula.name}</title>
+        <style>${cssPrintStyles}</style>
+      </head>
+      <body>
+        <div class="watermark">TABELA DE PREÇOS</div>
+        
+        <div class="card" style="border-right: 8px solid #202eac;">
+          <div class="card-header" style="border-bottom-color: #202eac;">
+            <span class="card-title">Ficha de Precificação Estratégica</span>
+            <span class="badge badge-primary">${label.toUpperCase()}</span>
+          </div>
+
+          <div class="grid grid-3 text-center">
+             <div class="data-item">
+              <span class="data-label">Produto</span>
+              <span class="data-value">${formula.name}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Volume de Venda</span>
+              <span class="data-value" style="font-size: 18px; color: #202eac;">${capacity >= 1 ? `${capacity}L` : `${capacity * 1000}ml`}</span>
+            </div>
+            <div class="data-item">
+              <span class="data-label">Canal Aplicado</span>
+              <span class="data-value" style="color: #64748b;">${selectedPricingType.toUpperCase()}</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card" style="background: #f8fafc; text-align: center; padding: 40px 20px;">
+          <div class="data-label" style="font-size: 14px; margin-bottom: 10px;">Preço Sugerido de Comercialização</div>
+          <div style="font-size: 48px; font-weight: 900; color: #1e293b; letter-spacing: -1px;">
+            ${formatCurrency(sellPrice)}
+          </div>
+          <div style="margin-top: 15px; display: flex; justify-content: center; gap: 40px;">
+             <div>
+                <span class="data-label">Margem Bruta (R$)</span>
+                <div class="data-value" style="color: #10b981;">${formatCurrency(marginVal)}</div>
+             </div>
+             <div>
+                <span class="data-label">Margem Bruta (%)</span>
+                <div class="data-value" style="color: #10b981;">${marginPerc.toFixed(2)}%</div>
+             </div>
+             <div>
+                <span class="data-label">Markup Aplicado</span>
+                <div class="data-value" style="color: #6366f1;">${markupPerc.toFixed(2)}%</div>
+             </div>
+          </div>
+        </div>
+
+        <div class="grid grid-2">
+            <div class="card">
+              <div class="data-label">Composição de Custo Unitário</div>
+              <div style="margin-top: 15px; space-y: 10px;">
+                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
+                  <span>Matéria-Prima (Líquido)</span>
+                  <span class="font-bold">${formatCurrency(rawCostPerUnit)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
+                  <span>Embalagem (Frasco/Galão)</span>
+                  <span class="font-bold">${formatCurrency(costEmbalagem)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
+                  <span>Rótulo e Acabamento</span>
+                  <span class="font-bold">${formatCurrency(costRotulo + otherNonChemicalCost)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
+                  <span>Custos Fixos (Operação)</span>
+                  <span class="font-bold">${formatCurrency(fixedCosts)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 10px 0; color: #202eac;">
+                  <span class="font-bold">Custo Total de Produção</span>
+                  <span class="font-bold">${formatCurrency(totalCost)}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 8px; margin-top: 5px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; color: #b45309;">
+                  <span class="font-bold flex items-center justify-between w-full">🎯 Preço Teto Minimo Sugerido (+50%) <span>${formatCurrency(custoMinVenda)}</span></span>
+                </div>
+              </div>
+            </div>
+            <div class="card" style="background: #eff6ff; border: none;">
+              <div class="data-label">Referência de Outros Canais</div>
+              <table style="margin-top: 10px; background: transparent;">
+                <thead>
+                  <tr style="background: transparent; border-bottom: 1px solid #bfdbfe;">
+                    <th style="font-size: 10px;">Canal</th>
+                    <th class="text-right" style="font-size: 10px;">Preço</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${selectedPricingType !== 'varejo' && entry.varejoPrice > 0 ? `
+                    <tr>
+                      <td style="font-size: 11px;">Varejo</td>
+                      <td class="text-right font-bold" style="font-size: 12px;">${formatCurrency(entry.varejoPrice)}</td>
+                    </tr>
+                  ` : ''}
+                  ${selectedPricingType !== 'atacado' && entry.atacadoPrice > 0 ? `
+                    <tr>
+                      <td style="font-size: 11px;">Atacado</td>
+                      <td class="text-right font-bold" style="font-size: 12px;">${formatCurrency(entry.atacadoPrice)}</td>
+                    </tr>
+                  ` : ''}
+                  ${selectedPricingType !== 'fardo' && entry.fardoPrice > 0 ? `
+                    <tr>
+                      <td style="font-size: 11px;">Fardo (${entry.fardoQty}un)</td>
+                      <td class="text-right font-bold" style="font-size: 12px;">${formatCurrency(entry.fardoPrice / (entry.fardoQty || 1))} <small>/un</small></td>
+                    </tr>
+                  ` : ''}
+                </tbody>
+              </table>
+            </div>
+        </div>
+
+        <div style="margin-top: 20px; font-size: 10px; color: #64748b; line-height: 1.5; padding: 15px; border: 1px dashed #cbd5e1; border-radius: 8px;">
+          <strong>Nota de Auditoria:</strong> Este relatório é de uso interno e confidencial. Os valores de custo são baseados na última atualização de custos de insumos e embalagens registrados no sistema. A validade destes preços está sujeita à volatilidade do mercado de matérias-primas.
+        </div>
+
+        <div class="footer">
+          Emissão: ${new Date().toLocaleString('pt-BR')} — Ohana Clean Planner Strategic Unit
         </div>
       </body>
       </html>
@@ -759,11 +1181,11 @@ export default function Relatorios() {
               <Printer className="w-5 h-5 text-[#202eac]" />
               Central de Documentos & Impressão (PDF)
             </h3>
-            
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              
-              {/* Relatório Técnico de Fórmula */}
-              <div className="p-6 rounded-2xl border border-blue-100 bg-blue-50/50 flex flex-col justify-between hover:border-blue-300 transition-colors shadow-sm">
+
+              {/* Card 1: Relatório Técnico de Fórmula */}
+              <div className="p-6 rounded-2xl border border-blue-100 bg-blue-50/50 flex flex-col justify-between hover:border-blue-300 transition-colors shadow-sm min-h-[340px]">
                 <div>
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-12 h-12 bg-blue-100 text-[#202eac] rounded-xl flex items-center justify-center shrink-0">
@@ -772,151 +1194,230 @@ export default function Relatorios() {
                     <div>
                       <h4 className="font-bold text-slate-800 leading-tight">Relatório de Precisão de Fórmulas</h4>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Emissão de ficha técnica contendo composição percentual de formulação e os cálculos estatísticos de precificação.
+                        Emissão de ficha técnica contendo composição percentual e cálculos de precificação.
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Selecione a Fórmula Alvo</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Selecione a Fórmula Alvo</label>
                     <div className="relative">
                       <select
                         value={selectedFormulaId}
                         onChange={(e) => setSelectedFormulaId(e.target.value)}
                         className="w-full pl-4 pr-10 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
                       >
-                        <option value="">Escolha uma fórmula do banco de dados...</option>
+                        <option value="">Escolha uma fórmula...</option>
                         {formulas.map(f => (
-                          <option key={f.id} value={f.id}>{f.name} — (Vol: {f.base_volume}L • Versão: {(f.version || 'v1.0').toLowerCase()})</option>
+                          <option key={f.id} value={f.id}>{f.name} — ({f.base_volume}L)</option>
                         ))}
                       </select>
                       <ChevronRight className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none rotate-90" />
                     </div>
                   </div>
                 </div>
-                
-                <button
-                  onClick={handlePrintFormula}
-                  disabled={!selectedFormulaId}
-                  className="mt-6 w-full py-3.5 bg-[#202eac] text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-800 transition-all shadow-md disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group"
-                >
-                  <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" /> 
-                  Gerar e Imprimir Ficha Técnica
-                </button>
+
+                <div className="mt-6">
+                  <button
+                    onClick={handlePrintFormula}
+                    disabled={!selectedFormulaId}
+                    className="w-full py-3.5 bg-[#202eac] text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-800 transition-all shadow-md disabled:opacity-50 disabled:shadow-none group"
+                  >
+                    <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Imprimir Ficha Técnica
+                  </button>
+                </div>
               </div>
 
-              {/* Relatório de Ordem de Produção */}
-              <div className="p-6 rounded-2xl border border-emerald-100 bg-emerald-50/50 flex flex-col justify-between hover:border-emerald-300 transition-colors shadow-sm">
+              {/* Card 2: Registro Autenticado de Processo (OF) */}
+              <div className="p-6 rounded-2xl border border-emerald-100 bg-emerald-50/50 flex flex-col justify-between hover:border-emerald-300 transition-colors shadow-sm min-h-[340px]">
                 <div>
                   <div className="flex items-center gap-3 mb-5">
                     <div className="w-12 h-12 bg-emerald-100 text-emerald-700 rounded-xl flex items-center justify-center shrink-0">
                       <Factory className="w-6 h-6" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-slate-800 leading-tight">Registro Autenticado de Processo (OF)</h4>
+                      <h4 className="font-bold text-slate-800 leading-tight">Registro Autenticado (OF)</h4>
                       <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                        Geração de laudo logístico mapeando escalonamento de insumos e tracking de rastreabilidade de fornecedor e percentuais químicos.
+                        Laudo industrial com escalonamento de insumos e rastreabilidade total de lotes.
                       </p>
                     </div>
                   </div>
-                  
+
                   <div className="space-y-3">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Selecione o Lote (OF)</label>
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Selecione o Lote (OF)</label>
                     <div className="relative">
                       <select
                         value={selectedOrderId}
                         onChange={(e) => setSelectedOrderId(e.target.value)}
                         className="w-full pl-4 pr-10 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
                       >
-                        <option value="">Escolha um lote fabricado ou vigente...</option>
+                        <option value="">Escolha um lote fabricado...</option>
                         {orders.map(o => (
-                          <option key={o.id} value={o.id}>
-                            LOTE: {o.batch_number} — {o.planned_volume}L [{o.status === 'completed' ? 'CONCLUÍDO' : 'EM PROCESSO'}]
-                          </option>
+                          <option key={o.id} value={o.id}>LOTE: {o.batch_number} — {o.planned_volume}L</option>
                         ))}
                       </select>
                       <ChevronRight className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none rotate-90" />
                     </div>
                   </div>
                 </div>
-                
-                <button
-                  onClick={handlePrintOrder}
-                  disabled={!selectedOrderId}
-                  className="mt-6 w-full py-3.5 bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group"
-                >
-                  <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" /> 
-                  Gerar Ficha de Produção
-                </button>
+
+                <div className="mt-6">
+                  <button
+                    onClick={handlePrintOrder}
+                    disabled={!selectedOrderId}
+                    className="w-full py-3.5 bg-emerald-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-emerald-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none group"
+                  >
+                    <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Gerar Ficha de Produção
+                  </button>
+                </div>
               </div>
 
-              {/* Relatório de Memorial de Cálculo (Proporção) - NOVO */}
-              <div className="p-6 rounded-2xl border border-purple-100 bg-purple-50/50 flex flex-col justify-between hover:border-purple-300 transition-colors shadow-sm md:col-span-2">
-                <div className="flex flex-col md:flex-row md:items-center gap-8">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-5">
-                      <div className="w-12 h-12 bg-purple-100 text-purple-700 rounded-xl flex items-center justify-center shrink-0">
-                        <Scale className="w-6 h-6" />
-                      </div>
-                      <div>
-                        <h4 className="font-bold text-slate-800 leading-tight">Memorial de Cálculo (Simulação)</h4>
-                        <p className="text-[11px] text-slate-500 mt-1 leading-snug">
-                          Emissão de relatório detalhado das proporções arquivadas, ideal para análises de custo e planejamento de envase.
-                        </p>
-                      </div>
+              {/* Card 3: Memorial de Cálculo (Proporção) */}
+              <div className="p-6 rounded-2xl border border-purple-100 bg-purple-50/50 flex flex-col justify-between hover:border-purple-300 transition-colors shadow-sm min-h-[340px]">
+                <div>
+                  <div className="flex items-center gap-3 mb-5">
+                    <div className="w-12 h-12 bg-purple-100 text-purple-700 rounded-xl flex items-center justify-center shrink-0">
+                      <Scale className="w-6 h-6" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-slate-800 leading-tight">Memorial de Cálculo</h4>
+                      <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                        Relatório detalhado das simulações de proporção para análise de custos e planejamento de envase.
+                      </p>
                     </div>
                   </div>
-                  
-                  <div className="flex-[2] space-y-3">
-                    <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider">Selecione a Simulação Arquivada</label>
-                      <div className="flex flex-col md:flex-row gap-2">
-                        <div className="relative flex-1">
-                          <select
-                            value={selectedProportionId}
-                            onChange={(e) => setSelectedProportionId(e.target.value)}
-                            className="w-full pl-4 pr-10 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
-                          >
-                            <option value="">Escolha uma das proporções salvas...</option>
-                            {savedProportions.map(p => (
-                              <option key={p.id} value={p.id}>
-                                {p.displayName}
-                              </option>
-                            ))}
-                          </select>
-                          <ChevronRight className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none rotate-90" />
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={handlePrintProportion}
-                            disabled={!selectedProportionId}
-                            className="py-3.5 px-6 bg-purple-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-purple-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none disabled:cursor-not-allowed group whitespace-nowrap"
-                          >
-                            <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" /> 
-                            Imprimir
-                          </button>
-                          {selectedProportionId && (
-                            <button
-                              onClick={() => handleDeleteProportion(selectedProportionId)}
-                              className="p-3.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-xl border border-rose-200 transition-all shadow-sm"
-                              title="Excluir esta simulação"
-                            >
-                              <Trash2 className="w-5 h-5" />
-                            </button>
-                          )}
-                          {savedProportions.length > 1 && (
-                            <button
-                              onClick={handleClearAllProportions}
-                              className="p-3.5 bg-slate-50 text-slate-500 hover:bg-slate-100 rounded-xl border border-slate-200 transition-all shadow-sm flex items-center gap-2 px-4"
-                              title="Limpar todas as simulações"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                              <span className="text-[10px] font-black uppercase tracking-tighter">Limpar Tudo</span>
-                            </button>
-                          )}
-                        </div>
-                      </div>
+
+                  <div className="space-y-3">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Selecione a Simulação</label>
+                    <div className="relative">
+                      <select
+                        value={selectedProportionId}
+                        onChange={(e) => setSelectedProportionId(e.target.value)}
+                        className="w-full pl-4 pr-10 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
+                      >
+                        <option value="">Escolha uma simulação...</option>
+                        {savedProportions.map(p => (
+                          <option key={p.id} value={p.id}>{p.displayName}</option>
+                        ))}
+                      </select>
+                      <ChevronRight className="w-5 h-5 text-slate-400 absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none rotate-90" />
+                    </div>
                   </div>
                 </div>
+
+                <div className="mt-6 flex flex-col gap-2">
+                  <button
+                    onClick={handlePrintProportion}
+                    disabled={!selectedProportionId}
+                    className="w-full py-3.5 bg-purple-600 text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-purple-700 transition-all shadow-md disabled:opacity-50 disabled:shadow-none group"
+                  >
+                    <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                    Imprimir Memorial
+                  </button>
+                  <div className="flex gap-2">
+                    {selectedProportionId && (
+                      <button
+                        onClick={() => handleDeleteProportion(selectedProportionId)}
+                        className="flex-1 py-1.5 bg-rose-50 text-rose-600 font-bold rounded-xl text-[10px] uppercase border border-rose-100 flex items-center justify-center gap-2"
+                      >
+                        <Trash2 className="w-3 h-3" /> Excluir
+                      </button>
+                    )}
+                    {savedProportions.length > 1 && (
+                      <button
+                        onClick={handleClearAllProportions}
+                        className="flex-1 py-1.5 bg-white text-slate-400 font-bold rounded-xl text-[10px] uppercase border border-slate-200 flex items-center justify-center gap-2"
+                      >
+                        <Trash2 className="w-3 h-3" /> Limpar Tudo
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Card 4: Gestão de Preços e Margens */}
+              <div className="p-6 rounded-2xl border border-blue-100 bg-blue-50/50 flex flex-col justify-between hover:border-blue-300 transition-colors shadow-sm">
+                {/* Linha 1: Título e Ícone */}
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="w-12 h-12 bg-blue-100 text-[#202eac] rounded-xl flex items-center justify-center shrink-0">
+                    <DollarSign className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-slate-800 leading-tight">Gestão de Preços</h4>
+                    <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                      Análise de markup, lucros e custos por canal.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Linha 2: Seletores em Row */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6">
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Produto</label>
+                    <select
+                      value={selectedPricingFormulaId}
+                      onChange={(e) => {
+                        setSelectedPricingFormulaId(e.target.value);
+                        setSelectedPricingCapacity('');
+                      }}
+                      className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer"
+                    >
+                      <option value="">Selecione...</option>
+                      {formulas.filter(f => pricingEntries.some(e => e.formulaId === f.id)).map(f => (
+                        <option key={f.id} value={f.id}>{f.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Tipo de Preço</label>
+                    <select
+                      value={selectedPricingType}
+                      onChange={(e) => setSelectedPricingType(e.target.value as any)}
+                      className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer"
+                    >
+                      <option value="varejo">Varejo</option>
+                      <option value="atacado">Atacado</option>
+                      <option value="fardo">Fardo</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest pl-1">Volume</label>
+                    <select
+                      disabled={!selectedPricingFormulaId}
+                      value={selectedPricingCapacity}
+                      onChange={(e) => setSelectedPricingCapacity(e.target.value)}
+                      className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer disabled:opacity-50"
+                    >
+                      <option value="">Escolha...</option>
+                      {[...new Set(pricingEntries
+                        .filter(e => e.formulaId === selectedPricingFormulaId)
+                        .filter(e => {
+                          if (selectedPricingType === 'varejo') return e.varejoPrice > 0;
+                          if (selectedPricingType === 'atacado') return e.atacadoPrice > 0;
+                          if (selectedPricingType === 'fardo') return e.fardoPrice > 0;
+                          return false;
+                        })
+                        .map(e => e.capacityKey)
+                      )].sort((a,b) => parseFloat(a)-parseFloat(b)).map(cap => (
+                        <option key={cap} value={cap}>{parseFloat(cap) >= 1 ? `${cap}L` : `${parseFloat(cap)*1000}ml`} (Já Precificado)</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Linha 3: Botão */}
+                <button
+                  onClick={handlePrintPricing}
+                  disabled={!selectedPricingFormulaId || !selectedPricingCapacity}
+                  className="w-full py-3.5 bg-[#202eac] text-white font-bold rounded-xl flex items-center justify-center gap-2 hover:bg-blue-800 transition-all shadow-md disabled:opacity-50 disabled:shadow-none group"
+                >
+                  <Printer className="w-5 h-5 group-hover:scale-110 transition-transform" />
+                  Gerar Ficha de Preço
+                </button>
               </div>
 
             </div>
@@ -965,7 +1466,7 @@ export default function Relatorios() {
               </div>
             </div>
           </div>
-          
+
           {/* Performance Industrial */}
           <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm mt-8">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
@@ -973,7 +1474,7 @@ export default function Relatorios() {
               Performance Industrial & Qualidade
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
+
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
                 <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-emerald-600">
                   <CheckCircle2 className="w-6 h-6" />

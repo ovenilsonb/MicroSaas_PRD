@@ -94,7 +94,7 @@ export function useProporcaoData(): UseProporcaoDataReturn {
           if (vcap > 0)
             flattened.push({
               id: ing.id,
-              variant_id: v.id,
+              variant_id: v.id || v.name,
               name: `${ing.name} - ${v.name}`,
               cost: v.cost_per_unit || ing.cost_per_unit,
               capacity: vcap,
@@ -241,17 +241,17 @@ export function useCalculation(
     const val = parseFloat(batchSize.replace(',', '.'));
     if (isNaN(val) || val <= 0 || uniqueCapacities.length === 0) return [];
 
-      if (calculationMode === 'volume') {
-        const options: { items: { capacity: number; quantity: number }[] }[] = [];
+    if (calculationMode === 'volume') {
+      const options: { items: { capacity: number; quantity: number }[] }[] = [];
+      
+      for (const cap of uniqueCapacities) {
+        const qty = Math.round(val / cap);
+        const remainder = val - (qty * cap);
         
-        for (const cap of uniqueCapacities) {
-          const qty = Math.round(val / cap);
-          const remainder = val - (qty * cap);
-          
-          if (Math.abs(remainder) < 0.001 && qty > 0) {
-            options.push({ items: [{ capacity: cap, quantity: qty }] });
-          }
+        if (Math.abs(remainder) < 0.001 && qty > 0) {
+          options.push({ items: [{ capacity: cap, quantity: qty }] });
         }
+      }
 
       if (options.length === 0) {
         return [{
@@ -283,7 +283,7 @@ export function useCalculation(
   const packagingAllocation = useMemo(() => {
     const alloc: Record<number, number> = {};
     const selectedCaps = uniqueCapacities.filter(cap =>
-      packagingOptionsByCapacity[cap].some(p => selectedPackagingKeys.includes(`${p.id}_${p.variant_id || 'base'}`))
+      packagingOptionsByCapacity[cap].some(p => selectedPackagingKeys.includes(`${p.id}_${p.variant_id || p.name}`))
     );
 
     if (selectedCaps.length > 0) {
@@ -335,7 +335,7 @@ export function useCalculation(
     Object.entries(packagingAllocation).forEach(([cap, qty]) => {
       if (qty <= 0) return;
       packagingOptionsByCapacity[Number(cap)]
-        ?.filter(p => selectedPackagingKeys.includes(`${p.id}_${(p.variant_id || 'base')}`))
+        ?.filter(p => selectedPackagingKeys.includes(`${p.id}_${p.variant_id || p.name}`))
         .forEach(p => {
           pkgs.push({ name: `${p.name}`, quantity: qty, cost: p.cost, total: qty * p.cost });
         });
