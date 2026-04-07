@@ -505,24 +505,10 @@ export default function Precificacao() {
       setFardoQty(entry.fardoQty);
       setFixedCostsPerUnit(entry.fixedCosts);
     } else {
-      // Auto-calculate initial pricing from costs
-      const formula = formulas.find(f => f.id === formulaId);
-      if (formula) {
-        const totalIngCost = calcIngredientCost(formula);
-        const costPerLiter = totalIngCost / (formula.base_volume || 1);
-        const liquidCost = costPerLiter * cap;
-        const pkgCost = packagingOptions.find(p => p.capacity === cap)?.cost || 0;
-        const totalCost = liquidCost + pkgCost;
-        // Default 30% margin markup
-        const retailPrice = totalCost > 0 ? totalCost / (1 - 0.30) : 0;
-        setVarejoPrice(snapPrice(retailPrice, 95));
-        setAtacadoPrice(snapPrice(retailPrice * 0.95, 90));
-        setFardoPrice(snapPrice(retailPrice * 0.90, 80));
-      } else {
-        setVarejoPrice(0);
-        setAtacadoPrice(0);
-        setFardoPrice(0);
-      }
+      // Default to 0, user sets prices manually
+      setVarejoPrice(0);
+      setAtacadoPrice(0);
+      setFardoPrice(0);
       setFardoQty(6);
       setFixedCostsPerUnit(0);
     }
@@ -1261,9 +1247,34 @@ export default function Precificacao() {
                       <div className="flex items-center gap-6 flex-wrap">
                         <PriceAdjuster value={fardoPrice} onChange={setFardoPrice} cents={80} color="purple" />
                         <div className="flex-1 flex gap-2">
-                          <MetricBlock label="Custo/Un" value={fmt(detailCalc.custoTotal)} colorClass="bg-slate-50" />
+                          <MetricBlock label="Custo Fardo" value={fmt(detailCalc.custoTotal * fardoQty)} colorClass="bg-slate-50" />
                           <MetricBlock label="Markup" value={`${detailCalc.fardoMarkup.toFixed(1)}%`} colorClass={`${detailCalc.fardoMarkup >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.fardoMarkup >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
+                          <MetricBlock label="Margem" value={`${detailCalc.fardoMargem.toFixed(1)}%`} colorClass={`${detailCalc.fardoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.fardoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                           <MetricBlock label="Lucro/Un" value={fmt(detailCalc.fardoLucro / fardoQty)} colorClass="bg-purple-50 !text-purple-700 font-black" />
+                        </div>
+                      </div>
+                      <div className="mt-4 pt-4 border-t border-slate-100">
+                        <div className="flex gap-3">
+                          <div className="flex-1 bg-slate-100 rounded-xl p-3 text-center">
+                            <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Custo/Un</div>
+                            <div className="text-lg font-black text-slate-700">{fmt(detailCalc.custoTotal)}</div>
+                          </div>
+                          <div className="flex-1 bg-blue-50 rounded-xl p-3 text-center">
+                            <div className="text-[10px] font-bold text-blue-500 uppercase tracking-wide">Unit.</div>
+                            <div className="text-lg font-black text-blue-700">{fmt(fardoPrice / fardoQty)}</div>
+                          </div>
+                          <div className="flex-1 bg-emerald-50 rounded-xl p-3 text-center">
+                            <div className="text-[10px] font-bold text-emerald-500 uppercase tracking-wide">vs Varejo</div>
+                            <div className={`text-lg font-black ${varejoPrice > 0 ? 'text-emerald-700' : 'text-slate-400'}`}>
+                              {varejoPrice > 0 ? fmt((fardoPrice / fardoQty) - varejoPrice) : '---'}
+                            </div>
+                          </div>
+                          <div className="flex-1 bg-amber-50 rounded-xl p-3 text-center">
+                            <div className="text-[10px] font-bold text-amber-500 uppercase tracking-wide">vs Atacado</div>
+                            <div className={`text-lg font-black ${atacadoPrice > 0 ? 'text-amber-700' : 'text-slate-400'}`}>
+                              {atacadoPrice > 0 ? fmt((fardoPrice / fardoQty) - atacadoPrice) : '---'}
+                            </div>
+                          </div>
                         </div>
                       </div>
                     </div>
