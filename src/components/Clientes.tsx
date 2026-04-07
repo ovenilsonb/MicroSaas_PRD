@@ -5,6 +5,7 @@ import { useStorageMode } from '../contexts/StorageModeContext';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { generateId } from '../lib/id';
 import { useToast } from './dashboard/Toast';
+import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
 interface Client {
   id: string;
@@ -36,6 +37,10 @@ export default function Clientes() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean; title: string; message: string; detail?: string;
+    type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -227,28 +232,32 @@ export default function Clientes() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o cliente ${name}?`)) return;
-
-    try {
-      if (mode === 'supabase') {
-        const { error } = await supabase
-          .from('clients')
-          .delete()
-          .eq('id', id);
-
-        if (error) throw error;
-        showToast('success', 'Sucesso', 'Cliente excluído com sucesso.');
-      } else {
-        const localData = JSON.parse(localStorage.getItem('local_clients') || '[]');
-        const newData = localData.filter((c: any) => c.id !== id);
-        localStorage.setItem('local_clients', JSON.stringify(newData));
-        showToast('success', 'Sucesso', 'Cliente excluído localmente.');
-      }
-      fetchClients();
-    } catch (err) {
-      console.error('Erro ao excluir cliente:', err);
-      showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o cliente.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Excluir Cliente',
+      message: `Tem certeza que deseja excluir o cliente ${name}?`,
+      type: 'danger',
+      confirmLabel: 'Sim, Excluir',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          if (mode === 'supabase') {
+            const { error } = await supabase.from('clients').delete().eq('id', id);
+            if (error) throw error;
+            showToast('success', 'Sucesso', 'Cliente excluído com sucesso.');
+          } else {
+            const localData = JSON.parse(localStorage.getItem('local_clients') || '[]');
+            const newData = localData.filter((c: any) => c.id !== id);
+            localStorage.setItem('local_clients', JSON.stringify(newData));
+            showToast('success', 'Sucesso', 'Cliente excluído localmente.');
+          }
+          fetchClients();
+        } catch (err) {
+          console.error('Erro ao excluir cliente:', err);
+          showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o cliente.');
+        }
+      },
+    });
   };
 
   const handleExport = () => {
@@ -920,6 +929,16 @@ export default function Clientes() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        detail={confirmModal.detail}
+        type={confirmModal.type}
+        confirmLabel={confirmModal.confirmLabel}
+      />
     </div>
   );
 }

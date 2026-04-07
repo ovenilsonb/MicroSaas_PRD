@@ -8,6 +8,7 @@ import {
   Search, MessageSquare, Beaker, User, History, Save, Clock, Droplets,
   Activity, FileSpreadsheet, Package, Printer
 } from 'lucide-react';
+import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
 export default function Qualidade() {
   const { showToast } = useToast();
@@ -27,6 +28,17 @@ export default function Qualidade() {
   const [notes, setNotes] = useState('');
   const [analyst, setAnalyst] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  // Modal State (substitui window.confirm)
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    detail?: string;
+    type: ConfirmModalType;
+    confirmLabel?: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
 
   useEffect(() => {
     fetchInitialData();
@@ -100,6 +112,39 @@ export default function Qualidade() {
 
   const handleApproveReject = async (status: 'approved' | 'rejected') => {
     if (!selectedCheck) return;
+
+    const actionLabel = status === 'approved' ? 'APROVAR' : 'REPROVAR';
+    const batchLabel = selectedCheck.production_orders?.batch_number || 'desconhecido';
+
+    // Confirmação visual antes de decisão irreversível
+    setConfirmModal({
+      isOpen: true,
+      title: `${actionLabel} Lote ${batchLabel}`,
+      message: status === 'approved'
+        ? 'O produto acabado será gerado e o estoque de embalagens será baixado automaticamente. Esta ação é irreversível.'
+        : 'O lote será marcado como perda/quarentena. Esta ação é irreversível.',
+      type: status === 'approved' ? 'success' : 'danger',
+      confirmLabel: status === 'approved' ? 'Sim, Aprovar Lote' : 'Sim, Reprovar Lote',
+      onConfirm: () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        // Se aprovando sem dados numéricos, mostra segundo alerta
+        if (status === 'approved' && !ph && !viscosity) {
+          setConfirmModal({
+            isOpen: true,
+            title: 'Dados Incompletos',
+            message: 'Você está aprovando este lote SEM valores de pH e Viscosidade. O certificado ficará sem dados numéricos.',
+            type: 'warning',
+            confirmLabel: 'Continuar Mesmo Assim',
+            onConfirm: () => { setConfirmModal(prev => ({ ...prev, isOpen: false })); executeApproveReject(status); },
+          });
+        } else {
+          executeApproveReject(status);
+        }
+      },
+    });
+  };
+
+  const executeApproveReject = async (status: 'approved' | 'rejected') => {
     setIsSaving(true);
 
     try {
@@ -267,13 +312,17 @@ export default function Qualidade() {
         </head>
         <body>
           <div class="header">
-            <div>
-              <h1 class="title">Certificado de Análise Técnica</h1>
-              <p class="subtitle">Microsaas-Planner / Relatório Oficial Qualidade</p>
+            <div style="display: flex; align-items: center; gap: 15px;">
+              <img src="/logo.png" style="width: 50px; height: 50px; object-fit: contain;" onerror="this.style.display='none'" />
+              <div>
+                <h1 class="title">Certificado de Análise Técnica</h1>
+                <p class="subtitle">Ohana Clean — Soluções em Limpeza Industrial</p>
+              </div>
             </div>
             <div style="text-align: right;">
               <div class="info-label">Emissão</div>
               <div class="info-value">${new Date().toLocaleDateString('pt-BR')}</div>
+              <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
             </div>
           </div>
           
@@ -349,22 +398,25 @@ export default function Qualidade() {
       </html>
     `;
 
-    const printWindow = window.open('', '_blank', 'width=800,height=900,menubar=no,toolbar=no,status=no');
-    if (printWindow) {
-      printWindow.document.write(printHtml);
-      printWindow.document.close();
-      printWindow.focus();
-      setTimeout(() => {
-        printWindow.print();
-        printWindow.close();
-      }, 500);
-    }
+    // Engine de impressão via iframe (anti-bloqueio de pop-up)
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    document.body.appendChild(iframe);
+    iframe.contentDocument?.write(printHtml);
+    iframe.contentDocument?.close();
+    setTimeout(() => {
+      iframe.contentWindow?.focus();
+      iframe.contentWindow?.print();
+      setTimeout(() => { document.body.removeChild(iframe); }, 1000);
+    }, 500);
   };
 
-  const filteredChecks = checks.filter(c =>
-    c.production_orders?.batch_number.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    c.production_orders?.formulas?.name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredChecks = checks.filter(c => {
+    const batchNum = c.production_orders?.batch_number || '';
+    const formulaName = c.production_orders?.formulas?.name || '';
+    const term = searchTerm.toLowerCase();
+    return batchNum.toLowerCase().includes(term) || formulaName.toLowerCase().includes(term);
+  });
 
   const pendingChecks = filteredChecks.filter(c => c.status === 'pending');
   const historyChecks = filteredChecks.filter(c => c.status !== 'pending');
@@ -669,6 +721,17 @@ export default function Qualidade() {
 
         </div>
       </div>
+      {/* Modal de Confirmação Visual */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        detail={confirmModal.detail}
+        type={confirmModal.type}
+        confirmLabel={confirmModal.confirmLabel}
+      />
     </div>
   );
 }

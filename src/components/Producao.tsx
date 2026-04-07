@@ -11,6 +11,7 @@ import {
   PackageOpen, Lightbulb, Minus, PlusCircle
 } from 'lucide-react';
 import { generateId } from '../lib/id';
+import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
 // ─── Interfaces ──────────────────────────────────────────────
 
@@ -237,6 +238,17 @@ export default function Producao() {
   const [equipmentId, setEquipmentId] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
+  // Modal State (substitui window.confirm)
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    detail?: string;
+    type: ConfirmModalType;
+    confirmLabel?: string;
+    onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
+
   // Packaging State
   const [packagingOptions, setPackagingOptions] = useState<PackagingOption[]>([]);
   const [packagingQty, setPackagingQty] = useState<Record<string, number>>({});
@@ -396,6 +408,13 @@ export default function Producao() {
       return;
     }
 
+    // Verificação de duplicidade de número de lote
+    const batchExists = orders.some(o => o.batch_number.toLowerCase() === batchNumber.toLowerCase());
+    if (batchExists) {
+      showToast('error', 'Lote Duplicado', `Já existe uma OF com o número de lote "${batchNumber}". Altere o número para prosseguir.`);
+      return;
+    }
+
     setIsSaving(true);
     const formula = latestFormulas.find(f => f.id === targetFormulaId) || formulas.find(f => f.id === targetFormulaId);
     // Build packaging plan from selected quantities
@@ -463,6 +482,51 @@ export default function Producao() {
     const idx = flow.indexOf(order.status);
     if (idx < 0 || idx >= flow.length - 1) return;
     const newStatus = flow[idx + 1];
+    const statusLabel = getStatusConfig(newStatus).label;
+
+    // Validação de estoque quando vai para pesagem (modo ALERTA)
+    if (newStatus === 'weighing') {
+      const scaled = getScaledIngredients(order);
+      const localIngs = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
+      const insufficient: string[] = [];
+      scaled.forEach(item => {
+        const ing = localIngs.find((i: any) => i.id === item.ingredient_id);
+        if (ing) {
+          const currentStock = ing.estoque_atual || 0;
+          if (currentStock < item.scaledQty) {
+            const ingName = item.variants?.name || item.ingredients?.name || 'Desconhecido';
+            insufficient.push(`${ingName}: precisa ${item.scaledQty.toFixed(3)} ${item.ingredients?.unit || ''}, disponível ${currentStock.toFixed(3)}`);
+          }
+        }
+      });
+
+      if (insufficient.length > 0) {
+        // Modal de alerta de estoque insuficiente
+        setConfirmModal({
+          isOpen: true,
+          title: 'Estoque Insuficiente',
+          message: `Os seguintes insumos não possuem estoque suficiente para o lote ${order.batch_number}. Deseja prosseguir mesmo assim?`,
+          detail: insufficient.join('\n'),
+          type: 'danger',
+          confirmLabel: 'Prosseguir Mesmo Assim',
+          onConfirm: () => { setConfirmModal(prev => ({ ...prev, isOpen: false })); executeAdvance(order, newStatus); },
+        });
+        return;
+      }
+    }
+
+    // Confirmação visual antes de avançar qualquer etapa
+    setConfirmModal({
+      isOpen: true,
+      title: `Avançar para ${statusLabel}`,
+      message: `Deseja avançar a OF ${order.batch_number} para a etapa "${statusLabel}"?${newStatus === 'weighing' ? '\n\nAo confirmar, o estoque de insumos será baixado automaticamente.' : ''}`,
+      type: newStatus === 'weighing' ? 'warning' : 'info',
+      confirmLabel: 'Avançar Etapa',
+      onConfirm: () => { setConfirmModal(prev => ({ ...prev, isOpen: false })); executeAdvance(order, newStatus); },
+    });
+  };
+
+  const executeAdvance = async (order: ProductionOrder, newStatus: OrderStatus) => {
 
     const updateData: Partial<ProductionOrder> = { status: newStatus };
     if (newStatus === 'weighing') updateData.start_date = new Date().toISOString();
@@ -1375,6 +1439,18 @@ export default function Producao() {
           animation: pulse-amber 2s infinite;
         }
       `}</style>
+
+      {/* Modal de Confirmação Visual */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        detail={confirmModal.detail}
+        type={confirmModal.type}
+        confirmLabel={confirmModal.confirmLabel}
+      />
     </div>
   );
 }

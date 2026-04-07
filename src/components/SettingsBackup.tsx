@@ -1,7 +1,8 @@
-import React, { useRef } from 'react';
+import React, { useRef, useState } from 'react';
 import { Download, Upload, AlertCircle, Database } from 'lucide-react';
 import { useToast } from './dashboard/Toast';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
+import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
 const LOCAL_KEYS = [
   'local_ingredients',
@@ -29,6 +30,11 @@ const LOCAL_KEYS = [
 export default function SettingsBackup() {
   const { showToast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean; title: string; message: string; detail?: string;
+    type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
+  const [pendingImportData, setPendingImportData] = useState<Record<string, unknown> | null>(null);
 
   const handleExport = () => {
     try {
@@ -62,19 +68,18 @@ export default function SettingsBackup() {
         throw new Error('Formato de backup inválido. Use um arquivo gerado pelo sistema.');
       }
 
-      const confirmMsg = `Isso substituirá TODOS os dados atuais pelos dados do backup. Deseja continuar?`;
-      if (!window.confirm(confirmMsg)) return;
-
-      let importedCount = 0;
-      for (const [key, value] of Object.entries(data)) {
-        if (LOCAL_KEYS.includes(key) || key.startsWith('local_') || key.startsWith('precificacao_') || key.startsWith('production_')) {
-          localStorage.setItem(key, JSON.stringify(value));
-          importedCount++;
-        }
-      }
-
-      showToast('success', 'Restauração Concluída', `${importedCount} chaves de dados foram restauradas. A página será recarregada.`);
-      setTimeout(() => window.location.reload(), 1500);
+      setPendingImportData(data as Record<string, unknown>);
+      setConfirmModal({
+        isOpen: true,
+        title: 'Restaurar Backup',
+        message: 'Isso substituirá TODOS os dados atuais pelos dados do backup. Deseja continuar?',
+        type: 'danger',
+        confirmLabel: 'Sim, Restaurar',
+        onConfirm: () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          executeImport(data as Record<string, unknown>);
+        },
+      });
     } catch (err: any) {
       showToast('error', 'Erro na Restauração', err.message || 'Falha ao importar arquivo.');
     } finally {
@@ -82,7 +87,24 @@ export default function SettingsBackup() {
     }
   };
 
+  const executeImport = (data: Record<string, unknown>) => {
+    try {
+      let importedCount = 0;
+      for (const [key, value] of Object.entries(data)) {
+        if (LOCAL_KEYS.includes(key) || key.startsWith('local_') || key.startsWith('precificacao_') || key.startsWith('production_')) {
+          localStorage.setItem(key, JSON.stringify(value));
+          importedCount++;
+        }
+      }
+      showToast('success', 'Restauração Concluída', `${importedCount} chaves de dados foram restauradas. A página será recarregada.`);
+      setTimeout(() => window.location.reload(), 1500);
+    } catch (err: any) {
+      showToast('error', 'Erro na Restauração', err.message || 'Falha ao restaurar dados.');
+    }
+  };
+
   return (
+    <>
     <section className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
       <div className="p-6 border-b border-slate-200 bg-slate-50/50">
         <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
@@ -141,5 +163,17 @@ export default function SettingsBackup() {
         </p>
       </div>
     </section>
+
+    <ConfirmModal
+      isOpen={confirmModal.isOpen}
+      onConfirm={confirmModal.onConfirm}
+      onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+      title={confirmModal.title}
+      message={confirmModal.message}
+      detail={confirmModal.detail}
+      type={confirmModal.type}
+      confirmLabel={confirmModal.confirmLabel}
+    />
+    </>
   );
 }

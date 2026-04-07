@@ -65,7 +65,8 @@ export default function Estoque() {
   const [fgLogs, setFgLogs] = useState<FinishedGoodLog[]>([]);
 
   const [isLoading, setIsLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTermFG, setSearchTermFG] = useState('');
+  const [searchTermRaw, setSearchTermRaw] = useState('');
 
   useEffect(() => {
     fetchData();
@@ -232,12 +233,21 @@ export default function Estoque() {
   }
 
   const filteredStats = stats.filter(s =>
-    s.nome.toLowerCase().includes(searchTerm.toLowerCase())
+    s.nome.toLowerCase().includes(searchTermRaw.toLowerCase())
   );
 
   const filteredFG = finishedGoods.filter(fg =>
-    fg.name.toLowerCase().includes(searchTerm.toLowerCase())
+    fg.name.toLowerCase().includes(searchTermFG.toLowerCase())
   );
+
+  // Filtro de logs pelo mês corrente para KPIs
+  const currentMonthLogs = logs.filter(l => {
+    try {
+      const logDate = new Date(l.created_at);
+      const now = new Date();
+      return logDate.getMonth() === now.getMonth() && logDate.getFullYear() === now.getFullYear();
+    } catch { return false; }
+  });
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
@@ -332,8 +342,8 @@ export default function Estoque() {
                       <input
                         type="text"
                         placeholder="Buscar produto acabado..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        value={searchTermFG}
+                        onChange={e => setSearchTermFG(e.target.value)}
                         className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#202eac]/10"
                       />
                     </div>
@@ -444,16 +454,16 @@ export default function Estoque() {
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Entradas (Mês)</div>
                 <div className="text-3xl font-black text-slate-800">
-                  {logs.filter(l => l.type === 'in').length}
+                  {currentMonthLogs.filter(l => l.type === 'in').length}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
                   <TrendingUp className="w-3 h-3 text-emerald-500" /> Reposição de estoque
                 </div>
               </div>
               <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
-                <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Saidas p/ OFs</div>
+                <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Saídas p/ OFs (Mês)</div>
                 <div className="text-3xl font-black text-slate-800">
-                  {logs.filter(l => l.type === 'out').length}
+                  {currentMonthLogs.filter(l => l.type === 'out').length}
                 </div>
                 <div className="text-[10px] text-slate-400 mt-1 flex items-center gap-1">
                   <TrendingDown className="w-3 h-3 text-blue-500" /> Consumo em produção
@@ -474,8 +484,8 @@ export default function Estoque() {
                       <input
                         type="text"
                         placeholder="Buscar insumo..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
+                        value={searchTermRaw}
+                        onChange={e => setSearchTermRaw(e.target.value)}
                         className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#202eac]/10"
                       />
                     </div>
@@ -560,11 +570,7 @@ export default function Estoque() {
                     )}
                   </div>
 
-                  <div className="p-4 border-t border-slate-50 bg-slate-50/50">
-                    <button className="w-full py-2.5 text-xs font-bold text-slate-500 hover:text-[#202eac] transition-all flex items-center justify-center gap-2">
-                      Ver Relatório Completo <ClipboardList className="w-4 h-4" />
-                    </button>
-                  </div>
+
                 </div>
               </div>
             </div>

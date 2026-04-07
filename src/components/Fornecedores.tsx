@@ -25,6 +25,7 @@ import {
 } from 'lucide-react';
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { useInsumosData } from './InsumosComponents/useInsumosData';
+import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
 interface Supplier {
   id: string;
@@ -47,6 +48,10 @@ export default function Fornecedores() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean; title: string; message: string; detail?: string;
+    type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
 
   // Modal state
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -230,26 +235,30 @@ export default function Fornecedores() {
   };
 
   const handleDelete = async (id: string, name: string) => {
-    if (!window.confirm(`Tem certeza que deseja excluir o fornecedor ${name}?`)) return;
-
-    try {
-      if (mode === 'supabase') {
-        const { error } = await supabase
-          .from('suppliers')
-          .delete()
-          .eq('id', id);
-
-        if (error) throw error;
-      } else {
-        const local = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
-        const filtered = local.filter((s: Supplier) => s.id !== id);
-        localStorage.setItem('local_suppliers', JSON.stringify(filtered));
-      }
-      fetchSuppliers();
-    } catch (err) {
-      console.error('Erro ao excluir fornecedor:', err);
-      showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o fornecedor.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Excluir Fornecedor',
+      message: `Tem certeza que deseja excluir o fornecedor ${name}?`,
+      type: 'danger',
+      confirmLabel: 'Sim, Excluir',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          if (mode === 'supabase') {
+            const { error } = await supabase.from('suppliers').delete().eq('id', id);
+            if (error) throw error;
+          } else {
+            const local = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
+            const filtered = local.filter((s: Supplier) => s.id !== id);
+            localStorage.setItem('local_suppliers', JSON.stringify(filtered));
+          }
+          fetchSuppliers();
+        } catch (err) {
+          console.error('Erro ao excluir fornecedor:', err);
+          showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o fornecedor.');
+        }
+      },
+    });
   };
 
   const handleExport = () => {
@@ -270,32 +279,40 @@ export default function Fornecedores() {
       const data = await importFromJson(file);
       if (!Array.isArray(data)) throw new Error('Dados inválidos.');
 
-      if (window.confirm(`Deseja importar ${data.length} fornecedores?`)) {
-        if (mode === 'supabase') {
-          for (const item of data) {
-            const { id, created_at, ...cleanData } = item;
-            await supabase.from('suppliers').upsert([cleanData]);
-          }
-        } else {
-          const local = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
-          for (const item of data) {
-            const { id, created_at, ...cleanData } = item;
-            const existingIdx = local.findIndex((s: Supplier) => s.id === id);
-            if (existingIdx >= 0) {
-              local[existingIdx] = { ...local[existingIdx], ...cleanData };
+      setConfirmModal({
+        isOpen: true,
+        title: 'Importar Fornecedores',
+        message: `Deseja importar ${data.length} fornecedores?`,
+        type: 'info',
+        confirmLabel: 'Sim, Importar',
+        onConfirm: async () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          try {
+            if (mode === 'supabase') {
+              for (const item of data) {
+                const { id, created_at, ...cleanData } = item;
+                await supabase.from('suppliers').upsert([cleanData]);
+              }
             } else {
-              local.push({
-                id: generateId(),
-                ...cleanData,
-                created_at: new Date().toISOString()
-              } as Supplier);
+              const local = JSON.parse(localStorage.getItem('local_suppliers') || '[]');
+              for (const item of data) {
+                const { id, created_at, ...cleanData } = item;
+                const existingIdx = local.findIndex((s: Supplier) => s.id === id);
+                if (existingIdx >= 0) {
+                  local[existingIdx] = { ...local[existingIdx], ...cleanData };
+                } else {
+                  local.push({ id: generateId(), ...cleanData, created_at: new Date().toISOString() } as Supplier);
+                }
+              }
+              localStorage.setItem('local_suppliers', JSON.stringify(local));
             }
+            fetchSuppliers();
+            showToast('success', 'Importação Concluída', `${data.length} fornecedores foram processados.`);
+          } catch (importErr) {
+            showToast('error', 'Erro na Importação', 'Falha ao processar os dados importados.');
           }
-          localStorage.setItem('local_suppliers', JSON.stringify(local));
-        }
-        fetchSuppliers();
-        showToast('success', 'Importação Concluída', `${data.length} fornecedores foram processados.`);
-      }
+        },
+      });
     } catch (err) {
       showToast('error', 'Erro na Importação', 'Falha ao importar arquivo.');
     }
@@ -852,6 +869,16 @@ export default function Fornecedores() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        detail={confirmModal.detail}
+        type={confirmModal.type}
+        confirmLabel={confirmModal.confirmLabel}
+      />
     </div>
   );
 }

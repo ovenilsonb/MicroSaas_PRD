@@ -8,6 +8,7 @@ import { isSupabaseConfigured } from './lib/supabase';
 import { ToastProvider, useToast } from './components/dashboard/Toast';
 import { exportToJson, importFromJson, getBackupFilename } from './lib/backupUtils';
 import Header, { getModuleConfig } from './components/Header';
+import { ConfirmModal, ConfirmModalType } from './components/shared/ConfirmModal';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const Insumos = lazy(() => import('./components/Insumos'));
@@ -43,6 +44,10 @@ export default function App() {
   const [isConfigured, setIsConfigured] = useState(isSupabaseConfigured());
   const [showSetupManual, setShowSetupManual] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean; title: string; message: string; detail?: string;
+    type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
 
   const sqlScript = `-- 1. Habilitar extensão UUID
 create extension if not exists "uuid-ossp";
@@ -244,10 +249,14 @@ create table if not exists public.inventory_logs (
 
   const handleModeToggle = () => {
     if (mode === 'local') {
-      const confirmMsg = 'Atenção: Ao escolher a opção On-line (Supabase), certifique-se de que as tabelas e colunas necessárias (novas implementações) já foram criadas no Supabase.\n\nDeseja continuar?';
-      if (window.confirm(confirmMsg)) {
-        setMode('supabase');
-      }
+      setConfirmModal({
+        isOpen: true,
+        title: 'Mudar para Supabase',
+        message: 'Ao escolher a opção On-line (Supabase), certifique-se de que as tabelas e colunas necessárias já foram criadas no Supabase.',
+        type: 'warning',
+        confirmLabel: 'Sim, Mudar para On-line',
+        onConfirm: () => { setConfirmModal(prev => ({ ...prev, isOpen: false })); setMode('supabase'); },
+      });
     } else {
       setMode('local');
     }
@@ -465,6 +474,17 @@ create table if not exists public.inventory_logs (
         })()}
 
       </main>
+
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        detail={confirmModal.detail}
+        type={confirmModal.type}
+        confirmLabel={confirmModal.confirmLabel}
+      />
     </div>
     </ToastProvider>
   );

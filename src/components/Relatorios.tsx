@@ -28,6 +28,7 @@ import {
   Trash2
 } from 'lucide-react';
 import { useStorageMode } from '../contexts/StorageModeContext';
+import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
 interface Ingredient {
   id: string;
@@ -47,6 +48,8 @@ interface Formula {
   base_volume: number;
   version: string;
   status: string;
+  packaging_variant_id?: string;
+  label_variant_id?: string;
   instructions?: string;
   formula_ingredients: {
     ingredient_id: string;
@@ -73,6 +76,10 @@ export default function Relatorios() {
   const [selectedPricingFormulaId, setSelectedPricingFormulaId] = useState<string>('');
   const [selectedPricingCapacity, setSelectedPricingCapacity] = useState<string>('');
   const [selectedPricingType, setSelectedPricingType] = useState<'varejo' | 'atacado' | 'fardo'>('varejo');
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean; title: string; message: string; detail?: string;
+    type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
 
   useEffect(() => {
     fetchData();
@@ -83,9 +90,10 @@ export default function Relatorios() {
       setIsLoading(true);
       if (mode === 'supabase') {
         const [ingRes, forRes, ordRes, qcRes] = await Promise.all([
-          supabase.from('ingredients').select('*'),
+          supabase.from('ingredients').select('*, variants (*)'),
           supabase.from('formulas').select(`
-            id, name, base_volume, version, status, instructions,
+            id, name, base_volume, version, status, instructions, 
+            packaging_variant_id, label_variant_id,
             formula_ingredients (
               ingredient_id,
               quantity,
@@ -151,28 +159,44 @@ export default function Relatorios() {
   }
 
   const handleDeleteProportion = (id: string) => {
-    if (!window.confirm('Deseja realmente excluir esta simulação?')) return;
-
-    try {
-      const remaining = savedProportions.filter(p => p.id !== id);
-      localStorage.setItem('local_proportions', JSON.stringify(remaining));
-      setSavedProportions(remaining);
-      if (selectedProportionId === id) setSelectedProportionId('');
-    } catch (e) {
-      console.error('Erro ao excluir simulação:', e);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Excluir Simulação',
+      message: 'Deseja realmente excluir esta simulação? Esta ação não pode ser desfeita.',
+      type: 'danger',
+      confirmLabel: 'Sim, Excluir',
+      onConfirm: () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          const remaining = savedProportions.filter(p => p.id !== id);
+          localStorage.setItem('local_proportions', JSON.stringify(remaining));
+          setSavedProportions(remaining);
+          if (selectedProportionId === id) setSelectedProportionId('');
+        } catch (e) {
+          console.error('Erro ao excluir simulação:', e);
+        }
+      },
+    });
   };
 
   const handleClearAllProportions = () => {
-    if (!window.confirm('Deseja realmente apagar TODAS as simulações arquivadas? Esta ação não pode ser desfeita.')) return;
-
-    try {
-      localStorage.removeItem('local_proportions');
-      setSavedProportions([]);
-      setSelectedProportionId('');
-    } catch (e) {
-      console.error('Erro ao limpar simulações:', e);
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Limpar Todas as Simulações',
+      message: 'Deseja realmente apagar TODAS as simulações arquivadas? Esta ação não pode ser desfeita.',
+      type: 'danger',
+      confirmLabel: 'Sim, Apagar Todas',
+      onConfirm: () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          localStorage.removeItem('local_proportions');
+          setSavedProportions([]);
+          setSelectedProportionId('');
+        } catch (e) {
+          console.error('Erro ao limpar simulações:', e);
+        }
+      },
+    });
   };
 
   const stats = useMemo(() => {
@@ -405,6 +429,39 @@ export default function Relatorios() {
     .text-center { text-align: center; }
     .font-bold { font-weight: 700; }
     .text-primary { color: #202eac; }
+
+    /* Cabeçalho do Relatório */
+    .report-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+    .logo-img {
+      width: 60px;
+      height: 60px;
+      object-fit: contain;
+    }
+    .company-info {
+      display: flex;
+      flex-direction: column;
+    }
+    .company-name {
+      font-size: 18px;
+      font-weight: 900;
+      color: #0f172a;
+      letter-spacing: -0.5px;
+    }
+    .report-meta {
+      text-align: right;
+    }
     
     .footer {
       position: fixed;
@@ -417,6 +474,24 @@ export default function Relatorios() {
       border-top: 1px solid #f1f5f9;
       padding-top: 10px;
     }
+  `;
+
+  const reportHeader = (title: string, subtitle: string) => `
+    <div class="report-header">
+      <div class="logo-container">
+        <img src="/logo.png" class="logo-img" onerror="this.style.display='none'; document.getElementById('text-logo').style.display='flex';" />
+        <div id="text-logo" style="display:none; width:50px; height:50px; background:#202eac; border-radius:50%; align-items:center; justify-content:center; color:white; font-weight:900; font-size:20px;">OC</div>
+        <div class="company-info">
+          <div class="company-name">OHANA CLEAN</div>
+          <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Soluções em Limpeza Industrial</div>
+        </div>
+      </div>
+      <div class="report-meta">
+        <div style="font-size: 11px; font-weight: 800; color: #202eac; text-transform: uppercase;">${title}</div>
+        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${subtitle}</div>
+        <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+      </div>
+    </div>
   `;
 
   const handlePrintFormula = () => {
@@ -458,12 +533,7 @@ export default function Relatorios() {
       </head>
       <body>
         <div class="watermark">FICHA TÉCNICA P&D</div>
-        
-        <div class="card">
-          <div class="card-header" style="border-bottom-color: #202eac;">
-            <span class="card-title">Relatório de Precisão e Ficha Técnica</span>
-            <span class="badge badge-primary">GESTÃO DE P&D</span>
-          </div>
+        ${reportHeader('Ficha Técnica de Produto', `Fórmula: ${formula.name}`)}
 
           <div class="grid grid-4 text-center">
             <div class="data-item">
@@ -596,9 +666,7 @@ export default function Relatorios() {
       </head>
       <body>
         <div class="watermark">MEMORIAL DE CÁLCULO</div>
-        
-        <div class="card">
-          <div class="card-header">
+        ${reportHeader('Memorial de Cálculo Industrial', `Simulação: ${prop.displayName}`)}
             <span class="card-title">Instrução de Proporção (Operacional)</span>
             <span class="badge badge-primary">ID: ${prop.id.slice(0, 8).toUpperCase()}</span>
           </div>
@@ -761,12 +829,7 @@ export default function Relatorios() {
       </head>
       <body>
         <div class="watermark">ORDEM DE FABRICAÇÃO</div>
-        
-        <div class="card" style="border-left: 8px solid #10b981;">
-          <div class="card-header" style="border-bottom-color: #10b981;">
-            <span class="card-title" style="color: #065f46;">Registro Autenticado de Produção (OF)</span>
-            <span class="badge badge-success">Lote: ${order.batch_number}</span>
-          </div>
+        ${reportHeader('Ordem de Fabricação (OF)', `Lote: ${order.batch_number}`)}
 
           <div class="grid grid-3 text-center">
             <div class="data-item">
@@ -906,61 +969,62 @@ export default function Relatorios() {
     const capacity = parseFloat(selectedPricingCapacity);
     const rawCostPerUnit = (rawCostTotal / (formula.base_volume || 1)) * capacity;
     
-    // Obter custos isolados de embalagem e rótulo
-    const embalagemItems = ingredients.filter(ing => 
-      !ing.produto_quimico && 
-      (ing.name.toLowerCase().includes('embalagem') || ing.name.toLowerCase().includes('frasco') || ing.name.toLowerCase().includes('galão') || ing.name.toLowerCase().includes('garrafa'))
-    );
+    // Função auxiliar para processar custos idêntica à da Precificação
+    const parseCostVal = (v: any): number => {
+        if (!v) return 0;
+        if (typeof v === 'number') return v;
+        const s = String(v).replace(/\./g, '').replace(',', '.');
+        return parseFloat(s) || 0;
+    };
+
+    // Montar lista de opções de embalagem baseada nos insumos cadastrados (mesma lógica do Precificacao.tsx)
+    const packagingOptions: any[] = [];
+    ingredients.forEach((ing: any) => {
+        const m = ing.name.match(/(\d+[.,]?\d*)\s*(L|ml|LT)/i);
+        let cap = 0;
+        if (m) { 
+            cap = parseFloat(m[1].replace(',', '.')); 
+            if (m[2].toLowerCase() === 'ml') cap /= 1000; 
+        }
+        if (cap > 0) packagingOptions.push({ id: ing.id, variant_id: null, name: ing.name, cost: parseCostVal(ing.cost_per_unit), capacity: cap });
+        if (ing.variants) {
+          ing.variants.forEach((v: any) => {
+            const vm = v.name?.match(/(\d+[.,]?\d*)\s*(L|ml|LT)/i);
+            let vc = cap;
+            if (vm) { 
+                vc = parseFloat(vm[1].replace(',', '.')); 
+                if (vm[2].toLowerCase() === 'ml') vc /= 1000; 
+            }
+            if (vc > 0) packagingOptions.push({ id: ing.id, variant_id: v.id, name: v.name || ing.name, cost: parseCostVal(v.cost_per_unit || ing.cost_per_unit), capacity: vc });
+          });
+        }
+    });
+
+    // 1. Busca custo de embalagem (Prioridade: ID de variante vinculada + Capacidade)
+    const pkgVariantId = formula.packaging_variant_id;
+    let pkgOpt = pkgVariantId 
+        ? packagingOptions.find(p => p.variant_id === pkgVariantId && Math.abs(p.capacity - capacity) < 0.001)
+        : null;
     
-    const rotuloItems = ingredients.filter(ing => 
-      !ing.produto_quimico && 
-      (ing.name.toLowerCase().includes('rótulo') || ing.name.toLowerCase().includes('etiqueta'))
-    );
+    // Fallback: Busca apenas pela capacidade se não houver variante ou não bater
+    if (!pkgOpt) {
+        pkgOpt = packagingOptions.find(p => Math.abs(p.capacity - capacity) < 0.001 && !p.name.toLowerCase().includes('rótulo'));
+    }
 
-    const calcCategoryCost = (items: any[]) => items.reduce((sum, ing) => {
-        // Tenta capturar volume com unidade (ex: 2L, 500ml) ou número isolado no fim (ex: Frasco 2)
-        const m = ing.name.match(/(\d+[.,]?\d*)\s*(L|ml|LT|g|kg)?$/i) || ing.name.match(/(\d+[.,]?\d*)\s*(L|ml|LT|g|kg)/i);
-        let cap = 0;
-        if (m) { 
-          cap = parseFloat(m[1].replace(',', '.')); 
-          const unit = (m[2] || '').toLowerCase();
-          if (unit === 'ml' || unit === 'g') cap /= 1000; 
-        }
-        
-        if (cap > 0 && Math.abs(cap - capacity) < 0.001) {
-            const cost = typeof ing.cost_per_unit === 'string' 
-              ? parseFloat(String(ing.cost_per_unit).replace(/\./g, '').replace(',', '.')) || 0 
-              : (Number(ing.cost_per_unit) || 0);
-            return sum + cost;
-        }
-        return sum;
-    }, 0);
+    // 2. Busca custo de rótulo (Prioridade: ID de variante vinculada)
+    const labelVariantId = formula.label_variant_id;
+    let labelOpt = labelVariantId
+        ? packagingOptions.find(p => p.variant_id === labelVariantId)
+        : null;
+    
+    // Fallback: Busca automática por nome se não vinculado
+    if (!labelOpt) {
+        labelOpt = packagingOptions.find(p => p.name.toLowerCase().includes('rótulo') || p.name.toLowerCase().includes('etiqueta'));
+    }
 
-    const costEmbalagem = calcCategoryCost(embalagemItems);
-    const costRotulo = calcCategoryCost(rotuloItems);
-
-    // Soma de outros insumos não químicos que não se encaixam nas categorias acima mas batem com a capacidade
-    const otherNonChemicalCost = ingredients.filter(ing => 
-      !ing.produto_quimico && 
-      !embalagemItems.find(e => e.id === ing.id) && 
-      !rotuloItems.find(r => r.id === ing.id)
-    ).reduce((sum, ing) => {
-        const m = ing.name.match(/(\d+[.,]?\d*)\s*(L|ml|LT|g|kg)/i);
-        let cap = 0;
-        if (m) { 
-          cap = parseFloat(m[1].replace(',', '.')); 
-          const unit = m[2].toLowerCase();
-          if (unit === 'ml' || unit === 'g') cap /= 1000; 
-        }
-        if (cap > 0 && Math.abs(cap - capacity) < 0.001) {
-            const costRaw = ing.cost_per_unit;
-            const cost = typeof costRaw === 'string' ? parseFloat(String(costRaw).replace(/\./g, '').replace(',', '.')) || 0 : (Number(costRaw) || 0);
-            return sum + cost;
-        }
-        return sum;
-    }, 0);
-
-    const packagingCostTotal = costEmbalagem + costRotulo + otherNonChemicalCost;
+    const costEmbalagem = pkgOpt ? pkgOpt.cost : 0;
+    const costRotulo = labelOpt ? labelOpt.cost : 0;
+    const packagingCostTotal = costEmbalagem + costRotulo;
 
     const fixedCosts = entry.fixedCosts || 0;
     const totalCost = rawCostPerUnit + packagingCostTotal + fixedCosts;
@@ -987,12 +1051,7 @@ export default function Relatorios() {
       </head>
       <body>
         <div class="watermark">TABELA DE PREÇOS</div>
-        
-        <div class="card" style="border-right: 8px solid #202eac;">
-          <div class="card-header" style="border-bottom-color: #202eac;">
-            <span class="card-title">Ficha de Precificação Estratégica</span>
-            <span class="badge badge-primary">${label.toUpperCase()}</span>
-          </div>
+        ${reportHeader('Gestão de Preços e Margens', `Produto: ${formula.name} - ${label}`)}
 
           <div class="grid grid-3 text-center">
              <div class="data-item">
@@ -1040,12 +1099,12 @@ export default function Relatorios() {
                   <span class="font-bold">${formatCurrency(rawCostPerUnit)}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
-                  <span>Embalagem (Frasco/Galão)</span>
+                  <span>Embalagem (${pkgOpt?.name || 'Não Ident.'})</span>
                   <span class="font-bold">${formatCurrency(costEmbalagem)}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
                   <span>Rótulo e Acabamento</span>
-                  <span class="font-bold">${formatCurrency(costRotulo + otherNonChemicalCost)}</span>
+                  <span class="font-bold">${formatCurrency(costRotulo)}</span>
                 </div>
                 <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
                   <span>Custos Fixos (Operação)</span>
@@ -1577,6 +1636,16 @@ export default function Relatorios() {
           </div>
         </div>
       </div>
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        detail={confirmModal.detail}
+        type={confirmModal.type}
+        confirmLabel={confirmModal.confirmLabel}
+      />
     </div>
   );
 }

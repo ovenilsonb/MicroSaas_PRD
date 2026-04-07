@@ -10,6 +10,7 @@ import {
 import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUtils';
 import { useToast } from './dashboard/Toast';
 import FormulaCard from './FormulasComponents/FormulaCard';
+import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
 interface Group {
   id: string;
@@ -133,37 +134,39 @@ export default function Formulas() {
       }
 
       const confirmMsg = `Você está prestes a importar ${data.length} fórmulas. Se houver fórmulas com o mesmo ID, elas serão atualizadas. Deseja continuar?`;
-      if (!window.confirm(confirmMsg)) return;
-
-      if (mode === 'supabase') {
-        showToast('info', 'Importando...', 'Sincronizando dados com o Supabase...');
-        for (const item of data) {
-          // Remove nested objects before upserting the main formula
-          const { formula_ingredients, groups, ...cleanFormula } = item;
-          const { error } = await supabase.from('formulas').upsert(cleanFormula);
-          if (error) console.error(`Erro ao importar fórmula ${item.name}:`, error);
-
-          // Ideally, we'd also import ingredients, but that's a separate step for the user
-        }
-        await fetchData();
-      } else {
-        const localData = JSON.parse(localStorage.getItem('local_formulas') || '[]');
-        const newData = [...localData];
-
-        data.forEach((item: any) => {
-          const index = newData.findIndex(i => i.id === item.id);
-          if (index >= 0) {
-            newData[index] = item;
-          } else {
-            newData.push(item);
+      setConfirmModal({
+        isOpen: true,
+        title: 'Importar Fórmulas',
+        message: confirmMsg,
+        type: 'info',
+        confirmLabel: 'Sim, Importar',
+        onConfirm: async () => {
+          setConfirmModal(prev => ({ ...prev, isOpen: false }));
+          try {
+            if (mode === 'supabase') {
+              showToast('info', 'Importando...', 'Sincronizando dados com o Supabase...');
+              for (const item of data) {
+                const { formula_ingredients, groups, ...cleanFormula } = item;
+                const { error } = await supabase.from('formulas').upsert(cleanFormula);
+                if (error) console.error(`Erro ao importar fórmula ${item.name}:`, error);
+              }
+              await fetchData();
+            } else {
+              const localData = JSON.parse(localStorage.getItem('local_formulas') || '[]');
+              const newData = [...localData];
+              data.forEach((item: any) => {
+                const index = newData.findIndex(i => i.id === item.id);
+                if (index >= 0) { newData[index] = item; } else { newData.push(item); }
+              });
+              localStorage.setItem('local_formulas', JSON.stringify(newData));
+              setFormulas(newData);
+            }
+            showToast('success', 'Importação Concluída', `${data.length} fórmulas foram processadas.`);
+          } catch (importErr: any) {
+            showToast('error', 'Erro na Importação', importErr.message || 'Falha ao processar.');
           }
-        });
-
-        localStorage.setItem('local_formulas', JSON.stringify(newData));
-        setFormulas(newData);
-      }
-
-      showToast('success', 'Importação Concluída', `${data.length} fórmulas foram processadas.`);
+        },
+      });
     } catch (err: any) {
       showToast('error', 'Erro na Importação', err.message || 'Falha ao importar arquivo.');
     } finally {
@@ -191,6 +194,10 @@ export default function Formulas() {
 
   // Delete Modal
   const [deleteModal, setDeleteModal] = useState<{ isOpen: boolean; id: string; name: string }>({ isOpen: false, id: '', name: '' });
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean; title: string; message: string; detail?: string;
+    type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
 
   // Group Management State
   const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
@@ -442,23 +449,31 @@ export default function Formulas() {
   };
 
   const handleDeleteGroup = async (id: string) => {
-    if (!window.confirm('Tem certeza que deseja excluir este grupo?')) return;
-    try {
-      if (mode === 'supabase') {
-        const { error } = await supabase.from('groups').delete().eq('id', id);
-        if (error) throw error;
-      } else {
-        // Local Logic
-        const localGroups = JSON.parse(localStorage.getItem('local_groups') || '[]');
-        const filtered = localGroups.filter((g: any) => g.id !== id);
-        localStorage.setItem('local_groups', JSON.stringify(filtered));
-      }
-      await fetchGroups();
-      showToast('success', 'Excluído', 'Grupo removido com sucesso.');
-    } catch (error) {
-      console.error('Erro ao excluir grupo:', error);
-      showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o grupo.');
-    }
+    setConfirmModal({
+      isOpen: true,
+      title: 'Excluir Grupo',
+      message: 'Tem certeza que deseja excluir este grupo? As fórmulas vinculadas perderão a associação.',
+      type: 'danger',
+      confirmLabel: 'Sim, Excluir',
+      onConfirm: async () => {
+        setConfirmModal(prev => ({ ...prev, isOpen: false }));
+        try {
+          if (mode === 'supabase') {
+            const { error } = await supabase.from('groups').delete().eq('id', id);
+            if (error) throw error;
+          } else {
+            const localGroups = JSON.parse(localStorage.getItem('local_groups') || '[]');
+            const filtered = localGroups.filter((g: any) => g.id !== id);
+            localStorage.setItem('local_groups', JSON.stringify(filtered));
+          }
+          await fetchGroups();
+          showToast('success', 'Excluído', 'Grupo removido com sucesso.');
+        } catch (error) {
+          console.error('Erro ao excluir grupo:', error);
+          showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o grupo.');
+        }
+      },
+    });
   };
 
   // --- Formatação ---
@@ -2065,6 +2080,16 @@ export default function Formulas() {
           </div>
         </div>
       )}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={() => setConfirmModal(prev => ({ ...prev, isOpen: false }))}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        detail={confirmModal.detail}
+        type={confirmModal.type}
+        confirmLabel={confirmModal.confirmLabel}
+      />
     </div>
   );
 }
