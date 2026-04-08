@@ -96,11 +96,11 @@ const navItems = [
     ]
   },
   {
-    title: 'Futuro',
+    title: 'Negócios & Sistema',
     items: [
-      { id: 'compras', label: 'Compras', icon: ShoppingCart, disabled: true },
-      { id: 'vendas', label: 'Vendas', icon: DollarSign, disabled: true },
-      { id: 'usuarios', label: 'Usuários', icon: Users, disabled: true },
+      { id: 'compras', label: 'Compras', icon: ShoppingCart, color: 'from-amber-500/20 to-amber-500/5', disabled: false },
+      { id: 'vendas', label: 'Vendas', icon: DollarSign, color: 'from-rose-500/20 to-rose-500/5', disabled: false },
+      { id: 'usuarios', label: 'Usuários', icon: Users, color: 'from-indigo-500/20 to-indigo-500/5', disabled: false },
     ]
   }
 ];

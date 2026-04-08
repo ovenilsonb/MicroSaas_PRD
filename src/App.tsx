@@ -21,6 +21,9 @@ const Clientes = lazy(() => import('./components/Clientes'));
 const Producao = lazy(() => import('./components/Producao'));
 const Qualidade = lazy(() => import('./components/Qualidade'));
 const Estoque = lazy(() => import('./components/Estoque'));
+const Compras = lazy(() => import('./components/Compras'));
+const Vendas = lazy(() => import('./components/Vendas'));
+const Usuarios = lazy(() => import('./components/Usuarios'));
 
 import Sidebar from './components/Sidebar';
 import SettingsBackup from './components/SettingsBackup';
@@ -239,6 +242,20 @@ create table if not exists public.inventory_logs (
   notes text,
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
+
+-- 15. Ordens de Compra (Compras)
+create table if not exists public.purchase_orders (
+  id uuid default uuid_generate_v4() primary key,
+  number text not null,
+  supplier_id uuid references public.suppliers(id) on delete set null,
+  supplier_name text,
+  status text default 'rascunho',
+  items jsonb default '[]'::jsonb,
+  total_value numeric(10, 2) default 0,
+  expected_date date,
+  notes text,
+  created_at timestamp with time zone default timezone('utc'::text, now()) not null
+);
 `;
 
   const copyToClipboard = () => {
@@ -389,6 +406,9 @@ create table if not exists public.inventory_logs (
             {activeMenu === 'qualidade' && <Qualidade />}
 
             {activeMenu === 'estoque' && <Estoque />}
+            {activeMenu === 'compras' && <Compras />}
+            {activeMenu === 'vendas' && <Vendas />}
+            {activeMenu === 'usuarios' && <Usuarios />}
           </Suspense>
         </div>
 
@@ -457,7 +477,7 @@ create table if not exists public.inventory_logs (
           const implementedMenus = [
             'dashboard', 'insumos', 'formulas', 'proporcao', 'precificacao',
             'fornecedores', 'clientes', 'relatorios', 'producao', 'qualidade',
-            'estoque', 'configuracoes'
+            'estoque', 'compras', 'vendas', 'usuarios', 'configuracoes'
           ];
           if (implementedMenus.includes(activeMenu)) return null;
           return (
