@@ -38,8 +38,10 @@ interface FinishedGood {
   formula_id: string;
   packaging_id: string;
   variant_id: string | null;
+  capacity?: number;
   stock_quantity: number;
 }
+
 
 interface FinishedGoodLog {
   id: string;
@@ -363,7 +365,15 @@ export default function Estoque() {
                             <div className="flex items-start justify-between mb-3">
                               <div className="pr-4">
                                 <h3 className="font-bold text-slate-800 text-sm leading-tight">{fg.name}</h3>
-                                <p className="text-[10px] text-slate-400 mt-0.5">ID: {fg.id.substring(0,8)}</p>
+                                <div className="flex items-center gap-2 mt-1">
+                                  <p className="text-[10px] text-slate-400">ID: {fg.id.substring(0,8)}</p>
+                                  {fg.capacity && (
+                                    <span className="text-[10px] font-black text-[#202eac] bg-blue-50 px-1.5 py-0.5 rounded uppercase">
+                                      {fg.capacity}L
+                                    </span>
+                                  )}
+                                </div>
+
                               </div>
                               <button 
                                 onClick={() => handleAdjustFgStock(fg.id)}

@@ -222,6 +222,7 @@ export default function Qualidade() {
                   const newFg = { 
                     id: generateId(), key: fgKey, name: fgName, 
                     formula_id: formulaId, packaging_id: pkg.packagingId, variant_id: pkg.variantId, 
+                    capacity: pkg.capacity, // Campo essencial para o catálogo de vendas
                     stock_quantity: pkg.quantity 
                   };
                   localFG.push(newFg);
@@ -229,7 +230,9 @@ export default function Qualidade() {
                 } else {
                   // Incrementa estoque se já existir
                   localFG[fgIndex].stock_quantity = (localFG[fgIndex].stock_quantity || 0) + pkg.quantity;
+                  localFG[fgIndex].capacity = pkg.capacity; // Garante que a capacidade esteja presente
                 }
+
                 
                 // Gera Log de Entrada (Estoque PA)
                 localFGLogs.push({
