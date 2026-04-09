@@ -44,6 +44,7 @@ interface Formula {
   status: string;
   group_id?: string;
   groups?: { name: string };
+  categories?: { name: string };
   packaging_variant_id?: string;
   label_variant_id?: string;
   formula_ingredients: FormulaIngredient[];
@@ -95,14 +96,9 @@ const parseCost = (v: any): number => {
   return parseFloat(s) || 0;
 };
 
-const getFormulaCategory = (name: string): string => {
-  const n = name.toLowerCase();
-  if (n.includes('amaciant')) return 'Amaciantes';
-  if (n.includes('deter') || n.includes('lava')) return 'Detergentes';
-  if (n.includes('desinfet') || n.includes('desinf')) return 'Desinfetantes';
-  if (n.includes('limp')) return 'Limpadores';
-  if (n.includes('sab')) return 'Sabões';
-  return 'Produtos';
+
+const getFormulaCategoryFromData = (formula: Formula): string => {
+  return formula.categories?.name || formula.groups?.name || 'Sem Categoria';
 };
 
 const categoryColors: Record<string, { bg: string; text: string }> = {
@@ -164,7 +160,7 @@ export default function Precificacao() {
   const DEFAULT_COLUMNS: ColumnConfig[] = [
     { id: 'name', label: 'Produto', visible: true },
     { id: 'version', label: 'Versão', visible: true },
-    { id: 'group', label: 'Grupo', visible: true },
+    { id: 'group', label: 'Categoria', visible: true },
     { id: 'lm_code', label: 'Código', visible: true },
     { id: 'cost', label: 'Custo Mat. Prima', visible: true },
     { id: 'varejo', label: 'Varejo', visible: true },
@@ -183,10 +179,23 @@ export default function Precificacao() {
 
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
 
+
   // Save columns to localStorage when changed
   useEffect(() => {
     localStorage.setItem('precificacao_columns', JSON.stringify(columns));
   }, [columns]);
+
+  // Migrator: Ensure "Grupo" label is updated to "Categoria" in saved state
+  useEffect(() => {
+    const hasLegacyLabel = columns.some(c => c.label === 'Grupo' || c.label === 'GRUPO');
+    if (hasLegacyLabel) {
+      setColumns(prev => prev.map(c => 
+        (c.label === 'Grupo' || c.label === 'GRUPO' || c.id === 'group') 
+          ? { ...c, label: 'Categoria' } 
+          : c
+      ));
+    }
+  }, []);
 
   // DnD sensors
   const sensors = useSensors(
@@ -717,8 +726,8 @@ export default function Precificacao() {
           bValue = b.version || '';
           break;
         case 'group':
-          aValue = a.groups?.name || '';
-          bValue = b.groups?.name || '';
+          aValue = a.categories?.name || a.groups?.name || '';
+          bValue = b.categories?.name || b.groups?.name || '';
           break;
         case 'lm_code':
           aValue = a.lm_code || '';
@@ -1518,7 +1527,7 @@ export default function Precificacao() {
             /* ═══ GRID / CARD VIEW — Mini-tabela por volume ═══ */
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
               {filteredFormulas.map(formula => {
-                const cat = getFormulaCategory(formula.name);
+                const cat = getFormulaCategoryFromData(formula);
                 const catColor = categoryColors[cat] || categoryColors.Produtos;
                 const volStatus = getVolumePricingStatus(formula.id);
 
@@ -1613,7 +1622,7 @@ export default function Precificacao() {
                     </thead>
                     <tbody>
                       {filteredFormulas.map(formula => {
-                        const cat = getFormulaCategory(formula.name);
+                        const cat = getFormulaCategoryFromData(formula);
                         const catColor = categoryColors[cat] || categoryColors.Produtos;
                         const volStatus = getVolumePricingStatus(formula.id);
                         const custoBase = calcIngredientCost(formula);
@@ -1623,8 +1632,10 @@ export default function Precificacao() {
                         const columnValues: Record<string, React.ReactNode> = {
                           name: <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors text-sm">{formula.name}</div>,
                           version: <span className="text-[10px] bg-[#202eac] text-white px-1.5 py-0.5 rounded font-black border border-blue-100/50 shadow-sm">V{(formula.version || '1').replace(/^v/i, '')}</span>,
-                          group: formula.groups?.name ? (
-                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${catColor.bg} ${catColor.text}`}>{formula.groups.name}</span>
+                          group: (formula.categories?.name || formula.groups?.name) ? (
+                            <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${catColor.bg} ${catColor.text}`}>
+                              {formula.categories?.name || formula.groups?.name}
+                            </span>
                           ) : (
                             <span className="text-xs text-slate-400">-</span>
                           ),

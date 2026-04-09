@@ -31,9 +31,12 @@ interface PurchaseOrder {
   notes?: string;
 }
 
+import { useCompanySettings } from '../hooks/useCompanySettings';
+
 export default function Compras() {
   const { mode } = useStorageMode();
   const { showToast } = useToast();
+  const { settings } = useCompanySettings();
   const { ingredients, suppliers, addStockMovement } = useInsumosData();
 
   const [activeTab, setActiveTab] = useState<'ordens' | 'sugestoes'>('ordens');
@@ -305,7 +308,7 @@ export default function Compras() {
     const fmtDT = (iso: string) => new Date(iso).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
 
     const cssStyles = `
-      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+      @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Montserrat:wght@400;700;900&family=Roboto:wght@400;700;900&family=Playfair+Display:wght@400;700;900&family=Open+Sans:wght@400;700;800&family=Lato:wght@400;700;900&family=Poppins:wght@400;700;900&family=Outfit:wght@400;700;900&display=swap');
       @page { margin: 15mm; size: auto; }
       * { margin: 0; padding: 0; box-sizing: border-box; }
       body { font-family: 'Inter', sans-serif; color: #0f172a; font-size: 11px; line-height: 1.6; }
@@ -316,34 +319,42 @@ export default function Compras() {
       .text-right { text-align: right; }
       .text-center { text-align: center; }
       .font-bold { font-weight: 700; }
-      .text-primary { color: #202eac; }
+      .text-primary { color: ${settings.primaryColor || '#202eac'}; }
       .report-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 1px solid #e2e8f0; }
       .logo-container { display: flex; align-items: center; gap: 15px; }
-      .logo-img { width: 60px; height: 60px; object-fit: contain; }
-      .company-name { font-size: 18px; font-weight: 900; color: #0f172a; }
+      .logo-img { height: 60px; object-fit: contain; }
+      .company-name { font-family: '${settings.headerFont}', sans-serif !important; font-size: 20px; font-weight: 900; color: #0f172a; }
       .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
       .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
       .data-item { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px; }
       .data-label { font-size: 9px; font-weight: 800; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.5px; }
-      .data-value { font-size: 14px; font-weight: 800; color: #0f172a; margin-top: 4px; }
+      .data-value { font-size: 13px; font-weight: 800; color: #0f172a; margin-top: 4px; }
       .signature-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 60px; margin-top: 60px; page-break-inside: avoid; }
       .signature-box { border-top: 1px solid #cbd5e1; padding-top: 10px; text-align: center; font-size: 10px; font-weight: 700; color: #64748b; }
       .watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80px; font-weight: 900; color: rgba(32,46,172,0.03); z-index: -1; pointer-events: none; }
       .footer { position: fixed; bottom: 10mm; left: 0; right: 0; text-align: center; font-size: 9px; color: #94a3b8; border-top: 1px solid #f1f5f9; padding-top: 10px; }
-      .total-box { background: #202eac; color: white; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
+      .total-box { background: ${settings.primaryColor || '#202eac'}; color: white; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; align-items: center; margin-top: 12px; }
       .total-box .label { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; opacity: 0.7; }
-      .total-box .value { font-size: 24px; font-weight: 900; }
+      .total-box .value { font-size: 20px; font-weight: 900; }
     `;
 
     const html = `<!DOCTYPE html><html><head><title>OC - ${order.number}</title><style>${cssStyles}</style></head><body>
       <div class="watermark">ORDEM DE COMPRA</div>
       <div class="report-header">
         <div class="logo-container">
-          <img src="/logo.png" class="logo-img" onerror="this.style.display='none'" />
-          <div><div class="company-name">OHANA CLEAN</div><div style="font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:1px;">Soluções em Limpeza Industrial</div></div>
+          ${settings.logo 
+            ? `<img src="${settings.logo}" class="logo-img" />`
+            : `<div style="width:50px; height:50px; background:${settings.primaryColor || '#202eac'}; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:20px;">${settings.name.substring(0, 2).toUpperCase()}</div>`
+          }
+          <div>
+            <div class="company-name">${settings.name}</div>
+            <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">
+              ${settings.document ? `CNPJ: ${settings.document} | ` : ''} ${settings.address || 'Gestão de Suprimentos'}
+            </div>
+          </div>
         </div>
         <div style="text-align:right;">
-          <div style="font-size:11px;font-weight:800;color:#202eac;text-transform:uppercase;">Ordem de Compra</div>
+          <div style="font-size:11px;font-weight:800;color:${settings.primaryColor || '#202eac'};text-transform:uppercase;">Ordem de Compra</div>
           <div style="font-size:10px;color:#64748b;margin-top:2px;">${order.number}</div>
           <div style="font-size:9px;color:#94a3b8;margin-top:4px;">Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
         </div>
@@ -390,7 +401,7 @@ export default function Compras() {
         <div class="signature-box">Responsável pela Compra</div>
         <div class="signature-box">Recebimento / Fornecedor</div>
       </div>
-      <div class="footer">Ohana Clean Planner — Ordem de Compra — Documento de Controle Interno</div>
+      <div class="footer">${settings.name} — Ordem de Compra — Documento de Controle Interno</div>
     </body></html>`;
 
     const iframe = document.createElement('iframe');

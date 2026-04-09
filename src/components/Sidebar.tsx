@@ -134,7 +134,8 @@ export default function Sidebar({ activeMenu, setActiveMenu, mode, isSyncing, on
           </div>
         </div>
         
-        {/* Mode Toggle */}
+        {/* Mode Toggle - Desativado temporariamente conforme pedido */}
+        {/*
         <div className="space-y-2">
           <button 
             onClick={onModeToggle}
@@ -160,6 +161,7 @@ export default function Sidebar({ activeMenu, setActiveMenu, mode, isSyncing, on
             {isSyncing ? 'Sincronizando...' : 'Sincronizar Dados'}
           </button>
         </div>
+        */}
       </div>
 
       {/* Navigation */}

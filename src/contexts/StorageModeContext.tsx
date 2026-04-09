@@ -14,9 +14,9 @@ const StorageModeContext = createContext<StorageModeContextType | undefined>(und
 
 export function StorageModeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<StorageMode>(() => {
-    const savedMode = localStorage.getItem('storageMode') as StorageMode | null;
-    // Default to 'local' - Supabase code is isolated but ready for future use
-    return savedMode || 'local';
+    // Force 'local' mode for now as requested
+    // const savedMode = localStorage.getItem('storageMode') as StorageMode | null;
+    return 'local';
   });
 
   const [isSyncing, setIsSyncing] = useState(false);
@@ -27,6 +27,7 @@ export function StorageModeProvider({ children }: { children: React.ReactNode })
   };
 
   const syncFromSupabase = async () => {
+    /* 
     setIsSyncing(true);
     try {
       // 1. Fetch Ingredients and Variants
@@ -77,6 +78,8 @@ export function StorageModeProvider({ children }: { children: React.ReactNode })
     } finally {
       setIsSyncing(false);
     }
+    */
+    console.log('Sincronização Supabase desativada temporariamente.');
   };
 
   return (

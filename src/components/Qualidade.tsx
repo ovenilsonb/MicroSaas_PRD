@@ -6,7 +6,7 @@ import { useToast } from './dashboard/Toast';
 import {
   ShieldCheck, FlaskConical, CheckCircle2, XCircle, AlertTriangle, FileText,
   Search, MessageSquare, Beaker, User, History, Save, Clock, Droplets,
-  Activity, FileSpreadsheet, Package, Printer
+  Activity, FileSpreadsheet, Package, Printer, LayoutGrid, List
 } from 'lucide-react';
 import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
@@ -18,6 +18,7 @@ export default function Qualidade() {
   const [isLoading, setIsLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCheck, setSelectedCheck] = useState<any | null>(null);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
 
   // Form State
   const [ph, setPh] = useState('');
@@ -70,17 +71,22 @@ export default function Qualidade() {
       } else {
         const localQC = JSON.parse(localStorage.getItem('local_quality_controls') || '[]');
         const localOrders = JSON.parse(localStorage.getItem('local_production_orders') || '[]');
+        const localSales = JSON.parse(localStorage.getItem('local_sale_orders') || '[]');
         const formulas = JSON.parse(localStorage.getItem('local_formulas') || '[]');
 
         const enriched = localQC.map((qc: any) => {
           const order = localOrders.find((o: any) => o.id === qc.production_order_id);
           const formula = formulas.find((f: any) => f.id === order?.formula_id);
+          const saleOrder = order?.reference_sale_order_id ? localSales.find((s: any) => s.id === order.reference_sale_order_id) : null;
+          
           return {
             ...qc,
             production_orders: order ? {
               batch_number: order.batch_number,
               planned_volume: order.planned_volume,
               formula_id: order.formula_id,
+              reference_sale_order_id: order.reference_sale_order_id,
+              reference_sale_order_number: order.reference_sale_order_number || saleOrder?.number,
               formulas: formula ? { 
                 name: formula.name, 
                 lm_code: formula.lm_code,
@@ -197,11 +203,23 @@ export default function Qualidade() {
 
         if (status === 'approved') {
           // Log de transação básica
+          // --- BUSCA REFERÊNCIA DO PEDIDO DE VENDA PARA RASTREABILIDADE ---
+          let saleOrderRef = '';
+          const linkedSaleOrderId = selectedCheck.production_orders?.reference_sale_order_id;
+          if (linkedSaleOrderId) {
+            const localSalesRaw = localStorage.getItem('local_sale_orders');
+            if (localSalesRaw) {
+              const localSales = JSON.parse(localSalesRaw);
+              const sale = localSales.find((s: any) => s.id === linkedSaleOrderId);
+              if (sale) saleOrderRef = ` | Pedido: ${sale.number}`;
+            }
+          }
+
           localLogs.push({
             id: generateId(),
             quantity: selectedCheck.production_orders.planned_volume,
             type: 'in', reference_id: selectedCheck.production_order_id,
-            notes: `Lote Aprovado e Finalizado: ${formulaName} (Lote: ${batchNumber})`,
+            notes: `Lote Aprovado e Finalizado: ${formulaName} (Lote: ${batchNumber}${saleOrderRef})`,
             created_at: new Date().toISOString()
           });
 
@@ -216,29 +234,40 @@ export default function Qualidade() {
                 const fgName = `${formulaName} - ${pkg.name}`;
                 const fgKey = `${formulaId}_${pkg.packagingId}_${pkg.variantId || 'base'}`;
                 
+                const saleOrderId = selectedCheck.production_orders?.reference_sale_order_id;
+                const saleOrderRef = saleOrderId ? ` | Pedido: ${saleOrderId.substring(0,8)}` : '';
+
                 let fgIndex = localFG.findIndex((f: any) => f.key === fgKey);
                 if (fgIndex === -1) {
                   // Cria o Produto Acabado se não existir
                   const newFg = { 
                     id: generateId(), key: fgKey, name: fgName, 
                     formula_id: formulaId, packaging_id: pkg.packagingId, variant_id: pkg.variantId, 
-                    capacity: pkg.capacity, // Campo essencial para o catálogo de vendas
-                    stock_quantity: pkg.quantity 
+                    capacity: pkg.capacity,
+                    stock_quantity: saleOrderId ? 0 : pkg.quantity,
+                    reserved_quantity: saleOrderId ? pkg.quantity : 0
                   };
                   localFG.push(newFg);
                   fgIndex = localFG.length - 1;
                 } else {
-                  // Incrementa estoque se já existir
-                  localFG[fgIndex].stock_quantity = (localFG[fgIndex].stock_quantity || 0) + pkg.quantity;
-                  localFG[fgIndex].capacity = pkg.capacity; // Garante que a capacidade esteja presente
+                  // Incrementa estoque (Livre ou Reservado dependendo da origem)
+                  if (saleOrderId) {
+                    localFG[fgIndex].reserved_quantity = (localFG[fgIndex].reserved_quantity || 0) + pkg.quantity;
+                  } else {
+                    localFG[fgIndex].stock_quantity = (localFG[fgIndex].stock_quantity || 0) + pkg.quantity;
+                  }
+                  localFG[fgIndex].capacity = pkg.capacity;
                 }
 
                 
                 // Gera Log de Entrada (Estoque PA)
                 localFGLogs.push({
-                  id: generateId(), finished_good_id: localFG[fgIndex].id, quantity: pkg.quantity,
-                  type: 'in', reference_id: selectedCheck.production_order_id,
-                  notes: `Produção Aprovada (Lote: ${batchNumber})`,
+                  id: generateId(), 
+                  finished_good_id: localFG[fgIndex].id, 
+                  quantity: pkg.quantity,
+                  type: 'in', 
+                  reference_id: selectedCheck.production_order_id,
+                  notes: `Produção Aprovada (Lote: ${batchNumber}${saleOrderRef})${saleOrderId ? ' [RESERVADO]' : ''}`,
                   created_at: new Date().toISOString()
                 });
               }
@@ -251,7 +280,7 @@ export default function Qualidade() {
                   localLogs.push({
                     id: generateId(), ingredient_id: pkg.packagingId, variant_id: pkg.variantId || undefined,
                     quantity: pkg.quantity, type: 'out', reference_id: selectedCheck.production_order_id,
-                    notes: `Consumo de Embalagem (Aprovação Lote: ${batchNumber})`,
+                    notes: `Consumo de Embalagem (Lote: ${batchNumber}${saleOrderRef})`,
                     created_at: new Date().toISOString()
                   });
                 }
@@ -261,6 +290,22 @@ export default function Qualidade() {
             localStorage.setItem('local_finished_goods', JSON.stringify(localFG));
             localStorage.setItem('local_finished_goods_logs', JSON.stringify(localFGLogs));
             localStorage.setItem('local_ingredients', JSON.stringify(localIngredients));
+
+            // --- ATUALIZAÇÃO AUTOMÁTICA DO PEDIDO DE VENDA ---
+            const saleOrderId = selectedCheck.production_orders?.reference_sale_order_id;
+            if (saleOrderId) {
+              const localSalesRaw = localStorage.getItem('local_sale_orders');
+              if (localSalesRaw) {
+                const localSales = JSON.parse(localSalesRaw);
+                const saleIdx = localSales.findIndex((is: any) => is.id === saleOrderId);
+                if (saleIdx >= 0 && localSales[saleIdx].status === 'producao') {
+                  localSales[saleIdx].status = 'separacao';
+                  localSales[saleIdx].notes = `${localSales[saleIdx].notes || ''}\n\n[SISTEMA] Estoque disponível via aprovação automática do Lote ${batchNumber} em ${new Date().toLocaleString()}.`;
+                  localStorage.setItem('local_sale_orders', JSON.stringify(localSales));
+                  console.log(`[Qualidade] Pedido de Venda ${localSales[saleIdx].number} atualizado para SEPARAÇÃO.`);
+                }
+              }
+            }
           }
         } 
         else if (status === 'rejected') {
@@ -272,7 +317,22 @@ export default function Qualidade() {
             notes: `🚨 LOTE REPROVADO (Quarentena/Descarte): ${formulaName} (Lote: ${batchNumber})`,
             created_at: new Date().toISOString()
           });
-          // Nota: Não gera Produto Acabado. Permanece bloqueado/perdido.
+
+          // --- ATUALIZAÇÃO AUTOMÁTICA DO PEDIDO DE VENDA PARA REPRODUÇÃO ---
+          const saleOrderId = selectedCheck.production_orders?.reference_sale_order_id;
+          if (saleOrderId) {
+            const localSalesRaw = localStorage.getItem('local_sale_orders');
+            if (localSalesRaw) {
+              const localSales = JSON.parse(localSalesRaw);
+              const saleIdx = localSales.findIndex((is: any) => is.id === saleOrderId);
+              if (saleIdx >= 0) {
+                localSales[saleIdx].status = 'reproducao';
+                localSales[saleIdx].notes = `${localSales[saleIdx].notes || ''}\n\n🚨 [ALERTA QUALIDADE] Lote ${batchNumber} reprovado em ${new Date().toLocaleString()}. Produção bloqueada e aguardando REINÍCIO.`;
+                localStorage.setItem('local_sale_orders', JSON.stringify(localSales));
+                console.log(`[Qualidade] Pedido de Venda ${localSales[saleIdx].number} marcado para REPRODUÇÃO.`);
+              }
+            }
+          }
         }
         localStorage.setItem('local_inventory_logs', JSON.stringify(localLogs));
       }
@@ -302,10 +362,10 @@ export default function Qualidade() {
             .title { font-size: 24px; font-weight: 900; color: #202eac; margin: 0; text-transform: uppercase;}
             .subtitle { font-size: 12px; color: #64748b; margin-top: 5px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
             .status-badge { font-weight: 900; font-size: 24px; color: ${statusColor}; border: 4px solid ${statusColor}; padding: 10px 30px; border-radius: 8px; transform: rotate(-10deg); display: inline-block; margin-top: 20px;}
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 40px; }
-            .info-item { background: #f8fafc; padding: 15px; border-radius: 12px; border: 1px solid #e2e8f0; }
-            .info-label { font-size: 10px; text-transform: uppercase; color: #64748b; font-weight: 800; margin-bottom: 5px;}
-            .info-value { font-size: 16px; font-weight: 900; color: #0f172a;}
+            .info-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 40px; }
+            .info-item { background: #f8fafc; padding: 12px; border-radius: 12px; border: 1px solid #e2e8f0; }
+            .info-label { font-size: 9px; text-transform: uppercase; color: #64748b; font-weight: 800; margin-bottom: 5px;}
+            .info-value { font-size: 14px; font-weight: 900; color: #0f172a;}
             table { width: 100%; border-collapse: collapse; margin-bottom: 40px; }
             th { text-align: left; padding: 12px; background: #f1f5f9; border-bottom: 2px solid #cbd5e1; font-size: 11px; text-transform: uppercase; color: #475569; font-weight: 800;}
             td { padding: 12px; border-bottom: 1px solid #e2e8f0; font-size: 13px; color: #334155;}
@@ -330,13 +390,21 @@ export default function Qualidade() {
           </div>
           
           <div class="info-grid">
+            <div class="info-item" style="grid-column: span 3;">
+              <div class="info-label">Produto Qualificado</div>
+              <div class="info-value" style="font-size: 18px;">${check.production_orders?.formulas?.name || 'Não Especificado'}</div>
+            </div>
             <div class="info-item">
-              <div class="info-label">Fórmula Qualificada</div>
-              <div class="info-value">${check.production_orders?.formulas?.name || 'Não Especificado'}</div>
+              <div class="info-label">Ordem de Fabr. (OF)</div>
+              <div class="info-value" style="font-family: monospace;">${check.production_orders?.batch_number || 'N/A'}</div>
             </div>
             <div class="info-item">
               <div class="info-label">Lote Industrial</div>
               <div class="info-value" style="font-family: monospace;">${check.production_orders?.batch_number || 'N/A'}</div>
+            </div>
+            <div class="info-item">
+              <div class="info-label">Venda Vinculada (PV)</div>
+              <div class="info-value" style="font-family: monospace; font-size: 14px;">${check.production_orders?.reference_sale_order_number || 'VENDA DIRETA'}</div>
             </div>
           </div>
 
@@ -507,9 +575,16 @@ export default function Qualidade() {
                           }`}
                       >
                         <div className="flex items-center justify-between">
-                          <span className="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono">
-                            {check.production_orders?.batch_number}
-                          </span>
+                          <div className="flex items-center gap-2">
+                            <span className="text-[10px] font-black bg-slate-100 px-2 py-0.5 rounded text-slate-500 font-mono" title="Ordem de Fabricação">
+                              OF: {check.production_orders?.batch_number}
+                            </span>
+                            {check.production_orders?.reference_sale_order_number && (
+                              <span className="text-[10px] font-black bg-blue-50 px-2 py-0.5 rounded text-[#202eac] font-mono whitespace-normal" title="Pedido de Venda">
+                                PV: {check.production_orders.reference_sale_order_number}
+                              </span>
+                            )}
+                          </div>
                           <span className="flex items-center gap-1 text-[10px] font-bold text-amber-600 uppercase">
                             <Clock className="w-3 h-3" /> Pendente
                           </span>
@@ -658,11 +733,27 @@ export default function Qualidade() {
                 <h2 className="font-bold text-slate-700 text-sm flex items-center gap-2">
                   <FileSpreadsheet className="w-4 h-4 text-[#202eac]" /> Desempenho e Histórico de Qualidade
                 </h2>
+                <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl">
+                  <button
+                    onClick={() => setViewMode('grid')}
+                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    title="Visualização em Grade"
+                  >
+                    <LayoutGrid className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => setViewMode('list')}
+                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    title="Visualização em Lista"
+                  >
+                    <List className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
               
               {historyChecks.length === 0 ? (
                 <div className="p-12 text-center text-slate-400 italic">Nenhum laudo finalizado até o momento.</div>
-              ) : (
+              ) : viewMode === 'grid' ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 p-4">
                   {historyChecks.map(check => {
                     const isApproved = check.status === 'approved';
@@ -671,14 +762,21 @@ export default function Qualidade() {
                         isApproved ? 'border-l-emerald-500 bg-emerald-50/30 border-slate-200' : 'border-l-red-500 bg-red-50/30 border-slate-200'
                       }`}>
                         <div>
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-500">
-                              {check.production_orders?.batch_number}
-                            </span>
-                            {isApproved ? (
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase bg-emerald-100 px-2 py-0.5 rounded-full"><CheckCircle2 className="w-3 h-3"/> Aprovado</span>
-                            ) : (
-                              <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 uppercase bg-red-100 px-2 py-0.5 rounded-full"><XCircle className="w-3 h-3"/> Reprovado</span>
+                          <div className="flex flex-col gap-1.5 mb-2">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-500">
+                                OF: {check.production_orders?.batch_number}
+                              </span>
+                              {isApproved ? (
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase bg-emerald-100 px-2 py-0.5 rounded-full"><CheckCircle2 className="w-3 h-3"/> Aprovado</span>
+                              ) : (
+                                <span className="flex items-center gap-1 text-[10px] font-bold text-red-600 uppercase bg-red-100 px-2 py-0.5 rounded-full"><XCircle className="w-3 h-3"/> Reprovado</span>
+                              )}
+                            </div>
+                            {check.production_orders?.reference_sale_order_number && (
+                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-50 border border-blue-100 text-[#202eac] w-fit">
+                                PV: {check.production_orders.reference_sale_order_number}
+                              </span>
                             )}
                           </div>
                           <h3 className="font-black text-slate-800 text-sm line-clamp-1">{check.production_orders?.formulas?.name}</h3>
@@ -709,6 +807,78 @@ export default function Qualidade() {
                       </div>
                     );
                   })}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                   <table className="w-full text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                          <th className="py-4 px-6">Data</th>
+                          <th className="py-4 px-6">Rastreio (OF/PV)</th>
+                          <th className="py-4 px-6">Produto</th>
+                          <th className="py-4 px-6">Resultados</th>
+                          <th className="py-4 px-6">Analista</th>
+                          <th className="py-4 px-6">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {historyChecks.map(check => {
+                          const isApproved = check.status === 'approved';
+                          return (
+                            <tr key={check.id} className="hover:bg-blue-50/20 transition-colors cursor-pointer group relative">
+                              <td className="py-4 px-6">
+                                <span className="text-xs font-bold text-slate-600">{new Date(check.created_at).toLocaleDateString()}</span>
+                              </td>
+                              <td className="py-4 px-6">
+                                <div className="flex flex-col gap-1">
+                                  <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-slate-100 border border-slate-200 text-slate-500 w-fit">
+                                    OF: {check.production_orders?.batch_number}
+                                  </span>
+                                  {check.production_orders?.reference_sale_order_number && (
+                                    <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-blue-50 border border-blue-100 text-[#202eac] w-fit">
+                                      PV: {check.production_orders.reference_sale_order_number}
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                              <td className="py-4 px-6">
+                                <span className="font-bold text-slate-800 text-sm">{check.production_orders?.formulas?.name}</span>
+                              </td>
+                              <td className="py-4 px-6">
+                                <div className="flex gap-3">
+                                  <div className="text-xs text-slate-500"><span className="font-bold">pH:</span> {check.ph_value || '-'}</div>
+                                  <div className="text-xs text-slate-500"><span className="font-bold">Visc:</span> {check.viscosity_value || '-'}</div>
+                                </div>
+                              </td>
+                              <td className="py-4 px-6 text-xs text-slate-500">
+                                {check.analyst_name || 'Desconhecido'}
+                              </td>
+                              <td className="py-4 px-6 relative text-right">
+                                <div className="inline-flex">
+                                  {isApproved ? (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 uppercase bg-emerald-100 px-2.5 py-1.5 rounded-xl border border-emerald-200"><CheckCircle2 className="w-3.5 h-3.5"/> Aprovado</span>
+                                  ) : (
+                                    <span className="inline-flex items-center gap-1 text-[10px] font-bold text-red-600 uppercase bg-red-100 px-2.5 py-1.5 rounded-xl border border-red-200"><XCircle className="w-3.5 h-3.5"/> Reprovado</span>
+                                  )}
+                                </div>
+
+                                {/* Floating Action Buttons on Hover */}
+                                <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 shadow-xl z-20 flex items-center gap-2">
+                                  <button 
+                                    onClick={(e) => { e.stopPropagation(); handlePrint(check); }}
+                                    className="p-3 bg-white border border-slate-200 text-blue-600 hover:bg-[#202eac] hover:text-white rounded-2xl transition-all shadow-lg flex items-center gap-2"
+                                    title="Imprimir Laudo"
+                                  >
+                                    <Printer className="w-4 h-4" />
+                                    <span className="text-[10px] font-black uppercase">Imprimir Laudo</span>
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                   </table>
                 </div>
               )}
             </div>

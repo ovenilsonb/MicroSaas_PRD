@@ -1,12 +1,26 @@
 export interface DashboardStats {
+  // Insumos & Fórmulas
   totalInsumos: number;
   estoqueBaixo: number;
+  valorEstoque: number;
   totalFormulas: number;
   custoMedio: number;
+  
+  // Produção & Qualidade
   ofsAtivas: number;
   ofsConcluidas: number;
+  ofsAguardandoLab: number;
   taxaAprovacao: number;
+  qualidadePendente: number;
+  
+  // Vendas & Comercial
+  faturamentoMes: number;
+  pedidosPendentes: number;
   totalClientes: number;
+  
+  // Compras & Suprimentos
+  ocAtrasadas: number;
+  comprasPendentes: number;
   totalFornecedores: number;
 }
 

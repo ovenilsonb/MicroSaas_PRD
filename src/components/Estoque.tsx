@@ -40,6 +40,7 @@ interface FinishedGood {
   variant_id: string | null;
   capacity?: number;
   stock_quantity: number;
+  reserved_quantity?: number;
 }
 
 
@@ -139,6 +140,26 @@ export default function Estoque() {
       console.error('Erro ao buscar produtos acabados:', err);
     }
   }
+
+  const handleDeleteFgStock = (fgId: string) => {
+    const fg = finishedGoods.find(f => f.id === fgId);
+    if (!fg) return;
+
+    if (!confirm(`Deseja realmente excluir o estoque de "${fg.name}"? Esta ação removerá o produto e seu histórico do inventário.`)) return;
+
+    const localFG = JSON.parse(localStorage.getItem('local_finished_goods') || '[]');
+    const localFGLogs = JSON.parse(localStorage.getItem('local_finished_goods_logs') || '[]');
+    
+    const updatedFG = localFG.filter((f: any) => f.id !== fgId);
+    const updatedLogs = localFGLogs.filter((l: any) => l.finished_good_id !== fgId);
+
+    localStorage.setItem('local_finished_goods', JSON.stringify(updatedFG));
+    localStorage.setItem('local_finished_goods_logs', JSON.stringify(updatedLogs));
+    
+    setFinishedGoods(updatedFG);
+    setFgLogs(updatedLogs);
+    showToast('success', 'Excluído', 'Produto e histórico removidos com sucesso.');
+  };
 
   const handleAdjustFgStock = (fgId: string) => {
     const qtyStr = prompt('Informe a nova quantidade física em estoque (ajuste rápido):');
@@ -375,20 +396,44 @@ export default function Estoque() {
                                 </div>
 
                               </div>
-                              <button 
-                                onClick={() => handleAdjustFgStock(fg.id)}
-                                className="opacity-0 group-hover:opacity-100 p-1.5 text-slate-400 hover:text-[#202eac] hover:bg-slate-50 rounded-lg transition-all absolute top-3 right-3"
-                                title="Ajuste Manual"
-                              >
-                                <Pencil className="w-4 h-4" />
-                              </button>
+                              <div className="flex flex-col gap-2 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all">
+                                <button 
+                                  onClick={() => handleAdjustFgStock(fg.id)}
+                                  className="p-1.5 text-slate-400 hover:text-[#202eac] hover:bg-slate-50 rounded-lg shadow-sm border border-transparent hover:border-slate-100"
+                                  title="Ajuste Manual"
+                                >
+                                  <Pencil className="w-3.5 h-3.5" />
+                                </button>
+                                <button 
+                                  onClick={() => handleDeleteFgStock(fg.id)}
+                                  className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg shadow-sm border border-transparent hover:border-red-100"
+                                  title="Excluir Registro"
+                                >
+                                  <Archive className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
                             
-                            <div className="flex items-end justify-between mt-4">
-                              <div className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
-                                <Box className="w-4 h-4" />
-                                <span className="font-black text-lg">{fg.stock_quantity.toLocaleString()}</span>
-                                <span className="text-[10px] font-bold uppercase">un.</span>
+                            <div className="flex flex-col gap-2 w-full mt-4">
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Saldo Livre (Disp.)</span>
+                                <div className="bg-emerald-50 text-emerald-700 px-3 py-1.5 rounded-lg flex items-center gap-2">
+                                  <Box className="w-4 h-4" />
+                                  <span className="font-black text-lg">{fg.stock_quantity?.toLocaleString() || 0}</span>
+                                  <span className="text-[10px] font-bold uppercase">un.</span>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between">
+                                <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Reservado (Vendas)</span>
+                                <div className={`text-right ${fg.reserved_quantity ? 'text-blue-600' : 'text-slate-300'} font-black`}>
+                                  {fg.reserved_quantity || 0} <span className="text-[8px] uppercase">un.</span>
+                                </div>
+                              </div>
+                              <div className="pt-2 border-t border-slate-50 flex items-center justify-between">
+                                <span className="text-[10px] font-black text-slate-700 uppercase tracking-widest">Total Físico</span>
+                                <div className="text-right text-[#202eac] font-black">
+                                  {(fg.stock_quantity || 0) + (fg.reserved_quantity || 0)} <span className="text-[8px] uppercase">un.</span>
+                                </div>
                               </div>
                             </div>
                           </div>

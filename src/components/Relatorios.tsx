@@ -59,211 +59,153 @@ interface Formula {
   }[];
 }
 
+import { useCompanySettings } from '../hooks/useCompanySettings';
+
 export default function Relatorios() {
   const { mode } = useStorageMode();
+  const { settings } = useCompanySettings();
   const [ingredients, setIngredients] = useState<Ingredient[]>([]);
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
-  const [qualityControls, setQualityControls] = useState<any[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Estados de Impressão
-  const [selectedFormulaId, setSelectedFormulaId] = useState<string>('');
-  const [selectedOrderId, setSelectedOrderId] = useState<string>('');
   const [savedProportions, setSavedProportions] = useState<any[]>([]);
-  const [selectedProportionId, setSelectedProportionId] = useState<string>('');
   const [pricingEntries, setPricingEntries] = useState<any[]>([]);
-  const [selectedPricingFormulaId, setSelectedPricingFormulaId] = useState<string>('');
-  const [selectedPricingCapacity, setSelectedPricingCapacity] = useState<string>('');
+  const [qualityControls, setQualityControls] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+
+  // Selection States
+  const [selectedFormulaId, setSelectedFormulaId] = useState('');
+  const [selectedOrderId, setSelectedOrderId] = useState('');
+  const [selectedProportionId, setSelectedProportionId] = useState('');
+  const [selectedPricingFormulaId, setSelectedPricingFormulaId] = useState('');
+  const [selectedPricingCapacity, setSelectedPricingCapacity] = useState('');
   const [selectedPricingType, setSelectedPricingType] = useState<'varejo' | 'atacado' | 'fardo'>('varejo');
+
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean; title: string; message: string; detail?: string;
     type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
 
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  async function fetchData() {
+  const fetchData = async () => {
+    setIsLoading(true);
     try {
-      setIsLoading(true);
       if (mode === 'supabase') {
-        const [ingRes, forRes, ordRes, qcRes] = await Promise.all([
-          supabase.from('ingredients').select('*, variants (*)'),
-          supabase.from('formulas').select(`
-            id, name, base_volume, version, status, instructions, 
-            packaging_variant_id, label_variant_id,
-            formula_ingredients (
-              ingredient_id,
-              quantity,
-              ingredients (name, unit, cost_per_unit, produto_quimico),
-              variants (name, cost_per_unit)
-            )
-          `),
-          supabase.from('production_orders').select('*'),
-          supabase.from('quality_controls').select('*')
-        ]);
-
-        if (ingRes.error) throw ingRes.error;
-        if (forRes.error) throw forRes.error;
-
-        setIngredients(ingRes.data || []);
-        setFormulas(forRes.data || []);
-        setOrders(ordRes.data || []);
-        setQualityControls(qcRes.data || []);
+        const { data: ing } = await supabase.from('ingredients').select('*').order('name');
+        const { data: form } = await supabase.from('formulas').select('*, formula_ingredients(*, ingredients(*), variants(*))');
+        const { data: ord } = await supabase.from('production_orders').select('*').order('created_at', { ascending: false });
+        const { data: qc } = await supabase.from('quality_controls').select('*');
+        
+        setIngredients(ing || []);
+        setFormulas(form || []);
+        setOrders(ord || []);
+        setQualityControls(qc || []);
       } else {
-        const getLocal = (key: string) => {
-          try {
-            const raw = localStorage.getItem(key);
-            const parsed = raw ? JSON.parse(raw) : [];
-            return Array.isArray(parsed) ? parsed : [];
-          } catch {
-            return [];
-          }
-        };
-
-        setIngredients(getLocal('local_ingredients'));
-        setFormulas(getLocal('local_formulas'));
-        setOrders(getLocal('local_production_orders'));
-        setQualityControls(getLocal('local_quality_controls'));
-      }
-
-      // SEMPRE carregar simulações locais (Memorial de Cálculo), mesmo em modo Supabase
-      const rawProps = localStorage.getItem('local_proportions');
-      try {
-        const parsedProps = rawProps ? JSON.parse(rawProps) : [];
-        if (Array.isArray(parsedProps)) {
-          // Filtrar simulações corrompidas para evitar crashes na renderização
-          const validProps = parsedProps.filter(p => p && typeof p === 'object' && p.displayName);
-          setSavedProportions(validProps);
-        } else {
-          setSavedProportions([]);
-        }
-      } catch {
-        setSavedProportions([]);
-      }
-
-      // Carregar dados de precificação
-      try {
-        const rawPricing = localStorage.getItem('precificacao_entries');
-        setPricingEntries(rawPricing ? JSON.parse(rawPricing) : []);
-      } catch {
-        setPricingEntries([]);
+        setIngredients(JSON.parse(localStorage.getItem('local_ingredients') || '[]'));
+        setFormulas(JSON.parse(localStorage.getItem('local_formulas') || '[]'));
+        setOrders(JSON.parse(localStorage.getItem('local_production_orders') || '[]'));
+        setSavedProportions(JSON.parse(localStorage.getItem('local_proportions') || '[]'));
+        setPricingEntries(JSON.parse(localStorage.getItem('precificacao_entries') || '[]'));
+        setQualityControls(JSON.parse(localStorage.getItem('local_quality_controls') || '[]'));
       }
     } catch (err) {
-      console.error('Erro ao buscar dados para relatórios:', err);
+      console.error('Error fetching report data:', err);
     } finally {
       setIsLoading(false);
     }
-  }
+  };
+
+  useEffect(() => {
+    fetchData();
+  }, [mode]);
+
+  const formatCurrency = (value: number) => 
+    new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(value);
+
+  const formatVol = (value: number) => 
+    value.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+
+  const stats = useMemo(() => {
+    const totalIngredients = ingredients.length;
+    const totalFormulas = formulas.length;
+    
+    const lowStock = ingredients.filter(ing => (ing.estoque_atual || 0) <= (ing.estoque_minimo || 0));
+    
+    const expiringSoon = ingredients.filter(ing => {
+      if (!ing.expiry_date || ing.validade_indeterminada) return false;
+      const expiry = new Date(ing.expiry_date);
+      const diff = Math.ceil((expiry.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24));
+      return diff > 0 && diff <= 30;
+    });
+
+    const totalInventoryValue = ingredients.reduce((acc, ing) => {
+      const cost = typeof ing.cost_per_unit === 'string' 
+        ? parseFloat(ing.cost_per_unit) || 0 
+        : ing.cost_per_unit || 0;
+      return acc + ((ing.estoque_atual || 0) * cost);
+    }, 0);
+
+    // Find most expensive formula per Liter
+    let mostExpensiveFormula = { name: 'N/A', cost: 0 };
+    if (formulas.length > 0) {
+      const costs = formulas.map(f => {
+        const totalFallowCost = f.formula_ingredients.reduce((sum, fi) => {
+          const ing = Array.isArray(fi.ingredients) ? fi.ingredients[0] : fi.ingredients;
+          const variant = Array.isArray(fi.variants) ? fi.variants[0] : fi.variants;
+          const cost = variant?.cost_per_unit ?? ing?.cost_per_unit ?? 0;
+          return sum + (fi.quantity * cost);
+        }, 0);
+        return { name: f.name, cost: totalFallowCost / (f.base_volume || 1) };
+      });
+      mostExpensiveFormula = costs.sort((a, b) => b.cost - a.cost)[0];
+    }
+
+    return { totalIngredients, totalFormulas, totalInventoryValue, lowStock, expiringSoon, mostExpensiveFormula };
+  }, [ingredients, formulas]);
+
+  const productionStats = useMemo(() => {
+    const completedOrders = orders.filter(o => o.status === 'concluido' || o.status === 'finalizado');
+    const totalVolume = completedOrders.reduce((acc, o) => acc + (o.planned_volume || 0), 0);
+    const approvedQCs = qualityControls.filter(q => q.status === 'aprovado').length;
+    const rejectedQCCount = qualityControls.filter(q => q.status === 'reprovado').length;
+    const approvalRate = qualityControls.length > 0 ? (approvedQCs / qualityControls.length) * 100 : 100;
+
+    return { 
+      completedOrdersCount: completedOrders.length, 
+      totalVolume, 
+      approvalRate, 
+      rejectedQCCount,
+      totalQCs: qualityControls.length
+    };
+  }, [orders, qualityControls]);
 
   const handleDeleteProportion = (id: string) => {
     setConfirmModal({
       isOpen: true,
       title: 'Excluir Simulação',
-      message: 'Deseja realmente excluir esta simulação? Esta ação não pode ser desfeita.',
-      type: 'danger',
-      confirmLabel: 'Sim, Excluir',
+      message: 'Tem certeza que deseja excluir este memorial de cálculo?',
+      type: 'warning',
       onConfirm: () => {
+        const newProps = savedProportions.filter(p => p.id !== id);
+        setSavedProportions(newProps);
+        localStorage.setItem('local_proportions', JSON.stringify(newProps));
+        setSelectedProportionId('');
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        try {
-          const remaining = savedProportions.filter(p => p.id !== id);
-          localStorage.setItem('local_proportions', JSON.stringify(remaining));
-          setSavedProportions(remaining);
-          if (selectedProportionId === id) setSelectedProportionId('');
-        } catch (e) {
-          console.error('Erro ao excluir simulação:', e);
-        }
-      },
+      }
     });
   };
 
   const handleClearAllProportions = () => {
     setConfirmModal({
       isOpen: true,
-      title: 'Limpar Todas as Simulações',
-      message: 'Deseja realmente apagar TODAS as simulações arquivadas? Esta ação não pode ser desfeita.',
-      type: 'danger',
-      confirmLabel: 'Sim, Apagar Todas',
+      title: 'Limpar Tudo',
+      message: 'Isso apagará TODAS as simulações salvas. Continuar?',
+      type: 'warning',
       onConfirm: () => {
+        setSavedProportions([]);
+        localStorage.removeItem('local_proportions');
+        setSelectedProportionId('');
         setConfirmModal(prev => ({ ...prev, isOpen: false }));
-        try {
-          localStorage.removeItem('local_proportions');
-          setSavedProportions([]);
-          setSelectedProportionId('');
-        } catch (e) {
-          console.error('Erro ao limpar simulações:', e);
-        }
-      },
+      }
     });
-  };
-
-  const stats = useMemo(() => {
-    const lowStock = ingredients.filter(i => i.estoque_atual <= i.estoque_minimo);
-    const expiringSoon = ingredients.filter(i => {
-      if (i.validade_indeterminada || !i.expiry_date) return false;
-      const expiry = new Date(i.expiry_date);
-      const now = new Date();
-      const diffTime = expiry.getTime() - now.getTime();
-      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      return diffDays <= 30 && diffDays >= 0;
-    });
-
-    const totalInventoryValue = ingredients.reduce((sum, i) => sum + (i.estoque_atual * i.cost_per_unit), 0);
-
-    const formulaCosts = formulas.map(f => {
-      const cost = f.formula_ingredients.reduce((sum, item) => {
-        let itemCost = 0;
-        const variantData = Array.isArray(item.variants) ? item.variants[0] : item.variants;
-        const ingredientData = Array.isArray(item.ingredients) ? item.ingredients[0] : item.ingredients;
-
-        const variantCost = variantData?.cost_per_unit;
-        const ingredientCost = ingredientData?.cost_per_unit;
-
-        if (variantCost !== undefined && variantCost !== null) {
-          itemCost = variantCost;
-        } else if (ingredientCost !== undefined && ingredientCost !== null) {
-          itemCost = ingredientCost;
-        }
-        return sum + (item.quantity * itemCost);
-      }, 0);
-      return { name: f.name, cost };
-    });
-
-    const mostExpensiveFormula = [...formulaCosts].sort((a, b) => b.cost - a.cost)[0];
-
-    return {
-      lowStock,
-      expiringSoon,
-      totalInventoryValue,
-      mostExpensiveFormula,
-      totalIngredients: ingredients.length,
-      totalFormulas: formulas.length
-    };
-  }, [ingredients, formulas]);
-
-  const productionStats = useMemo(() => {
-    const completedOrders = orders.filter(o => o.status === 'completed');
-    const cancelledOrders = orders.filter(o => o.status === 'cancelled');
-    const totalVolume = completedOrders.reduce((sum, o) => sum + (Number(o.planned_volume) || 0), 0);
-
-    const decidedQC = qualityControls.filter(q => q.status === 'approved' || q.status === 'rejected');
-    const approvedQC = decidedQC.filter(q => q.status === 'approved');
-    const rejectedQC = decidedQC.filter(q => q.status === 'rejected');
-
-    return {
-      completedOrdersCount: completedOrders.length,
-      cancelledOrdersCount: cancelledOrders.length,
-      totalVolume,
-      approvedQCCount: approvedQC.length,
-      rejectedQCCount: rejectedQC.length,
-      approvalRate: decidedQC.length > 0 ? (approvedQC.length / decidedQC.length) * 100 : 0
-    };
-  }, [orders, qualityControls]);
-
-  const formatCurrency = (value: number) => {
-    return value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
   };
 
   // --- Printing Engine (Anti-Bloqueio via Iframe) ---
@@ -285,126 +227,167 @@ export default function Relatorios() {
   };
 
   const cssPrintStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;700;900&display=swap');
     
-    @page { margin: 15mm; size: auto; }
+    @page { margin: 12mm; size: A4; }
     
     body { 
       font-family: 'Inter', sans-serif; 
-      color: #1e293b; 
+      color: #0f172a; 
       margin: 0; 
       padding: 0;
-      line-height: 1.4;
+      line-height: 1.5;
       background: white; 
       -webkit-print-color-adjust: exact; 
       print-color-adjust: exact; 
+      font-size: 11px;
     }
 
-    /* Layout de Blocos (Cards) */
-    .card {
-      border: 1px solid #e2e8f0;
-      border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 25px;
-      background: #f8fafc;
-      page-break-inside: avoid;
+    /* Watermark Técnica */
+    .watermark {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-45deg);
+      font-size: 80px;
+      font-weight: 900;
+      color: rgba(226, 232, 240, 0.45);
+      white-space: nowrap;
+      pointer-events: none;
+      z-index: -1;
+      text-transform: uppercase;
+      letter-spacing: 15px;
     }
 
-    .card-header {
+    /* Cabeçalho Profissional */
+    .report-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 20px;
-      border-bottom: 2px solid #202eac;
-      padding-bottom: 12px;
+      align-items: flex-start;
+      border-bottom: 3px solid ${settings.primaryColor || '#202eac'};
+      padding-bottom: 20px;
+      margin-bottom: 30px;
     }
 
-    .card-title {
+    .logo-container {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+    }
+
+    .logo-img {
+      height: 55px;
+      width: auto;
+      object-fit: contain;
+    }
+
+    .company-info .name {
+      font-family: '${settings.headerFont}', sans-serif !important;
       font-size: 20px;
       font-weight: 900;
       color: #0f172a;
-      text-transform: uppercase;
-      letter-spacing: -0.5px;
+      line-height: 1;
+      margin-bottom: 4px;
     }
 
-    /* Grid de Metadados */
-    .grid {
-      display: grid;
-      gap: 20px;
-      margin-bottom: 20px;
+    .company-info .meta {
+      font-size: 9px;
+      color: #64748b;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
+
+    .report-title-box {
+      text-align: right;
+    }
+
+    .report-title-box .main-title {
+      font-size: 14px;
+      font-weight: 900;
+      color: ${settings.primaryColor || '#202eac'};
+      text-transform: uppercase;
+      margin: 0;
+    }
+
+    .report-title-box .sub-title {
+      font-size: 10px;
+      color: #64748b;
+      margin-top: 2px;
+      font-weight: 700;
+    }
+
+    /* Sistema de Grid Industrial */
+    .grid { display: grid; gap: 20px; margin-bottom: 20px; }
     .grid-2 { grid-template-columns: repeat(2, 1fr); }
     .grid-3 { grid-template-columns: repeat(3, 1fr); }
     .grid-4 { grid-template-columns: repeat(4, 1fr); }
 
-    .data-item { display: flex; flex-direction: column; }
-    .data-label { 
-      font-size: 9px; 
-      font-weight: 800; 
-      color: #64748b; 
-      text-transform: uppercase; 
-      margin-bottom: 4px; 
-      letter-spacing: 0.8px;
-    }
-    .data-value { 
-      font-size: 14px; 
-      font-weight: 700; 
-      color: #0f172a; 
+    .data-card {
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      border-radius: 10px;
+      padding: 15px;
     }
 
-    /* Tabelas Profissionais */
-    table { width: 100%; border-collapse: separate; border-spacing: 0; margin-bottom: 20px; }
+    .card-title {
+      font-size: 10px;
+      font-weight: 900;
+      color: #475569;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      border-bottom: 1px solid #cbd5e1;
+      padding-bottom: 6px;
+      margin-bottom: 12px;
+    }
+
+    .data-item { margin-bottom: 4px; }
+    .label { font-size: 9px; color: #64748b; font-weight: 800; text-transform: uppercase; display: block; }
+    .value { font-size: 12px; font-weight: 700; color: #1e293b; }
+    .value.primary { color: ${settings.primaryColor || '#202eac'}; font-size: 14px; }
+
+    /* Tabelas de Alta Precisão */
+    table { width: 100%; border-collapse: collapse; margin-bottom: 25px; }
     th { 
       background: #f1f5f9; 
       text-align: left; 
-      padding: 12px 14px; 
-      font-size: 10px; 
-      font-weight: 800; 
+      padding: 8px 12px; 
+      font-size: 9px; 
+      font-weight: 900; 
       color: #475569; 
-      text-transform: uppercase; 
-      border-bottom: 2px solid #cbd5e1;
+      text-transform: uppercase;
+      border-bottom: 2px solid ${settings.primaryColor || '#202eac'};
     }
     td { 
-      padding: 10px 14px; 
-      font-size: 12px; 
-      color: #334155; 
-      border-bottom: 1px solid #f1f5f9; 
+      padding: 8px 12px; 
+      border-bottom: 1px solid #e2e8f0; 
+      vertical-align: middle; 
     }
-    .row-highlight { font-weight: 700; color: #0f172a; }
-    .row-sub { font-size: 10px; color: #64748b; }
+    tr:nth-child(even) { background: #f8fafc; }
 
-    /* Destaques e Alertas */
     .badge {
       display: inline-block;
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 10px;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 9px;
       font-weight: 800;
       text-transform: uppercase;
     }
-    .badge-primary { background: #e0e7ff; color: #202eac; }
+    .badge-primary { background: ${settings.primaryColor || '#202eac'}20; color: ${settings.primaryColor || '#202eac'}; }
     .badge-success { background: #dcfce7; color: #166534; }
-    
-    /* Blocos de Observação e Assinaturas */
-    .note-block {
-      background: #fffbeb;
-      border: 1px dashed #fcd34d;
-      padding: 15px;
-      border-radius: 8px;
-      font-size: 11px;
-      color: #92400e;
-      margin-top: 20px;
-    }
 
-    .signature-grid {
+    .text-right { text-align: right; }
+    .text-center { text-align: center; }
+
+    /* Assinaturas e Rodapé */
+    .signature-section {
+      margin-top: 50px;
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      gap: 60px;
-      margin-top: 60px;
-      page-break-inside: avoid;
+      gap: 50px;
     }
-    .signature-box {
-      border-top: 1px solid #cbd5e1;
+    .sig-box {
+      border-top: 1px solid #94a3b8;
       padding-top: 10px;
       text-align: center;
       font-size: 10px;
@@ -412,88 +395,45 @@ export default function Relatorios() {
       color: #64748b;
     }
 
-    .watermark {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) rotate(-45deg);
-      font-size: 100px;
-      font-weight: 900;
-      color: rgba(32, 46, 172, 0.03);
-      z-index: -1;
-      white-space: nowrap;
-      pointer-events: none;
-    }
-
-    .text-right { text-align: right; }
-    .text-center { text-align: center; }
-    .font-bold { font-weight: 700; }
-    .text-primary { color: #202eac; }
-
-    /* Cabeçalho do Relatório */
-    .report-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 30px;
-      padding-bottom: 20px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-    .logo-container {
-      display: flex;
-      align-items: center;
-      gap: 15px;
-    }
-    .logo-img {
-      width: 60px;
-      height: 60px;
-      object-fit: contain;
-    }
-    .company-info {
-      display: flex;
-      flex-direction: column;
-    }
-    .company-name {
-      font-size: 18px;
-      font-weight: 900;
-      color: #0f172a;
-      letter-spacing: -0.5px;
-    }
-    .report-meta {
-      text-align: right;
-    }
-    
     .footer {
       position: fixed;
-      bottom: 10mm;
+      bottom: 20px;
       left: 0;
       right: 0;
       text-align: center;
-      font-size: 9px;
+      font-size: 8px;
       color: #94a3b8;
-      border-top: 1px solid #f1f5f9;
-      padding-top: 10px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    @media print {
+      .no-print { display: none; }
     }
   `;
 
   const reportHeader = (title: string, subtitle: string) => `
     <div class="report-header">
       <div class="logo-container">
-        <img src="/logo.png" class="logo-img" onerror="this.style.display='none'; document.getElementById('text-logo').style.display='flex';" />
-        <div id="text-logo" style="display:none; width:50px; height:50px; background:#202eac; border-radius:50%; align-items:center; justify-content:center; color:white; font-weight:900; font-size:20px;">OC</div>
+        ${settings.logo 
+          ? `<img src="${settings.logo}" class="logo-img" />`
+          : `<div style="width:50px; height:50px; background:${settings.primaryColor || '#202eac'}; border-radius:12px; display:flex; align-items:center; justify-content:center; color:white; font-weight:900; font-size:20px;">${settings.name.substring(0, 2).toUpperCase()}</div>`
+        }
         <div class="company-info">
-          <div class="company-name">OHANA CLEAN</div>
-          <div style="font-size: 10px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 1px;">Soluções em Limpeza Industrial</div>
+          <div class="name">${settings.name}</div>
+          <div class="meta">
+            ${settings.document ? `CNPJ: ${settings.document} | ` : ''} ${settings.address || 'PLANEJAMENTO INDUSTRIAL'}
+          </div>
         </div>
       </div>
-      <div class="report-meta">
-        <div style="font-size: 11px; font-weight: 800; color: #202eac; text-transform: uppercase;">${title}</div>
-        <div style="font-size: 10px; color: #64748b; margin-top: 2px;">${subtitle}</div>
-        <div style="font-size: 9px; color: #94a3b8; margin-top: 4px;">Gerado em ${new Date().toLocaleDateString('pt-BR')} às ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
+      <div class="report-title-box">
+        <h1 class="main-title">${title}</h1>
+        <div class="sub-title">${subtitle}</div>
+        <div style="font-size: 8px; color: #94a3b8; margin-top: 8px;">EMISSÃO: ${new Date().toLocaleDateString('pt-BR')} ${new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</div>
       </div>
     </div>
   `;
-
   const handlePrintFormula = () => {
     if (!selectedFormulaId) return;
     const formula = formulas.find(f => f.id === selectedFormulaId);
@@ -522,7 +462,7 @@ export default function Relatorios() {
     const totalCost = items.reduce((sum, i) => sum + i.subtotal, 0);
 
     const formatBRL = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const formatVol = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+    const formatVolLocal = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
 
     const html = `
       <!DOCTYPE html>
@@ -532,130 +472,114 @@ export default function Relatorios() {
         <style>${cssPrintStyles}</style>
       </head>
       <body>
-        <div class="watermark">FICHA TÉCNICA P&D</div>
+        <div class="watermark">FICHA TÉCNICA</div>
         ${reportHeader('Ficha Técnica de Produto', `Fórmula: ${formula.name}`)}
 
-          <div class="grid grid-4 text-center">
-            <div class="data-item">
-              <span class="data-label">Produto</span>
-              <span class="data-value text-primary">${formula.name}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Versão Operacional</span>
-              <span class="data-value">${(formula.version || 'v1.0').toLowerCase()}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Lote Base</span>
-              <span class="data-value">${formatVol(formula.base_volume)} L/Kg</span>
-            </div>
-             <div class="data-item">
-              <span class="data-label">Data de Revisão</span>
-              <span class="data-value">${new Date().toLocaleDateString('pt-BR')}</span>
-            </div>
+        <div class="grid grid-4 text-center">
+          <div class="data-card">
+            <span class="label">Produto Master</span>
+            <span class="value primary">${formula.name}</span>
+          </div>
+          <div class="data-card">
+            <span class="label">Versão Técnica</span>
+            <span class="value">${(formula.version || 'v1.0').toUpperCase()}</span>
+          </div>
+          <div class="data-card">
+            <span class="label">Lote Padrão</span>
+            <span class="value">${formatVolLocal(formula.base_volume)} L/Kg</span>
+          </div>
+          <div class="data-card">
+            <span class="label">Última Revisão</span>
+            <span class="value">${new Date().toLocaleDateString('pt-BR')}</span>
           </div>
         </div>
-
-        <div class="card">
-          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-            1. Análise de Composição Química (BOM)
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Insumo Químico</th>
-                <th class="text-right">Quantidade</th>
-                <th class="text-center">Unid.</th>
-                <th class="text-right">Proporção (%)</th>
-                <th class="text-right">Custo Unitário</th>
-                <th class="text-right">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${chemicals.map(c => `
-                <tr>
-                  <td class="font-bold">${c.name}</td>
-                  <td class="text-right">${formatVol(c.qty)}</td>
-                  <td class="text-center">${c.unit.toUpperCase()}</td>
-                  <td class="text-right text-primary font-bold">${((c.qty / totalVolume) * 100).toFixed(2)}%</td>
-                  <td class="text-right" style="color: #64748b;">${formatBRL(c.cost)}</td>
-                  <td class="text-right font-bold">${formatBRL(c.subtotal)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-
-        ${packaging.length > 0 ? `
-        <div class="card">
-          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
-            2. Materiais de Embalagem e Acondicionamento
-          </div>
-          <table>
-            <thead>
-              <tr>
-                <th>Item</th>
-                <th class="text-right">Quantidade</th>
-                <th class="text-center">Unid.</th>
-                <th class="text-right">Custo Unitário</th>
-                <th class="text-right">Subtotal</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${packaging.map(p => `
-                <tr>
-                  <td class="font-bold">${p.name}</td>
-                  <td class="text-right">${formatVol(p.qty)}</td>
-                  <td class="text-center">${p.unit.toUpperCase()}</td>
-                  <td class="text-right" style="color: #64748b;">${formatBRL(p.cost)}</td>
-                  <td class="text-right font-bold">${formatBRL(p.subtotal)}</td>
-                </tr>
-              `).join('')}
-            </tbody>
-          </table>
-        </div>
-        ` : ''}
 
         <div class="grid grid-2">
-          <div class="card" style="background: #f1f5f9; border: none;">
-            <div class="data-label">Precificação Estrutural</div>
-            <div class="grid grid-2" style="margin-top: 15px;">
-              <div>
-                <span class="data-label">Custo/Litro</span>
-                <div class="data-value text-primary" style="font-size: 20px;">${formatBRL(totalCost / formula.base_volume)}</div>
-              </div>
-              <div>
-                <span class="data-label">Custo/Lote</span>
-                <div class="data-value" style="font-size: 20px;">${formatBRL(totalCost)}</div>
-              </div>
-            </div>
+          <div>
+            <div class="card-title">1. Composição Química (BOM)</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Insumo Químico</th>
+                  <th class="text-right">Qtd.</th>
+                  <th class="text-right">%</th>
+                  <th class="text-right">Custo</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${chemicals.map(c => `
+                  <tr>
+                    <td><strong>${c.name}</strong></td>
+                    <td class="text-right">${formatVolLocal(c.qty)} ${c.unit}</td>
+                    <td class="text-right" style="color:${settings.primaryColor || '#202eac'}; font-weight:800;">${((c.qty / totalVolume) * 100).toFixed(2)}%</td>
+                    <td class="text-right">${formatBRL(c.subtotal)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
           </div>
-          <div class="card" style="margin-bottom:0;">
-            <div class="data-label">Instruções de Manipulação</div>
-            <div style="font-size: 11px; color: #334155; margin-top: 10px; line-height: 1.6; font-style: italic;">
-              ${formula.instructions || 'Nenhuma instrução operacional padrão (POP) registrada para este produto.'}
+
+          <div>
+            <div class="card-title">2. Materiais de Envase</div>
+            <table>
+              <thead>
+                <tr>
+                  <th>Componente</th>
+                  <th class="text-right">Qtd.</th>
+                  <th class="text-right">Custo</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${packaging.length > 0 ? packaging.map(p => `
+                  <tr>
+                    <td><strong>${p.name}</strong></td>
+                    <td class="text-right">${formatVolLocal(p.qty)} ${p.unit}</td>
+                    <td class="text-right">${formatBRL(p.subtotal)}</td>
+                  </tr>
+                `).join('') : '<tr><td colspan="3" class="text-center">Nenhum material cadastrado</td></tr>'}
+              </tbody>
+            </table>
+
+            <div class="data-card" style="margin-top: 10px; background: #f1f5f9;">
+              <div class="grid grid-2">
+                <div>
+                  <span class="label">Custo/Litro</span>
+                  <span class="value" style="font-size: 16px;">${formatBRL(totalCost / formula.base_volume)}</span>
+                </div>
+                <div>
+                  <span class="label">Custo Total Lote</span>
+                  <span class="value" style="font-size: 16px;">${formatBRL(totalCost)}</span>
+                </div>
+              </div>
             </div>
           </div>
         </div>
 
-        <div class="signature-grid">
-          <div class="signature-box">Gestor de P&D / Responsável Técnico</div>
-          <div class="signature-box">Diretoria Industrial / Qualidade</div>
+        <div class="data-card">
+          <div class="card-title">3. Instruções de Manipulação / POP</div>
+          <div style="font-style: italic; color: #475569; font-size: 10px; line-height: 1.6;">
+            ${formula.instructions || 'Nenhuma instrução operacional cadastrada para esta versão.'}
+          </div>
         </div>
 
-        <div class="footer">
-          Ohana Clean Planner — Relatório Gerencial de Engenharia de Produto — Confidencial
+        <div class="signature-section">
+          <div class="sig-box">Laboratório / P&D</div>
+          <div class="sig-box">Garantia da Qualidade</div>
         </div>
+
+        <div class="footer">DOCUMENTO DE ENGENHARIA — PROPRIEDADE DE ${settings.name.toUpperCase()} — CONFIDENCIAL</div>
       </body>
       </html>
     `;
     triggerPrint(html);
   };
 
+
   const handlePrintProportion = () => {
     const prop = savedProportions.find(p => p.id === selectedProportionId);
     if (!prop) return;
 
-    const formatVol = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+    const formatVolLocal = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
 
     const html = `
       <!DOCTYPE html>
@@ -666,100 +590,88 @@ export default function Relatorios() {
       </head>
       <body>
         <div class="watermark">MEMORIAL DE CÁLCULO</div>
-        ${reportHeader('Memorial de Cálculo Industrial', `Simulação: ${prop.displayName}`)}
-            <span class="card-title">Instrução de Proporção (Operacional)</span>
-            <span class="badge badge-primary">ID: ${prop.id.slice(0, 8).toUpperCase()}</span>
-          </div>
+        ${reportHeader('Memorial de Cálculo Industrial', `Simulação ID: ${prop.id.slice(0, 8).toUpperCase()}`)}
 
-          <div class="grid grid-4 text-center">
-            <div class="data-item">
-              <span class="data-label">Data Emissão</span>
-              <span class="data-value">${new Date(prop.createdAt).toLocaleDateString('pt-BR')}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Produto Alvo</span>
-              <span class="data-value text-primary">${prop.formulaName}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Versão Base</span>
-              <span class="data-value">${prop.formulaVersion || 'v1.0'}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Meta de Produção</span>
-              <span class="data-value" style="font-size: 18px;">${formatVol(prop.targetVolume)} L/Kg</span>
-            </div>
+        <div class="grid grid-4 text-center">
+          <div class="data-card">
+            <span class="label">Produto Alvo</span>
+            <span class="value primary">${prop.formulaName}</span>
+          </div>
+          <div class="data-card">
+            <span class="label">Versão Base</span>
+            <span class="value">${prop.formulaVersion || 'v1.0'}</span>
+          </div>
+          <div class="data-card">
+            <span class="label">Meta Produção</span>
+            <span class="value" style="font-size: 16px;">${formatVolLocal(prop.targetVolume)} L/Kg</span>
+          </div>
+          <div class="data-card">
+            <span class="label">Data Simulação</span>
+            <span class="value">${new Date(prop.createdAt).toLocaleDateString('pt-BR')}</span>
           </div>
         </div>
 
-        <div class="card" style="background: white; border-color: #cbd5e1;">
-          <div style="font-size: 12px; font-weight: 900; color: #475569; margin-bottom: 15px; border-left: 4px solid #202eac; padding-left: 10px;">
-            LISTA DE ESCALONAMENTO DE INSUMOS
-          </div>
+        <div class="data-card">
+          <div class="card-title">Listagem de Escalonamento de Insumos</div>
           <table>
             <thead>
               <tr>
-                <th>Componente / Insumo</th>
-                <th>Origem</th>
+                <th>Componente</th>
+                <th class="text-center">Tipo</th>
                 <th class="text-right">Quantidade</th>
-                <th class="text-center">Unidade</th>
+                <th class="text-center">Unid.</th>
                 <th class="text-right">Part. (%)</th>
               </tr>
             </thead>
             <tbody>
               ${(() => {
-        const totalChem = prop.ingredients.reduce((sum: number, i: any) => i.isChemical ? sum + i.quantity : sum, 0) || 1;
-        return prop.ingredients.map((ing: any) => {
-          const percentage = ing.percentage ?? (ing.isChemical ? (ing.quantity / totalChem) * 100 : 0);
-          return `
+                const totalChem = prop.ingredients.reduce((sum: number, i: any) => i.isChemical ? sum + i.quantity : sum, 0) || 1;
+                return prop.ingredients.map((ing: any) => {
+                  const percentage = ing.percentage ?? (ing.isChemical ? (ing.quantity / totalChem) * 100 : 0);
+                  return `
                     <tr>
                       <td>
-                        <div class="row-highlight">${ing.name}</div>
-                        <div class="row-sub">${ing.isChemical ? 'Produto de Base Química' : 'Componente de Envase/Logística'}</div>
+                        <div style="font-weight: 800;">${ing.name}</div>
+                        <div style="font-size: 8px; color: #64748b;">${ing.isChemical ? 'Base Química' : 'Material de Envase'}</div>
                       </td>
                       <td class="text-center">
-                        <span class="badge ${ing.isChemical ? 'badge-primary' : 'badge-success'}">${ing.isChemical ? 'Químico' : 'Embalagem'}</span>
+                        <span class="badge ${ing.isChemical ? 'badge-primary' : 'badge-success'}">${ing.isChemical ? 'QUÍMICO' : 'LOGÍSTICO'}</span>
                       </td>
-                      <td class="text-right font-bold" style="font-size: 15px;">${formatVol(ing.quantity)}</td>
+                      <td class="text-right" style="font-size: 13px; font-weight: 900;">${formatVolLocal(ing.quantity)}</td>
                       <td class="text-center">${ing.unit.toUpperCase()}</td>
-                      <td class="text-right" style="color: #64748b;">${Number(percentage || 0).toFixed(2)}%</td>
+                      <td class="text-right" style="color: #64748b; font-weight: 700;">${Number(percentage || 0).toFixed(2)}%</td>
                     </tr>
                   `;
-        }).join('');
-      })()}
+                }).join('');
+              })()}
             </tbody>
             <tfoot>
-              <tr style="background: #f8fafc; font-weight: 900;">
-                <td colspan="4" class="text-right text-primary">VALOR TOTAL DO LOTE (PREVISTO)</td>
-                <td class="text-right" style="font-size: 16px; color: #202eac;">${formatCurrency(prop.totalCost)}</td>
+              <tr style="background: #f1f5f9; font-weight: 900;">
+                <td colspan="4" class="text-right" style="padding: 12px; color: ${settings.primaryColor || '#202eac'};">CUSTO TOTAL PREVISTO DO LOTE</td>
+                <td class="text-right" style="padding: 12px; font-size: 14px; color: ${settings.primaryColor || '#202eac'};">${formatCurrency(prop.totalCost)}</td>
               </tr>
             </tfoot>
           </table>
         </div>
 
         <div class="grid grid-2">
-          <div class="card" style="margin-bottom:0;">
-            <div class="data-label">Custo Médio Unitário</div>
-            <div class="data-value" style="font-size: 24px; color: #202eac;">${formatCurrency(prop.targetVolume > 0 ? prop.totalCost / prop.targetVolume : 0)} <span style="font-size: 12px; color: #64748b; font-weight: 400;">/ L-Kg</span></div>
+          <div class="data-card">
+            <span class="label">Custo Médio Planejado</span>
+            <span class="value" style="font-size: 18px; color: ${settings.primaryColor || '#202eac'};">${formatCurrency(prop.totalCost / (prop.targetVolume || 1))} <span style="font-size: 10px; color: #94a3b8;">/ L-Kg</span></span>
           </div>
-          <div class="card" style="margin-bottom:0; background: #fffbeb; border-color: #fcd34d;">
-             <div class="data-label" style="color: #92400e;">Observações Críticas do Operador</div>
-             <div style="height: 60px; border: 1px dashed #fcd34d; margin-top: 10px; border-radius: 4px;"></div>
-             <div class="row-sub" style="margin-top: 5px;">Anotar desvios de pH, densidade ou temperatura se houver.</div>
+          <div class="data-card" style="border-color: #fca5a5; background: #fef2f2;">
+            <span class="label" style="color: #b91c1c;">Anotações do Operador (Pesagem)</span>
+            <div style="height: 40px; border-bottom: 1px dashed #fca5a5; margin-top: 10px;"></div>
+            <div style="font-size: 8px; color: #991b1b; margin-top: 5px;">* Validar pH e Densidade após mistura completa.</div>
           </div>
         </div>
 
-        <div class="note-block">
-          <strong>Atenção ao Operador:</strong> Certifique-se de que todos os equipamentos de proteção individual (EPIs) estejam sendo utilizados conforme o FISPQ de cada insumo. O memorial de cálculo acima é baseado nas proporções técnicas aprovadas pelo laboratório.
+        <div class="signature-section">
+          <div class="sig-box">Operador Responsável</div>
+          <div class="sig-box">Conferência / CQ</div>
         </div>
 
-        <div class="signature-grid">
-          <div class="signature-box">Responsável pela Pesagem / Preparo</div>
-          <div class="signature-box">Conferência Técnica / Qualidade</div>
-        </div>
-
-        <div class="footer">
-          Gerado via Ohana Clean Planner — Tecnologias de Gestão para Microssaas Industrial — Documento Operacional Interno
-        </div>
+        <div class="footer">DOCUMENTO OPERACIONAL — GERADO VIA OHANA CLEAN PLANNER — MODELO INDUSTRIAL TÉCNICO</div>
       </body>
       </html>
     `;
@@ -818,7 +730,7 @@ export default function Relatorios() {
       }));
     }
 
-    const formatVol = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
+    const formatVolLocal = (v: number) => v.toLocaleString('pt-BR', { maximumFractionDigits: 3 });
 
     const html = `
       <!DOCTYPE html>
@@ -829,63 +741,58 @@ export default function Relatorios() {
       </head>
       <body>
         <div class="watermark">ORDEM DE FABRICAÇÃO</div>
-        ${reportHeader('Ordem de Fabricação (OF)', `Lote: ${order.batch_number}`)}
+        ${reportHeader('Ordem de Fabricação (OF)', `Lote Técnico: ${order.batch_number}`)}
 
-          <div class="grid grid-3 text-center">
-            <div class="data-item">
-              <span class="data-label">Produto / Fórmula</span>
-              <span class="data-value">${formula?.name || 'Fórmula Desconhecida'}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Volume do Lote</span>
-              <span class="data-value" style="font-size: 18px; color: #10b981;">${formatVol(order.planned_volume)} L/Kg</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Data de Fabricação</span>
-              <span class="data-value">${order.end_date ? new Date(order.end_date).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')}</span>
-            </div>
+        <div class="grid grid-3 text-center">
+          <div class="data-card">
+            <span class="label">Fórmula / Produto</span>
+            <span class="value primary">${formula?.name || 'Não Identificada'}</span>
           </div>
-          
-          <div class="grid grid-3 text-center" style="margin-top: 15px; border-top: 1px solid #e2e8f0; padding-top: 15px;">
-            <div class="data-item">
-              <span class="data-label">Operador Responsável</span>
-              <span class="data-value">${order.operatorName || 'Não Informado'}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Status Final</span>
-              <span class="badge ${order.status === 'completed' ? 'badge-success' : 'badge-primary'}" style="align-self: center; margin-top: 4px;">
-                ${order.status === 'completed' ? 'FINALIZADO' : 'EM PROCESSAMENTO'}
-              </span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">ID Único do Sistema</span>
-              <span class="data-value" style="font-family: monospace; font-size: 10px;">${order.id}</span>
-            </div>
+          <div class="data-card">
+            <span class="label">Volume do Lote</span>
+            <span class="value" style="font-size: 16px;">${formatVolLocal(order.planned_volume)} L/Kg</span>
+          </div>
+          <div class="data-card">
+            <span class="label">Data de Fabricação</span>
+            <span class="value">${order.end_date ? new Date(order.end_date).toLocaleDateString('pt-BR') : new Date().toLocaleDateString('pt-BR')}</span>
           </div>
         </div>
 
-        <div class="card">
-          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 12px; text-transform: uppercase;">
-            1. Rastreabilidade de Insumos Químicos
+        <div class="grid grid-3 text-center" style="margin-top: 10px;">
+          <div class="data-card">
+            <span class="label">Operador Responsável</span>
+            <span class="value">${order.operatorName || 'Indeterminado'}</span>
           </div>
+          <div class="data-card">
+            <span class="label">Status do Lote</span>
+            <span class="badge ${order.status === 'completed' ? 'badge-success' : 'badge-primary'}">${order.status === 'completed' ? 'FINALIZADO' : 'EM PRODUÇÃO'}</span>
+          </div>
+          <div class="data-card">
+            <span class="label">ID de Rastreabilidade</span>
+            <span class="value" style="font-family: monospace; font-size: 9px;">${order.id.slice(0, 16).toUpperCase()}</span>
+          </div>
+        </div>
+
+        <div class="data-card">
+          <div class="card-title">1. Rastreabilidade de Insumos Químicos</div>
           <table>
             <thead>
               <tr>
                 <th>Elemento Químico Consumido</th>
                 <th class="text-right">Volume Escalonado</th>
                 <th class="text-center">Unid.</th>
-                <th class="text-right">Concentração (%)</th>
-                <th style="padding-left: 20px;">Lote Original (Fornecedor)</th>
+                <th class="text-right">Part. (%)</th>
+                <th class="text-right">Lote Fornecedor</th>
               </tr>
             </thead>
             <tbody>
               ${chemicals.map(c => `
                 <tr>
-                  <td class="font-bold">${c.name}</td>
-                  <td class="text-right font-bold">${formatVol(c.qty)}</td>
+                  <td><strong>${c.name}</strong></td>
+                  <td class="text-right" style="font-weight: 800;">${formatVolLocal(c.qty)}</td>
                   <td class="text-center">${c.unit.toUpperCase()}</td>
-                  <td class="text-right" style="color: #64748b;">${((c.qty / totalVolume) * 100).toFixed(2)}%</td>
-                  <td style="padding-left: 20px;">
+                  <td class="text-right" style="color: #64748b; font-weight: 700;">${((c.qty / totalVolume) * 100).toFixed(2)}%</td>
+                  <td class="text-right">
                     ${c.supplierBatch !== '-' ? `<span class="badge badge-primary">${c.supplierBatch}</span>` : '<span style="color:#cbd5e1">—</span>'}
                   </td>
                 </tr>
@@ -895,26 +802,24 @@ export default function Relatorios() {
         </div>
 
         ${packaging.length > 0 ? `
-        <div class="card">
-          <div style="font-size: 11px; font-weight: 800; color: #475569; margin-bottom: 12px; text-transform: uppercase;">
-            2. Lista de Envase e Rastreamento de Embalagem
-          </div>
+        <div class="data-card">
+          <div class="card-title">2. Lista de Envase e Rastreamento de Embalagem</div>
           <table>
             <thead>
               <tr>
                 <th>Componente Logístico</th>
                 <th class="text-right">Quantidade</th>
                 <th class="text-center">Unid.</th>
-                <th style="padding-left: 20px;">Lote (Fornecedor)</th>
+                <th class="text-right">Lote Embalagem</th>
               </tr>
             </thead>
             <tbody>
               ${packaging.map(p => `
                 <tr>
-                  <td class="font-bold">${p.name}</td>
-                  <td class="text-right font-bold">${formatVol(p.qty)}</td>
+                  <td><strong>${p.name}</strong></td>
+                  <td class="text-right" style="font-weight: 800;">${formatVolLocal(p.qty)}</td>
                   <td class="text-center">${p.unit.toUpperCase()}</td>
-                  <td style="padding-left: 20px;">
+                  <td class="text-right">
                     ${p.supplierBatch !== '-' ? `<span class="badge badge-success">${p.supplierBatch}</span>` : '<span style="color:#cbd5e1">—</span>'}
                   </td>
                 </tr>
@@ -924,24 +829,23 @@ export default function Relatorios() {
         </div>
         ` : ''}
 
-        <div class="card">
-          <div class="data-label">3. Relatório de Ocorrências e Desvios de Processo</div>
-          <div style="min-height: 100px; border: 1px dashed #cbd5e1; margin-top: 10px; border-radius: 8px; padding: 15px; font-size: 10px; color: #94a3b8; font-style: italic;">
-            Descreva qualquer anormalidade durante a mistura, variações de temperatura, tempo de agitação ou intercorrências mecânicas.
+        <div class="data-card">
+          <div class="card-title">3. Relatório de Ocorrências e Desvios</div>
+          <div style="min-height: 80px; border: 1px dashed #cbd5e1; border-radius: 8px; padding: 15px; font-size: 10px; color: #94a3b8; font-style: italic;">
+            Descreva qualquer anormalidade durante a mistura, variações de temperatura ou intercorrências mecânicas.
           </div>
         </div>
 
-        <div class="signature-grid">
-          <div class="signature-box">Rubrica Operador Principal</div>
-          <div class="signature-box">Visto Qualidade (CQA)</div>
+        <div class="signature-section">
+          <div class="sig-box">Operador de Preparo</div>
+          <div class="sig-box">Visto Qualidade (CQA)</div>
         </div>
 
-        <div class="footer">
-          Ohana Clean Planner — Sistema Industrial de Rastreabilidade — OF Emitida em ${new Date().toLocaleString('pt-BR')}
-        </div>
+        <div class="footer">DOCUMENTO DE RASTREABILIDADE TOTAL — MODELO INDUSTRIAL OHANA CLEAN PLANNER</div>
       </body>
       </html>
     `;
+    triggerPrint(html);
   };
 
   const handlePrintPricing = () => {
@@ -1046,119 +950,93 @@ export default function Relatorios() {
       <!DOCTYPE html>
       <html>
       <head>
-        <title>Precificação - ${formula.name}</title>
+        <title>Simulação - ${formula.name}</title>
         <style>${cssPrintStyles}</style>
       </head>
       <body>
         <div class="watermark">TABELA DE PREÇOS</div>
-        ${reportHeader('Gestão de Preços e Margens', `Produto: ${formula.name} - ${label}`)}
+        ${reportHeader('Análise de Precificação e Margens', `Simulação Técnica: ${formula.name}`)}
 
-          <div class="grid grid-3 text-center">
-             <div class="data-item">
-              <span class="data-label">Produto</span>
-              <span class="data-value">${formula.name}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Volume de Venda</span>
-              <span class="data-value" style="font-size: 18px; color: #202eac;">${capacity >= 1 ? `${capacity}L` : `${capacity * 1000}ml`}</span>
-            </div>
-            <div class="data-item">
-              <span class="data-label">Canal Aplicado</span>
-              <span class="data-value" style="color: #64748b;">${selectedPricingType.toUpperCase()}</span>
-            </div>
+        <div class="grid grid-3 text-center">
+          <div class="data-card">
+            <span class="label">Canal Selecionado</span>
+            <span class="value primary">${label.toUpperCase()}</span>
+          </div>
+          <div class="data-card">
+            <span class="label">Volume Unitário</span>
+            <span class="value" style="font-size: 16px;">${capacity >= 1 ? `${capacity}L` : `${capacity * 1000}ml`}</span>
+          </div>
+          <div class="data-card">
+             <span class="label">Status Precificação</span>
+             <span class="badge badge-success">CONCLUÍDO</span>
           </div>
         </div>
 
-        <div class="card" style="background: #f8fafc; text-align: center; padding: 40px 20px;">
-          <div class="data-label" style="font-size: 14px; margin-bottom: 10px;">Preço Sugerido de Comercialização</div>
-          <div style="font-size: 48px; font-weight: 900; color: #1e293b; letter-spacing: -1px;">
-            ${formatCurrency(sellPrice)}
-          </div>
-          <div style="margin-top: 15px; display: flex; justify-content: center; gap: 40px;">
-             <div>
-                <span class="data-label">Margem Bruta (R$)</span>
-                <div class="data-value" style="color: #10b981;">${formatCurrency(marginVal)}</div>
-             </div>
-             <div>
-                <span class="data-label">Margem Bruta (%)</span>
-                <div class="data-value" style="color: #10b981;">${marginPerc.toFixed(2)}%</div>
-             </div>
-             <div>
-                <span class="data-label">Markup Aplicado</span>
-                <div class="data-value" style="color: #6366f1;">${markupPerc.toFixed(2)}%</div>
-             </div>
+        <div class="data-card" style="text-align: center; padding: 30px; background: #f8fafc;">
+          <span class="label" style="font-size: 11px;">Preço Final de Venda (Sugerido)</span>
+          <div style="font-size: 40px; font-weight: 900; color: #1e293b; margin: 10px 0;">${formatCurrency(sellPrice)}</div>
+          <div class="grid grid-3" style="width: 80%; margin: 20px auto 0;">
+            <div>
+              <span class="label">Margem Bruta (R$)</span>
+              <span class="value" style="color: #10b981;">${formatCurrency(marginVal)}</span>
+            </div>
+            <div>
+              <span class="label">Margem Bruta (%)</span>
+              <span class="value" style="color: #10b981;">${marginPerc.toFixed(2)}%</span>
+            </div>
+            <div>
+              <span class="label">Markup Aplicado</span>
+              <span class="value" style="color: ${settings.primaryColor || '#202eac'};">${markupPerc.toFixed(2)}%</span>
+            </div>
           </div>
         </div>
 
         <div class="grid grid-2">
-            <div class="card">
-              <div class="data-label">Composição de Custo Unitário</div>
-              <div style="margin-top: 15px; space-y: 10px;">
-                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
-                  <span>Matéria-Prima (Líquido)</span>
-                  <span class="font-bold">${formatCurrency(rawCostPerUnit)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
-                  <span>Embalagem (${pkgOpt?.name || 'Não Ident.'})</span>
-                  <span class="font-bold">${formatCurrency(costEmbalagem)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
-                  <span>Rótulo e Acabamento</span>
-                  <span class="font-bold">${formatCurrency(costRotulo)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 5px 0; border-bottom: 1px solid #f1f5f9;">
-                  <span>Custos Fixos (Operação)</span>
-                  <span class="font-bold">${formatCurrency(fixedCosts)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 13px; padding: 10px 0; color: #202eac;">
-                  <span class="font-bold">Custo Total de Produção</span>
-                  <span class="font-bold">${formatCurrency(totalCost)}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between; font-size: 11px; padding: 8px; margin-top: 5px; background: #fef3c7; border: 1px solid #fde68a; border-radius: 6px; color: #b45309;">
-                  <span class="font-bold flex items-center justify-between w-full">🎯 Preço Teto Minimo Sugerido (+50%) <span>${formatCurrency(custoMinVenda)}</span></span>
-                </div>
+          <div class="data-card">
+            <div class="card-title">Composição de Custo Industrial</div>
+            <div style="font-size: 11px;">
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+                <span>Matéria-Prima (Líquido)</span>
+                <span style="font-weight: 700;">${formatCurrency(rawCostPerUnit)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+                <span>Embalagem (${pkgOpt?.name || 'Padrão'})</span>
+                <span style="font-weight: 700;">${formatCurrency(costEmbalagem)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+                <span>Rótulos e Acabamentos</span>
+                <span style="font-weight: 700;">${formatCurrency(costRotulo)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-bottom: 6px; border-bottom: 1px solid #e2e8f0; padding-bottom: 3px;">
+                <span>Custos Operacionais Fixos</span>
+                <span style="font-weight: 700;">${formatCurrency(fixedCosts)}</span>
+              </div>
+              <div style="display: flex; justify-content: space-between; margin-top: 10px; font-size: 13px; color: ${settings.primaryColor || '#202eac'};">
+                <span style="font-weight: 900;">CUSTO TOTAL DE PRODUÇÃO</span>
+                <span style="font-weight: 900;">${formatCurrency(totalCost)}</span>
               </div>
             </div>
-            <div class="card" style="background: #eff6ff; border: none;">
-              <div class="data-label">Referência de Outros Canais</div>
-              <table style="margin-top: 10px; background: transparent;">
-                <thead>
-                  <tr style="background: transparent; border-bottom: 1px solid #bfdbfe;">
-                    <th style="font-size: 10px;">Canal</th>
-                    <th class="text-right" style="font-size: 10px;">Preço</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${selectedPricingType !== 'varejo' && entry.varejoPrice > 0 ? `
-                    <tr>
-                      <td style="font-size: 11px;">Varejo</td>
-                      <td class="text-right font-bold" style="font-size: 12px;">${formatCurrency(entry.varejoPrice)}</td>
-                    </tr>
-                  ` : ''}
-                  ${selectedPricingType !== 'atacado' && entry.atacadoPrice > 0 ? `
-                    <tr>
-                      <td style="font-size: 11px;">Atacado</td>
-                      <td class="text-right font-bold" style="font-size: 12px;">${formatCurrency(entry.atacadoPrice)}</td>
-                    </tr>
-                  ` : ''}
-                  ${selectedPricingType !== 'fardo' && entry.fardoPrice > 0 ? `
-                    <tr>
-                      <td style="font-size: 11px;">Fardo (${entry.fardoQty}un)</td>
-                      <td class="text-right font-bold" style="font-size: 12px;">${formatCurrency(entry.fardoPrice / (entry.fardoQty || 1))} <small>/un</small></td>
-                    </tr>
-                  ` : ''}
-                </tbody>
-              </table>
+          </div>
+          <div class="data-card" style="background: #eff6ff; border-style: dashed;">
+            <div class="card-title">Análise de Pontos de Equilíbrio</div>
+            <div style="font-size: 10px; color: #475569; line-height: 1.4;">
+               Este simulador considera os custos vigentes na data de emissão. 
+               Qualquer alteração no custo de matéria-prima impactará diretamente na margem de lucro operacional. 
+               Recomenda-se revisão trimestral das tabelas de preços de revenda.
             </div>
+            <div style="margin-top: 15px; padding: 10px; background: white; border-radius: 6px; border: 1px solid #bfdbfe;">
+              <span class="label">Sugestão de Preço Mínimo (+45%)</span>
+              <span class="value" style="font-size: 14px;">${formatCurrency(totalCost * 1.45)}</span>
+            </div>
+          </div>
         </div>
 
-        <div style="margin-top: 20px; font-size: 10px; color: #64748b; line-height: 1.5; padding: 15px; border: 1px dashed #cbd5e1; border-radius: 8px;">
-          <strong>Nota de Auditoria:</strong> Este relatório é de uso interno e confidencial. Os valores de custo são baseados na última atualização de custos de insumos e embalagens registrados no sistema. A validade destes preços está sujeita à volatilidade do mercado de matérias-primas.
+        <div class="signature-section">
+          <div class="sig-box">Analista Responsável</div>
+          <div class="sig-box">Diretoria Comercial</div>
         </div>
 
-        <div class="footer">
-          Emissão: ${new Date().toLocaleString('pt-BR')} — Ohana Clean Planner Strategic Unit
-        </div>
+        <div class="footer">ESTE DOCUMENTO É CONFIDENCIAL E DE USO EXCLUSIVO DA GERÊNCIA DE NEGÓCIOS DE ${settings.name.toUpperCase()}</div>
       </body>
       </html>
     `;

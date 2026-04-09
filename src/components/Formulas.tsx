@@ -12,7 +12,7 @@ import { useToast } from './dashboard/Toast';
 import FormulaCard from './FormulasComponents/FormulaCard';
 import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
 
-interface Group {
+interface Category {
   id: string;
   name: string;
 }
@@ -68,6 +68,7 @@ interface Formula {
   updated_at: string;
   formula_ingredients?: FormulaIngredient[];
   groups?: { name: string };
+  categories?: { name: string };
   ph_min?: string;
   ph_max?: string;
   viscosity_min?: string;
@@ -79,7 +80,7 @@ interface Formula {
 export default function Formulas() {
   const { showToast } = useToast();
   const [formulas, setFormulas] = useState<Formula[]>([]);
-  const [groups, setGroups] = useState<Group[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
   const [packagingVariants, setPackagingVariants] = useState<any[]>([]);
   const { mode } = useStorageMode();
@@ -199,11 +200,11 @@ export default function Formulas() {
     type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
   }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
 
-  // Group Management State
-  const [isGroupModalOpen, setIsGroupModalOpen] = useState(false);
-  const [editingGroupId, setEditingGroupId] = useState<string | null>(null);
-  const [groupName, setGroupName] = useState('');
-  const [isSavingGroup, setIsSavingGroup] = useState(false);
+  // Category Management State
+  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [categoryName, setCategoryName] = useState('');
+  const [isSavingCategory, setIsSavingCategory] = useState(false);
 
   useEffect(() => {
     if (currentFormula && viewMode === 'editor') {
@@ -311,7 +312,7 @@ export default function Formulas() {
         }
 
         setFormulas(localFormulas);
-        setGroups(localGroups);
+        setCategories(localGroups);
         setAllIngredients(localIngredients);
 
         // Extract packaging variants from local ingredients
@@ -338,17 +339,16 @@ export default function Formulas() {
     }
   };
 
-  const fetchGroups = async () => {
+  const fetchCategories = async () => {
     if (mode === 'supabase') {
       const { data: groupsData } = await supabase.from('groups').select('*').order('name');
-      if (groupsData) setGroups(groupsData);
+      if (groupsData) setCategories(groupsData);
     } else {
       const localGroups = JSON.parse(localStorage.getItem('local_groups') || '[]');
-      setGroups(localGroups);
+      setCategories(localGroups);
     }
   };
 
-  // --- Group Actions ---
   const normalizeString = (str: string) => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   };
@@ -401,58 +401,58 @@ export default function Formulas() {
     });
   }, [selectedIngId, flattenedIngredients]);
 
-  const handleOpenGroupModal = () => {
-    setGroupName('');
-    setIsGroupModalOpen(true);
+  const handleOpenCategoryModal = () => {
+    setCategoryName('');
+    setIsCategoryModalOpen(true);
   };
 
-  const handleEditGroup = (group: Group) => {
-    setEditingGroupId(group.id);
-    setGroupName(group.name);
-    setIsGroupModalOpen(true);
+  const handleEditCategory = (category: Category) => {
+    setEditingCategoryId(category.id);
+    setCategoryName(category.name);
+    setIsCategoryModalOpen(true);
   };
 
-  const handleSaveGroup = async () => {
-    if (!groupName.trim()) return;
-    setIsSavingGroup(true);
+  const handleSaveCategory = async () => {
+    if (!categoryName.trim()) return;
+    setIsSavingCategory(true);
     try {
       if (mode === 'supabase') {
-        if (editingGroupId) {
-          const { error } = await supabase.from('groups').update({ name: groupName }).eq('id', editingGroupId);
+        if (editingCategoryId) {
+          const { error } = await supabase.from('groups').update({ name: categoryName }).eq('id', editingCategoryId);
           if (error) throw error;
         } else {
-          const { error } = await supabase.from('groups').insert([{ name: groupName }]);
+          const { error } = await supabase.from('groups').insert([{ name: categoryName }]);
           if (error) throw error;
         }
       } else {
         // Local Logic
         const localGroups = JSON.parse(localStorage.getItem('local_groups') || '[]');
-        if (editingGroupId) {
-          const index = localGroups.findIndex((g: any) => g.id === editingGroupId);
-          if (index >= 0) localGroups[index].name = groupName;
+        if (editingCategoryId) {
+          const index = localGroups.findIndex((g: any) => g.id === editingCategoryId);
+          if (index >= 0) localGroups[index].name = categoryName;
         } else {
-          localGroups.push({ id: generateId(), name: groupName });
+          localGroups.push({ id: generateId(), name: categoryName });
         }
         localStorage.setItem('local_groups', JSON.stringify(localGroups));
       }
 
-      await fetchGroups();
-      setGroupName('');
-      setEditingGroupId(null);
-      showToast('success', 'Sucesso', 'Grupo salvo com sucesso.');
+      await fetchCategories();
+      setCategoryName('');
+      setEditingCategoryId(null);
+      showToast('success', 'Sucesso', 'Categoria salva com sucesso.');
     } catch (error) {
-      console.error('Erro ao salvar grupo:', error);
-      showToast('error', 'Erro ao Salvar', 'Não foi possível salvar o grupo.');
+      console.error('Erro ao salvar categoria:', error);
+      showToast('error', 'Erro ao Salvar', 'Não foi possível salvar a categoria.');
     } finally {
-      setIsSavingGroup(false);
+      setIsSavingCategory(false);
     }
   };
 
-  const handleDeleteGroup = async (id: string) => {
+  const handleDeleteCategory = async (id: string) => {
     setConfirmModal({
       isOpen: true,
-      title: 'Excluir Grupo',
-      message: 'Tem certeza que deseja excluir este grupo? As fórmulas vinculadas perderão a associação.',
+      title: 'Excluir Categoria',
+      message: 'Tem certeza que deseja excluir esta categoria? As fórmulas vinculadas perderão a associação.',
       type: 'danger',
       confirmLabel: 'Sim, Excluir',
       onConfirm: async () => {
@@ -466,11 +466,11 @@ export default function Formulas() {
             const filtered = localGroups.filter((g: any) => g.id !== id);
             localStorage.setItem('local_groups', JSON.stringify(filtered));
           }
-          await fetchGroups();
-          showToast('success', 'Excluído', 'Grupo removido com sucesso.');
+          await fetchCategories();
+          showToast('success', 'Excluído', 'Categoria removida com sucesso.');
         } catch (error) {
-          console.error('Erro ao excluir grupo:', error);
-          showToast('error', 'Erro ao Excluir', 'Não foi possível excluir o grupo.');
+          console.error('Erro ao excluir categoria:', error);
+          showToast('error', 'Erro ao Excluir', 'Não foi possível excluir a categoria.');
         }
       },
     });
@@ -693,8 +693,9 @@ export default function Formulas() {
           ph_max: currentFormula.ph_max || null,
           viscosity_min: currentFormula.viscosity_min || null,
           viscosity_max: currentFormula.viscosity_max || null,
-          formula_ingredients: currentIngredients, // Save nested for local simplicity
-          groups: groups.find(g => g.id === currentFormula.group_id) ? { name: groups.find(g => g.id === currentFormula.group_id)!.name } : null,
+          updated_at: new Date().toISOString(),
+          formula_ingredients: currentIngredients,
+          categories: categories.find(c => c.id === currentFormula.group_id) ? { name: categories.find(c => c.id === currentFormula.group_id)!.name } : null,
           updated_at: new Date().toISOString()
         };
 
@@ -1037,7 +1038,7 @@ export default function Formulas() {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Grupo</label>
+                    <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Categoria</label>
                     <div className="flex gap-2">
                       <select
                         value={currentFormula.group_id || ''}
@@ -1045,14 +1046,14 @@ export default function Formulas() {
                         className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                       >
                         <option value="">Selecione...</option>
-                        {groups.map(g => (
-                          <option key={g.id} value={g.id}>{g.name}</option>
+                        {categories.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
                         ))}
                       </select>
                       <button
-                        onClick={handleOpenGroupModal}
+                        onClick={handleOpenCategoryModal}
                         className="p-2 bg-slate-100 text-slate-600 hover:bg-slate-200 rounded-lg transition-colors border border-slate-200"
-                        title="Gerenciar Grupos"
+                        title="Gerenciar Categorias"
                       >
                         <Plus className="w-5 h-5" />
                       </button>
@@ -1673,7 +1674,7 @@ export default function Formulas() {
                     </div>
                     <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
                       <LayoutGrid className="w-4 h-4 text-purple-600" />
-                      <span className="text-slate-700 text-sm font-medium uppercase">{groups.length} grupos</span>
+                      <span className="text-slate-700 text-sm font-medium uppercase">{categories.length} categorias</span>
                     </div>
                   </div>
                 </div>
@@ -1715,14 +1716,14 @@ export default function Formulas() {
                 </div>
               </div>
 
-              {/* Grupos */}
+              {/* Categorias */}
               <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-purple-300 transition-all duration-300">
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 shrink-0">
                   <LayoutGrid className="w-5 h-5 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-slate-500 text-xs font-medium truncate uppercase">Total de Grupos</p>
-                  <h3 className="text-2xl font-bold text-slate-800">{groups.length}</h3>
+                  <p className="text-slate-500 text-xs font-medium truncate uppercase">Total de Categorias</p>
+                  <h3 className="text-2xl font-bold text-slate-800">{categories.length}</h3>
                 </div>
               </div>
             </div>
@@ -1827,7 +1828,7 @@ export default function Formulas() {
                     </th>
                     <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('group')}>
                       <div className="flex items-center gap-2">
-                        Grupo
+                        Categoria
                         {sortField === 'group' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
                       </div>
                     </th>
@@ -1883,7 +1884,7 @@ export default function Formulas() {
                           {formula.lm_code && <div className="text-[10px] text-slate-400 font-mono">LM: {formula.lm_code}</div>}
                         </td>
                         <td className="py-4 px-6 text-slate-600">
-                          {formula.groups?.name || '-'}
+                          {formula.categories?.name || formula.groups?.name || '-'}
                         </td>
                         <td className="py-4 px-6 text-slate-600 font-medium text-right">
                           {(formula.base_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L
@@ -1964,13 +1965,13 @@ export default function Formulas() {
     <div className="flex-1 flex flex-col h-full bg-slate-50 relative">
       {mainContent}
 
-      {/* Group Management Modal */}
-      {isGroupModalOpen && (
+      {/* Category Management Modal */}
+      {isCategoryModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl shadow-xl max-w-md w-full overflow-hidden animate-in fade-in zoom-in duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-              <h2 className="text-lg font-bold text-slate-800">Gerenciar Grupos</h2>
-              <button onClick={() => setIsGroupModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+              <h2 className="text-lg font-bold text-slate-800">Gerenciar Categorias</h2>
+              <button onClick={() => setIsCategoryModalOpen(false)} className="text-slate-400 hover:text-slate-600">
                 <X className="w-5 h-5" />
               </button>
             </div>
@@ -1979,23 +1980,23 @@ export default function Formulas() {
               <div className="flex gap-2">
                 <input
                   type="text"
-                  value={groupName}
-                  onChange={(e) => setGroupName(e.target.value)}
-                  placeholder="Nome do grupo..."
+                  value={categoryName}
+                  onChange={(e) => setCategoryName(e.target.value)}
+                  placeholder="Nome da categoria..."
                   className="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac]"
                 />
                 <button
-                  onClick={handleSaveGroup}
-                  disabled={isSavingGroup || !groupName.trim()}
+                  onClick={handleSaveCategory}
+                  disabled={isSavingCategory || !categoryName.trim()}
                   className="px-4 py-2 bg-[#202eac] text-white rounded-lg hover:bg-blue-800 disabled:opacity-50 transition-colors"
                 >
-                  {editingGroupId ? 'Atualizar' : 'Adicionar'}
+                  {editingCategoryId ? 'Atualizar' : 'Adicionar'}
                 </button>
-                {editingGroupId && (
+                {editingCategoryId && (
                   <button
                     onClick={() => {
-                      setEditingGroupId(null);
-                      setGroupName('');
+                      setEditingCategoryId(null);
+                      setCategoryName('');
                     }}
                     className="px-4 py-2 bg-slate-100 text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
                   >
@@ -2008,31 +2009,31 @@ export default function Formulas() {
                 <table className="w-full text-left text-sm">
                   <thead className="bg-slate-50 border-b border-slate-200 text-slate-600 sticky top-0">
                     <tr>
-                      <th className="py-2 px-4 font-semibold">Nome do Grupo</th>
+                      <th className="py-2 px-4 font-semibold">Nome da Categoria</th>
                       <th className="py-2 px-4 text-right font-semibold">Ações</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {groups.length === 0 ? (
+                    {categories.length === 0 ? (
                       <tr>
                         <td colSpan={2} className="py-4 text-center text-slate-500">
-                          Nenhum grupo cadastrado.
+                          Nenhuma categoria cadastrada.
                         </td>
                       </tr>
                     ) : (
-                      groups.map(group => (
-                        <tr key={group.id} className="hover:bg-slate-50">
-                          <td className="py-2 px-4">{group.name}</td>
+                      categories.map(category => (
+                        <tr key={category.id} className="hover:bg-slate-50">
+                          <td className="py-2 px-4">{category.name}</td>
                           <td className="py-2 px-4 text-right">
                             <button
-                              onClick={() => handleEditGroup(group)}
+                              onClick={() => handleEditCategory(category)}
                               className="p-1 text-slate-400 hover:text-[#202eac] transition-colors"
                               title="Editar"
                             >
-                              <Copy className="w-4 h-4" />
+                              <Pencil className="w-4 h-4" />
                             </button>
                             <button
-                              onClick={() => handleDeleteGroup(group.id)}
+                              onClick={() => handleDeleteCategory(category.id)}
                               className="p-1 text-slate-400 hover:text-red-600 transition-colors ml-2"
                               title="Excluir"
                             >
