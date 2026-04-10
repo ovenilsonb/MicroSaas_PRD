@@ -16,108 +16,83 @@ const BACKUP_MODULES = [
   {
     id: 'ingredients',
     label: 'Insumos',
-    description: 'Matérias-primas, custos e estoques',
+    description: 'Matérias-primas e estoques',
     icon: Package,
-    color: 'emerald',
     keys: ['local_ingredients', 'local_groups'],
   },
   {
     id: 'formulas',
     label: 'Fórmulas',
-    description: 'Composições e fichas técnicas',
+    description: 'Composições técnicas',
     icon: FlaskConical,
-    color: 'blue',
     keys: ['local_formulas'],
   },
   {
     id: 'proportions',
     label: 'Proporções',
-    description: 'Simulações e cálculos de proporção',
+    description: 'Simulações e cálculos',
     icon: Scale,
-    color: 'violet',
     keys: ['local_proportions'],
   },
   {
     id: 'pricing',
     label: 'Precificação',
-    description: 'Tabelas de preços e margens',
+    description: 'Tabelas e margens',
     icon: DollarSign,
-    color: 'amber',
     keys: ['precificacao_entries', 'precificacao_columns'],
   },
   {
     id: 'production',
     label: 'Produção',
-    description: 'Ordens de fabricação (OFs)',
+    description: 'Ordens de fabricação',
     icon: ClipboardList,
-    color: 'orange',
     keys: ['local_production_orders', 'production_orders_ext'],
   },
   {
     id: 'quality',
     label: 'Qualidade',
-    description: 'Registros de controle de qualidade',
+    description: 'Controle de qualidade',
     icon: BarChart3,
-    color: 'teal',
     keys: ['local_quality_controls'],
   },
   {
     id: 'stock',
     label: 'Estoque',
-    description: 'Produtos acabados e movimentações',
+    description: 'Produtos e logs',
     icon: Archive,
-    color: 'cyan',
     keys: ['local_finished_goods', 'local_finished_goods_logs', 'local_inventory_logs'],
   },
   {
     id: 'sales',
     label: 'Vendas',
-    description: 'Ordens de venda (OVs)',
+    description: 'Ordens de venda',
     icon: ShoppingCart,
-    color: 'rose',
     keys: ['local_sale_orders'],
   },
   {
     id: 'purchases',
     label: 'Compras',
-    description: 'Ordens de compra (OCs)',
+    description: 'Ordens de compra',
     icon: Truck,
-    color: 'indigo',
     keys: ['local_purchase_orders'],
   },
   {
     id: 'contacts',
     label: 'Contatos',
-    description: 'Fornecedores e clientes cadastrados',
+    description: 'Parceiros cadastrados',
     icon: Users,
-    color: 'pink',
     keys: ['local_suppliers', 'local_clients'],
   },
   {
     id: 'settings',
     label: 'Configurações',
-    description: 'Branding, logo, cores e tipografia',
+    description: 'Identidade e preferências',
     icon: Settings,
-    color: 'slate',
     keys: ['local_company_settings', 'storageMode', 'storage_version', 'dashboardLayouts', 'insumosViewMode', 'insumosItemsPerPage', 'formulasViewMode', 'proporcaoViewMode'],
   },
 ] as const;
 
 const ALL_KEYS = BACKUP_MODULES.flatMap(m => m.keys);
-
-const COLOR_MAP: Record<string, { bg: string; text: string; border: string; badge: string; ring: string }> = {
-  emerald: { bg: 'bg-emerald-50 dark:bg-emerald-900/20', text: 'text-emerald-600 dark:text-emerald-400', border: 'border-emerald-200 dark:border-emerald-800', badge: 'bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300', ring: 'ring-emerald-400' },
-  blue:    { bg: 'bg-blue-50 dark:bg-blue-900/20',    text: 'text-blue-600 dark:text-blue-400',    border: 'border-blue-200 dark:border-blue-800',    badge: 'bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300',    ring: 'ring-blue-400' },
-  violet:  { bg: 'bg-violet-50 dark:bg-violet-900/20',  text: 'text-violet-600 dark:text-violet-400',  border: 'border-violet-200 dark:border-violet-800',  badge: 'bg-violet-100 dark:bg-violet-900/40 text-violet-700 dark:text-violet-300',  ring: 'ring-violet-400' },
-  amber:   { bg: 'bg-amber-50 dark:bg-amber-900/20',   text: 'text-amber-600 dark:text-amber-400',   border: 'border-amber-200 dark:border-amber-800',   badge: 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300',   ring: 'ring-amber-400' },
-  orange:  { bg: 'bg-orange-50 dark:bg-orange-900/20',  text: 'text-orange-600 dark:text-orange-400',  border: 'border-orange-200 dark:border-orange-800',  badge: 'bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300',  ring: 'ring-orange-400' },
-  teal:    { bg: 'bg-teal-50 dark:bg-teal-900/20',    text: 'text-teal-600 dark:text-teal-400',    border: 'border-teal-200 dark:border-teal-800',    badge: 'bg-teal-100 dark:bg-teal-900/40 text-teal-700 dark:text-teal-300',    ring: 'ring-teal-400' },
-  cyan:    { bg: 'bg-cyan-50 dark:bg-cyan-900/20',    text: 'text-cyan-600 dark:text-cyan-400',    border: 'border-cyan-200 dark:border-cyan-800',    badge: 'bg-cyan-100 dark:bg-cyan-900/40 text-cyan-700 dark:text-cyan-300',    ring: 'ring-cyan-400' },
-  rose:    { bg: 'bg-rose-50 dark:bg-rose-900/20',    text: 'text-rose-600 dark:text-rose-400',    border: 'border-rose-200 dark:border-rose-800',    badge: 'bg-rose-100 dark:bg-rose-900/40 text-rose-700 dark:text-rose-300',    ring: 'ring-rose-400' },
-  indigo:  { bg: 'bg-indigo-50 dark:bg-indigo-900/20',  text: 'text-indigo-600 dark:text-indigo-400',  border: 'border-indigo-200 dark:border-indigo-800',  badge: 'bg-indigo-100 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300',  ring: 'ring-indigo-400' },
-  pink:    { bg: 'bg-pink-50 dark:bg-pink-900/20',    text: 'text-pink-600 dark:text-pink-400',    border: 'border-pink-200 dark:border-pink-800',    badge: 'bg-pink-100 dark:bg-pink-900/40 text-pink-700 dark:text-pink-300',    ring: 'ring-pink-400' },
-  slate:   { bg: 'bg-slate-50 dark:bg-slate-900/20',   text: 'text-slate-600 dark:text-slate-400',   border: 'border-slate-200 dark:border-slate-800',   badge: 'bg-slate-100 dark:bg-slate-900/40 text-slate-700 dark:text-slate-300',   ring: 'ring-slate-400' },
-};
 
 function getModuleStats(keys: readonly string[]) {
   let totalRecords = 0;
@@ -346,52 +321,51 @@ export default function SettingsBackup() {
           </div>
 
           {showModuleList && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
               {moduleStats.map(mod => {
-                const colors = COLOR_MAP[mod.color];
                 const isSelected = selectedModules.has(mod.id);
                 const Icon = mod.icon;
                 return (
                   <button
                     key={mod.id}
                     onClick={() => toggleModule(mod.id)}
-                    className={`group relative p-4 rounded-2xl border-2 text-left transition-all duration-200 ${
+                    className={`group relative p-3 rounded-xl border-2 text-left transition-all duration-200 ${
                       isSelected
-                        ? `${colors.bg} ${colors.border} ring-2 ${colors.ring} ring-offset-1 dark:ring-offset-slate-900`
-                        : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 opacity-60 hover:opacity-80'
+                        ? 'bg-blue-50 dark:bg-blue-900/10 border-blue-500 ring-2 ring-blue-500/20'
+                        : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 opacity-60 hover:opacity-100'
                     }`}
                   >
-                    <div className="flex items-start gap-3">
-                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${isSelected ? colors.bg : 'bg-slate-100 dark:bg-slate-800'}`}>
-                        <Icon className={`w-4 h-4 ${isSelected ? colors.text : 'text-slate-400'}`} />
+                    <div className="flex items-start gap-2.5">
+                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${isSelected ? 'bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400' : 'bg-slate-100 dark:bg-slate-800 text-slate-400'}`}>
+                        <Icon className="w-3.5 h-3.5" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className={`text-sm font-black ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
+                          <span className={`text-xs font-black ${isSelected ? 'text-slate-800 dark:text-slate-100' : 'text-slate-500 dark:text-slate-400'}`}>
                             {mod.label}
                           </span>
                           {mod.stats.hasData ? (
-                            <span className={`shrink-0 text-[9px] font-black px-2 py-0.5 rounded-full ${colors.badge}`}>
-                              {mod.stats.totalRecords} reg.
+                            <span className="shrink-0 text-[8px] font-black px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500">
+                              {mod.stats.totalRecords}
                             </span>
                           ) : (
-                            <span className="shrink-0 text-[9px] font-black px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400">
-                              Vazio
+                            <span className="shrink-0 text-[8px] font-black px-1.5 py-0.5 rounded-full bg-slate-50 dark:bg-slate-900 text-slate-300">
+                              0
                             </span>
                           )}
                         </div>
-                        <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5 leading-relaxed">
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-0.5 leading-snug truncate">
                           {mod.description}
                         </p>
                       </div>
                     </div>
 
                     {/* Tick de seleção */}
-                    <div className={`absolute top-2 right-2 w-4 h-4 rounded-full flex items-center justify-center transition-all ${
-                      isSelected ? `${colors.text.replace('text-', 'bg-').split(' ')[0]}` : 'bg-slate-200 dark:bg-slate-800'
-                    }`}>
-                      {isSelected && <CheckCircle2 className="w-4 h-4 text-white" />}
-                    </div>
+                    {isSelected && (
+                      <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center shadow-sm">
+                        <CheckCircle2 className="w-2.5 h-2.5 text-white" />
+                      </div>
+                    )}
                   </button>
                 );
               })}

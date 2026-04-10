@@ -1,5 +1,12 @@
 import { useState, useEffect } from 'react';
 
+export interface SidebarSection {
+  id: string;
+  title: string;
+  itemIds: string[];
+  isVisible: boolean;
+}
+
 export interface CompanySettings {
   name: string;
   subText: string;
@@ -13,6 +20,7 @@ export interface CompanySettings {
   isDarkMode: boolean;
   watermarkText: string;
   watermarkOpacity: number;
+  sidebarLayout: SidebarSection[];
 }
 
 const DEFAULT_SETTINGS: CompanySettings = {
@@ -28,6 +36,32 @@ const DEFAULT_SETTINGS: CompanySettings = {
   isDarkMode: false,
   watermarkText: 'OHANA CLEAN',
   watermarkOpacity: 0.05,
+  sidebarLayout: [
+    {
+      id: 'principal',
+      title: 'Principal',
+      itemIds: ['dashboard', 'insumos', 'formulas', 'proporcao', 'precificacao'],
+      isVisible: true
+    },
+    {
+      id: 'gestao',
+      title: 'Gestão',
+      itemIds: ['fornecedores', 'clientes', 'relatorios'],
+      isVisible: true
+    },
+    {
+      id: 'operacoes',
+      title: 'Operações',
+      itemIds: ['estoque', 'producao', 'qualidade'],
+      isVisible: true
+    },
+    {
+      id: 'negocios',
+      title: 'Negócios & Sistema',
+      itemIds: ['compras', 'vendas', 'usuarios'],
+      isVisible: true
+    }
+  ],
 };
 
 const STORAGE_KEY = 'local_company_settings';

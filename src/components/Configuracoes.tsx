@@ -2,10 +2,11 @@ import React, { useState, useRef } from 'react';
 import { 
   Settings, Building2, ShieldCheck, Sliders, Image as ImageIcon, 
   Type, Save, Upload, Trash2, Globe, Phone, MapPin, 
-  FileText, Palette, Sun, Moon, Eye
+  FileText, Palette, Sun, Moon, Eye, Layout
 } from 'lucide-react';
 import { useCompanySettings, CompanySettings } from '../hooks/useCompanySettings';
 import SettingsBackup from './SettingsBackup';
+import SettingsLayout from './SettingsLayout';
 import { useToast } from './dashboard/Toast';
 
 const FONT_OPTIONS = [
@@ -16,7 +17,7 @@ const FONT_OPTIONS = [
 export default function Configuracoes() {
   const { settings, updateSettings } = useCompanySettings();
   const { showToast } = useToast();
-  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'preferences'>('profile');
+  const [activeTab, setActiveTab] = useState<'profile' | 'security' | 'preferences' | 'layout'>('profile');
   const [localSettings, setLocalSettings] = useState<CompanySettings>(settings);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -88,7 +89,17 @@ export default function Configuracoes() {
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
             }`}
           >
-            <Sliders className="w-4 h-4" /> Preferências do Sistema
+            <Sliders className="w-4 h-4" /> Preferências
+          </button>
+          <button
+            onClick={() => setActiveTab('layout')}
+            className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
+              activeTab === 'layout' 
+                ? 'bg-blue-50 dark:bg-blue-900/30 text-[#202eac] dark:text-blue-400 shadow-sm' 
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+            }`}
+          >
+            <Layout className="w-4 h-4" /> Organização
           </button>
         </div>
 
@@ -499,6 +510,13 @@ export default function Configuracoes() {
                 </div>
               </section>
             </div>
+          )}
+
+          {activeTab === 'layout' && (
+            <SettingsLayout 
+              settings={localSettings} 
+              onUpdate={(newLayout) => setLocalSettings({ ...localSettings, sidebarLayout: newLayout })} 
+            />
           )}
         </div>
       </div>

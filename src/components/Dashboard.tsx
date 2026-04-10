@@ -41,6 +41,7 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
   const [isEditing, setIsEditing] = useState(false);
   const [layouts, setLayouts] = useState<ResponsiveLayouts>(defaultLayouts);
   const [hiddenCardKeys, setHiddenCardKeys] = useState<string[]>([]);
+  const [currentBreakpoint, setCurrentBreakpoint] = useState<string>('lg');
 
   // Carregar Layout e Cards Ocultos
   useEffect(() => {
@@ -178,25 +179,31 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
           cols={COLS}
           rowHeight={60}
           onLayoutChange={onLayoutChange}
+          onBreakpointChange={setCurrentBreakpoint}
           draggableHandle=".drag-handle"
           isDraggable={isEditing}
           isResizable={isEditing}
           margin={MARGIN}
         >
           {/* KPI Cards */}
-          {visibleCards.map(card => (
-            <div key={card.id}>
-              <DashboardCardComp
-                title={card.title}
-                value={card.value}
-                icon={card.icon}
-                color={card.color}
-                isLoading={isLoading}
-                isEditing={isEditing}
-                onRemove={() => handleRemoveCard(card.id)}
-              />
-            </div>
-          ))}
+          {visibleCards.map(card => {
+            const layout = layouts[currentBreakpoint]?.find(l => l.i === card.id);
+            return (
+              <div key={card.id}>
+                <DashboardCardComp
+                  title={card.title}
+                  value={card.value}
+                  icon={card.icon}
+                  color={card.color}
+                  isLoading={isLoading}
+                  isEditing={isEditing}
+                  w={layout?.w}
+                  h={layout?.h}
+                  onRemove={() => handleRemoveCard(card.id)}
+                />
+              </div>
+            );
+          })}
 
           {/* Quick Actions */}
           {!hiddenCardKeys.includes('card-acoes') && (

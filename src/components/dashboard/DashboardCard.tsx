@@ -44,6 +44,8 @@ const colorClasses = {
 interface ExtendedDashboardCardProps extends DashboardCardProps {
   isEditing?: boolean;
   onRemove?: () => void;
+  w?: number;
+  h?: number;
 }
 
 export default function DashboardCard({
@@ -56,8 +58,12 @@ export default function DashboardCard({
   onClick,
   isEditing = false,
   onRemove,
+  w,
+  h,
 }: ExtendedDashboardCardProps) {
   const colors = colorClasses[color];
+  const isCompact = h !== undefined && h < 3.5;
+  const isVerySmall = w !== undefined && w < 3;
 
   const formatValue = (val: string | number) => {
     if (typeof val === 'number') {
@@ -78,26 +84,30 @@ export default function DashboardCard({
     >
       {isEditing && (
         <>
-          <div className="drag-handle bg-slate-100 dark:bg-slate-800/50 p-1 flex justify-center cursor-move border-b border-slate-200 dark:border-slate-800 active:bg-blue-50 dark:active:bg-blue-900/20 transition-colors">
-            <GripHorizontal className="w-4 h-4 text-slate-400 dark:text-slate-600" />
+          <div className={`drag-handle bg-slate-100 dark:bg-slate-800/50 flex justify-center cursor-move border-b border-slate-200 dark:border-slate-800 active:bg-blue-50 dark:active:bg-blue-900/20 transition-colors ${
+            isCompact ? 'p-0.5' : 'p-1'
+          }`}>
+            <GripHorizontal className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'} text-slate-400 dark:text-slate-600`} />
           </div>
           {onRemove && (
             <button 
               onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className="absolute top-10 right-3 w-7 h-7 bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all z-10 shadow-sm border border-rose-100 dark:border-rose-900/50"
+              className={`absolute bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all z-10 shadow-sm border border-rose-100 dark:border-rose-900/50 ${
+                isCompact ? 'top-6 right-2 w-5 h-5' : 'top-10 right-3 w-7 h-7'
+              }`}
               title="Remover Card"
             >
-              <X className="w-4 h-4" />
+              <X className={isCompact ? 'w-3 h-3' : 'w-4 h-4'} />
             </button>
           )}
         </>
       )}
-      <div className="p-6 flex-1 flex flex-col justify-between">
-        <div className="flex items-start justify-between mb-4">
-          <div className={`w-12 h-12 ${colors.bg} ${colors.text} rounded-2xl flex items-center justify-center shrink-0 shadow-sm border ${colors.border}`}>
-            {React.cloneElement(icon as React.ReactElement, { className: 'w-6 h-6' })}
+      <div className={`flex-1 flex flex-col ${isCompact ? 'p-3' : 'p-6'} ${isCompact ? 'justify-center' : 'justify-between'}`}>
+        <div className={`flex items-start justify-between ${isCompact ? 'mb-2' : 'mb-4'}`}>
+          <div className={`${isCompact ? 'w-8 h-8 rounded-lg' : 'w-12 h-12 rounded-2xl'} ${colors.bg} ${colors.text} flex items-center justify-center shrink-0 shadow-sm border ${colors.border}`}>
+            {React.cloneElement(icon as React.ReactElement, { className: isCompact ? 'w-4 h-4' : 'w-6 h-6' })}
           </div>
-          {trend && (
+          {trend && !isCompact && (
             <div className={`flex items-center gap-1 text-[10px] font-black px-2.5 py-1 rounded-full ${colors.bg} ${colors.trend} tracking-widest`}>
               {trend.isPositive ? (
                 <TrendingUp className="w-3.5 h-3.5" />
@@ -108,11 +118,15 @@ export default function DashboardCard({
             </div>
           )}
         </div>
-        <div className="space-y-1">
-          <h3 className="text-slate-400 dark:text-slate-500 text-[10px] font-black uppercase tracking-[0.2em]">{title}</h3>
-          <p className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap overflow-hidden text-ellipsis">
+        <div className={isCompact ? 'space-y-0' : 'space-y-1'}>
+          <h3 className={`text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.2em] ${isCompact ? 'text-[8px] leading-tight' : 'text-[10px]'}`}>
+            {title}
+          </h3>
+          <p className={`font-black text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap overflow-hidden text-ellipsis ${
+            isCompact ? 'text-lg' : 'text-2xl'
+          }`}>
             {isLoading ? (
-              <span className="inline-block w-24 h-8 bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg" />
+              <span className={`inline-block bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg ${isCompact ? 'w-16 h-6' : 'w-24 h-8'}`} />
             ) : formatValue(value)}
           </p>
         </div>

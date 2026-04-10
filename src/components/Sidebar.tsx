@@ -65,45 +65,33 @@ interface SidebarProps {
   onSync: () => void;
 }
 
-const navItems = [
-  {
-    title: 'Principal',
-    items: [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-      { id: 'insumos', label: 'Insumos', icon: Package },
-      { id: 'formulas', label: 'Fórmulas', icon: Beaker },
-      { id: 'proporcao', label: 'Proporção', icon: Calculator },
-      { id: 'precificacao', label: 'Precificação', icon: DollarSign },
-    ]
-  },
-  {
-    title: 'Gestão',
-    items: [
-      { id: 'fornecedores', label: 'Fornecedores', icon: Users },
-      { id: 'clientes', label: 'Clientes', icon: Users },
-      { id: 'relatorios', label: 'Relatórios', icon: FileBarChart },
-    ]
-  },
-  {
-    title: 'Operações',
-    items: [
-      { id: 'estoque', label: 'Estoque', icon: Archive },
-      { id: 'producao', label: 'Produção', icon: Factory },
-      { id: 'qualidade', label: 'Qualidade', icon: Shield },
-    ]
-  },
-  {
-    title: 'Negócios & Sistema',
-    items: [
-      { id: 'compras', label: 'Compras', icon: ShoppingCart },
-      { id: 'vendas', label: 'Vendas', icon: DollarSign },
-      { id: 'usuarios', label: 'Usuários', icon: Users },
-    ]
-  }
+export const ALL_NAV_ITEMS = [
+  { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'insumos', label: 'Insumos', icon: Package },
+  { id: 'formulas', label: 'Fórmulas', icon: Beaker },
+  { id: 'proporcao', label: 'Proporção', icon: Calculator },
+  { id: 'precificacao', label: 'Precificação', icon: DollarSign },
+  { id: 'fornecedores', label: 'Fornecedores', icon: Users },
+  { id: 'clientes', label: 'Clientes', icon: Users },
+  { id: 'relatorios', label: 'Relatórios', icon: FileBarChart },
+  { id: 'estoque', label: 'Estoque', icon: Archive },
+  { id: 'producao', label: 'Produção', icon: Factory },
+  { id: 'qualidade', label: 'Qualidade', icon: Shield },
+  { id: 'compras', label: 'Compras', icon: ShoppingCart },
+  { id: 'vendas', label: 'Vendas', icon: DollarSign },
+  { id: 'usuarios', label: 'Usuários', icon: Users },
 ];
 
 export default function Sidebar({ activeMenu, setActiveMenu }: SidebarProps) {
   const { settings } = useCompanySettings();
+
+  // Mapear o layout dinâmico para os itens com ícones
+  const dynamicNavItems = (settings.sidebarLayout || []).map(section => ({
+    ...section,
+    items: section.itemIds
+      .map(id => ALL_NAV_ITEMS.find(item => item.id === id))
+      .filter((item): item is typeof ALL_NAV_ITEMS[0] => !!item)
+  })).filter(section => section.isVisible);
 
   return (
     <aside className="w-72 bg-[#020617] flex flex-col shadow-[10px_0_50px_rgba(0,0,0,0.3)] z-20 sticky top-0 h-screen shrink-0 border-r border-white/5">
@@ -149,8 +137,8 @@ export default function Sidebar({ activeMenu, setActiveMenu }: SidebarProps) {
       {/* Navigation */}
       <nav className="flex-1 px-4 py-4 overflow-y-auto custom-scrollbar">
         <div className="space-y-8">
-          {navItems.map((section) => (
-            <div key={section.title}>
+          {dynamicNavItems.map((section) => (
+            <div key={section.id}>
               <h3 className="px-4 text-[9px] font-black text-slate-700 uppercase tracking-[0.3em] mb-4">
                 {section.title}
               </h3>
