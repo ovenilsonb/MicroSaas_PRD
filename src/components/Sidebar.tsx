@@ -13,46 +13,43 @@ import {
   ShoppingCart,
   Settings,
   FlaskConical,
-  HardDrive,
-  Cloud,
-  Database,
   ChevronRight,
   Bell,
   User
 } from 'lucide-react';
+import { useCompanySettings } from '../hooks/useCompanySettings';
 
 interface NavItemProps {
   icon: React.ReactNode;
   label: string;
   active?: boolean;
   disabled?: boolean;
-  onClick?: () => void;
-  color?: string;
+  onClick: () => void;
 }
 
-function NavItem({ icon, label, active, disabled, onClick, color }: NavItemProps) {
+function NavItem({ icon, label, active, disabled, onClick }: NavItemProps) {
   return (
     <button
       onClick={disabled ? undefined : onClick}
       disabled={disabled}
       className={`
-        w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 text-sm font-medium
+        w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 text-sm font-medium
         ${active 
-          ? `bg-gradient-to-r ${color || 'from-primary/20 to-primary/10'} text-white shadow-sm` 
+          ? `bg-[var(--primary)] text-white shadow-lg shadow-[rgba(var(--primary-rgb),0.3)] scale-[1.02]` 
           : disabled 
-            ? 'text-slate-500 cursor-not-allowed opacity-50' 
-            : 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
+            ? 'text-slate-600 cursor-not-allowed opacity-40' 
+            : 'text-slate-400 hover:bg-white/5 hover:text-white'
         }
       `}
     >
-      <div className={active ? 'text-white' : disabled ? 'text-slate-500' : 'text-slate-400'}>
+      <div className={active ? 'text-white' : disabled ? 'text-slate-600' : 'text-slate-500 group-hover:text-slate-300'}>
         {React.cloneElement(icon as React.ReactElement<{ className?: string }>, { className: 'w-5 h-5' })}
       </div>
-      <span className="flex-1 text-left">{label}</span>
-      {active && <ChevronRight className="w-4 h-4 text-white/70" />}
+      <span className={`flex-1 text-left ${active ? 'font-bold' : 'font-medium'}`}>{label}</span>
+      {active && <ChevronRight className="w-4 h-4 text-white/50" />}
       {disabled && (
-        <span className="text-[10px] uppercase tracking-wider bg-slate-700/50 px-2 py-0.5 rounded-full">
-          Em Breve
+        <span className="text-[9px] font-black uppercase tracking-[0.2em] bg-white/5 px-2 py-0.5 rounded-lg">
+          Breve
         </span>
       )}
     </button>
@@ -72,116 +69,99 @@ const navItems = [
   {
     title: 'Principal',
     items: [
-      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard, color: 'from-indigo-500/20 to-indigo-500/5' },
-      { id: 'insumos', label: 'Insumos', icon: Package, color: 'from-emerald-500/20 to-emerald-500/5' },
-      { id: 'formulas', label: 'Fórmulas', icon: Beaker, color: 'from-violet-500/20 to-violet-500/5' },
-      { id: 'proporcao', label: 'Proporção', icon: Calculator, color: 'from-amber-500/20 to-amber-500/5' },
-      { id: 'precificacao', label: 'Precificação', icon: DollarSign, color: 'from-rose-500/20 to-rose-500/5' },
+      { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+      { id: 'insumos', label: 'Insumos', icon: Package },
+      { id: 'formulas', label: 'Fórmulas', icon: Beaker },
+      { id: 'proporcao', label: 'Proporção', icon: Calculator },
+      { id: 'precificacao', label: 'Precificação', icon: DollarSign },
     ]
   },
   {
     title: 'Gestão',
     items: [
-      { id: 'fornecedores', label: 'Fornecedores', icon: Users, color: 'from-cyan-500/20 to-cyan-500/5' },
-      { id: 'clientes', label: 'Clientes', icon: Users, color: 'from-teal-500/20 to-teal-500/5' },
-      { id: 'relatorios', label: 'Relatórios', icon: FileBarChart, color: 'from-blue-500/20 to-blue-500/5' },
+      { id: 'fornecedores', label: 'Fornecedores', icon: Users },
+      { id: 'clientes', label: 'Clientes', icon: Users },
+      { id: 'relatorios', label: 'Relatórios', icon: FileBarChart },
     ]
   },
   {
     title: 'Operações',
     items: [
-      { id: 'estoque', label: 'Estoque', icon: Archive, color: 'from-orange-500/20 to-orange-500/5', disabled: false },
-      { id: 'producao', label: 'Produção', icon: Factory, color: 'from-blue-500/20 to-blue-500/5', disabled: false },
-      { id: 'qualidade', label: 'Qualidade', icon: Shield, color: 'from-red-500/20 to-red-500/5', disabled: false },
+      { id: 'estoque', label: 'Estoque', icon: Archive },
+      { id: 'producao', label: 'Produção', icon: Factory },
+      { id: 'qualidade', label: 'Qualidade', icon: Shield },
     ]
   },
   {
     title: 'Negócios & Sistema',
     items: [
-      { id: 'compras', label: 'Compras', icon: ShoppingCart, color: 'from-amber-500/20 to-amber-500/5', disabled: false },
-      { id: 'vendas', label: 'Vendas', icon: DollarSign, color: 'from-rose-500/20 to-rose-500/5', disabled: false },
-      { id: 'usuarios', label: 'Usuários', icon: Users, color: 'from-indigo-500/20 to-indigo-500/5', disabled: false },
+      { id: 'compras', label: 'Compras', icon: ShoppingCart },
+      { id: 'vendas', label: 'Vendas', icon: DollarSign },
+      { id: 'usuarios', label: 'Usuários', icon: Users },
     ]
   }
 ];
 
-export default function Sidebar({ activeMenu, setActiveMenu, mode, isSyncing, onModeToggle, onSync }: SidebarProps) {
+export default function Sidebar({ activeMenu, setActiveMenu }: SidebarProps) {
+  const { settings } = useCompanySettings();
+
   return (
-    <aside className="w-72 bg-slate-900 flex flex-col shadow-2xl z-20 sticky top-0 h-screen shrink-0">
-      {/* Top Section - Notifications & Profile */}
-      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-        <button className="relative p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 transition-colors">
-          <Bell className="w-5 h-5 text-slate-300" />
-          <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border-2 border-slate-900"></span>
-        </button>
-        
-        <button className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-800 transition-colors">
-          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#202eac] to-[#4b5ce8] flex items-center justify-center">
-            <User className="w-4 h-4 text-white" />
+    <aside className="w-72 bg-[#020617] flex flex-col shadow-[10px_0_50px_rgba(0,0,0,0.3)] z-20 sticky top-0 h-screen shrink-0 border-r border-white/5">
+      {/* Profile Section */}
+      <div className="p-6 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[var(--primary)] to-[rgba(var(--primary-rgb),0.5)] flex items-center justify-center shadow-lg shadow-[rgba(var(--primary-rgb),0.2)]">
+            <User className="w-5 h-5 text-white" />
           </div>
+          <div>
+            <span className="font-black text-xs text-white uppercase tracking-widest">Admin</span>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest flex items-center gap-1">
+              <span className="w-1.5 h-1.5 bg-emerald-500 rounded-full animate-pulse"></span> Sistema Ativo
+            </p>
+          </div>
+        </div>
+        <button className="relative p-2 rounded-xl bg-white/5 hover:bg-white/10 transition-colors">
+          <Bell className="w-4 h-4 text-slate-400" />
         </button>
       </div>
 
       {/* Logo Section */}
-      <div className="p-5 border-b border-slate-800">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#202eac] to-[#4b5ce8] flex items-center justify-center shadow-lg shadow-indigo-500/25">
-            <FlaskConical className="w-5 h-5 text-white" />
-          </div>
-          <div>
-            <span className="font-bold text-lg text-white tracking-tight">Ohana Clean</span>
-            <p className="text-xs text-slate-500 font-medium">MicroSaaS Planner</p>
-          </div>
-        </div>
-        
-        {/* Mode Toggle - Desativado temporariamente conforme pedido */}
-        {/*
-        <div className="space-y-2">
-          <button 
-            onClick={onModeToggle}
-            className={`w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-200 border ${
-              mode === 'local' 
-                ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 hover:bg-amber-500/20' 
-                : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 hover:bg-emerald-500/20'
-            }`}
-          >
-            {mode === 'local' ? (
-              <><HardDrive className="w-4 h-4" /> Modo Local</>
+      <div className="px-6 py-6 group cursor-default">
+        <div className="flex items-center gap-4 mb-2">
+          <div className="w-16 h-16 rounded-[24px] flex items-center justify-center transition-all duration-500 overflow-hidden">
+            {settings.logo ? (
+              <img src={settings.logo} alt="Logo" className="w-full h-full object-contain p-0" />
             ) : (
-              <><Cloud className="w-4 h-4" /> Modo Cloud</>
+              <FlaskConical className="w-8 h-8 text-[var(--primary)]" />
             )}
-          </button>
-          
-          <button
-            onClick={onSync}
-            disabled={isSyncing}
-            className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all duration-200 bg-slate-800/50 text-slate-400 border border-slate-700/50 hover:bg-slate-800 hover:text-white disabled:opacity-50"
-          >
-            <Database className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Sincronizando...' : 'Sincronizar Dados'}
-          </button>
+          </div>
+          <div className="min-w-0 flex-1">
+            <span className="font-black text-xl text-white tracking-tighter leading-none block truncate">
+              {settings.name || 'OHANA CLEAN'}
+            </span>
+            <span className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-600 block mt-1.5 truncate">
+              {settings.subText || 'Industrial Planner'}
+            </span>
+          </div>
         </div>
-        */}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-3 py-4 overflow-y-auto custom-scrollbar">
-        <div className="space-y-6">
+      <nav className="flex-1 px-4 py-4 overflow-y-auto custom-scrollbar">
+        <div className="space-y-8">
           {navItems.map((section) => (
             <div key={section.title}>
-              <h3 className="px-4 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-2">
+              <h3 className="px-4 text-[9px] font-black text-slate-700 uppercase tracking-[0.3em] mb-4">
                 {section.title}
               </h3>
-              <div className="space-y-1">
+              <div className="space-y-1.5">
                 {section.items.map((item) => (
                   <NavItem 
                     key={item.id}
                     icon={<item.icon />}
                     label={item.label}
                     active={activeMenu === item.id}
-                    disabled={item.disabled}
-                    onClick={() => !item.disabled && setActiveMenu(item.id)}
-                    color={item.color}
+                    onClick={() => setActiveMenu(item.id)}
                   />
                 ))}
               </div>
@@ -191,15 +171,15 @@ export default function Sidebar({ activeMenu, setActiveMenu, mode, isSyncing, on
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-slate-800">
+      <div className="p-4 border-t border-white/5 bg-slate-900/40">
         <NavItem 
           icon={<Settings />}
           label="Configurações"
           active={activeMenu === 'configuracoes'}
           onClick={() => setActiveMenu('configuracoes')}
         />
-        <div className="mt-3 px-4 py-2 text-[10px] text-slate-600 text-center">
-          v1.0.0 • MicroSaaS Planner
+        <div className="mt-4 px-4 py-2 text-[9px] font-black uppercase tracking-widest text-slate-800 text-center">
+          v2.5.0 • Licenciado Ohana Clean
         </div>
       </div>
     </aside>

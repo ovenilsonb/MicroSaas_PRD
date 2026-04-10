@@ -48,6 +48,32 @@
   --color-error: #ef4444;
   --color-info: #3b82f6;
 
+  /* Theme-aware backgrounds and text */
+  --bg-main: var(--color-slate-50);
+  --bg-surface: #ffffff;
+  --bg-card: #ffffff;
+  --text-main: var(--color-slate-800);
+  --text-dim: var(--color-slate-500);
+  --border-active: var(--color-slate-200);
+  --bg-sidebar: var(--color-slate-900);
+}
+
+.dark {
+  --bg-main: #0b0f1a;
+  --bg-surface: #111827;
+  --bg-card: #1f2937;
+  --text-main: #f8fafc;
+  --text-dim: #94a3b8;
+  --border-active: #334155;
+  --bg-sidebar: #030712;
+  
+  /* Override core slates for dark mode accessibility if needed */
+  --color-slate-50: #0f172a;
+  --color-slate-100: #1e293b;
+  --color-slate-200: #334155;
+}
+
+:root {
   /* Shadows */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);

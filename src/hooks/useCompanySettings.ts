@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 
 export interface CompanySettings {
   name: string;
+  subText: string;
   document: string;
   email: string;
   phone: string;
@@ -9,10 +10,14 @@ export interface CompanySettings {
   logo: string | null;
   headerFont: string;
   primaryColor: string;
+  isDarkMode: boolean;
+  watermarkText: string;
+  watermarkOpacity: number;
 }
 
 const DEFAULT_SETTINGS: CompanySettings = {
   name: 'OHANA CLEAN',
+  subText: 'Industrial Planner',
   document: '',
   email: '',
   phone: '',
@@ -20,6 +25,9 @@ const DEFAULT_SETTINGS: CompanySettings = {
   logo: null,
   headerFont: 'Inter',
   primaryColor: '#202eac',
+  isDarkMode: false,
+  watermarkText: 'OHANA CLEAN',
+  watermarkOpacity: 0.05,
 };
 
 const STORAGE_KEY = 'local_company_settings';

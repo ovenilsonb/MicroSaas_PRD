@@ -9,6 +9,7 @@ import { ToastProvider, useToast } from './components/dashboard/Toast';
 import { exportToJson, importFromJson, getBackupFilename } from './lib/backupUtils';
 import Header, { getModuleConfig } from './components/Header';
 import { ConfirmModal, ConfirmModalType } from './components/shared/ConfirmModal';
+import { useCompanySettings } from './hooks/useCompanySettings';
 
 const Dashboard = lazy(() => import('./components/Dashboard'));
 const Insumos = lazy(() => import('./components/Insumos'));
@@ -30,10 +31,10 @@ import Sidebar from './components/Sidebar';
 
 function LoadingFallback() {
   return (
-    <div className="flex-1 flex items-center justify-center bg-slate-50">
+    <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-[#0b0f1a]">
       <div className="text-center">
-        <div className="w-12 h-12 border-4 border-[#202eac] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-        <p className="text-slate-500 font-medium">Carregando módulo...</p>
+        <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+        <p className="text-slate-500 dark:text-slate-400 font-medium">Sincronizando ambiente industrial...</p>
       </div>
     </div>
   );
@@ -41,7 +42,33 @@ function LoadingFallback() {
 
 export default function App() {
   const { mode, setMode, syncFromSupabase, isSyncing } = useStorageMode();
+  const { settings } = useCompanySettings();
   const [activeMenu, setActiveMenu] = useState('dashboard');
+
+  useEffect(() => {
+    if (settings.isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [settings.isDarkMode]);
+
+  // Aplicação Dinâmica da Cor Primária
+  useEffect(() => {
+    if (settings.primaryColor) {
+      document.documentElement.style.setProperty('--primary', settings.primaryColor);
+      
+      // Converter HEX para RGB para suporte a opacidade (rgba)
+      const hex = settings.primaryColor.replace('#', '');
+      const r = parseInt(hex.substring(0, 2), 16);
+      const g = parseInt(hex.substring(2, 4), 16);
+      const b = parseInt(hex.substring(4, 6), 16);
+      
+      if (!isNaN(r) && !isNaN(g) && !isNaN(b)) {
+        document.documentElement.style.setProperty('--primary-rgb', `${r}, ${g}, ${b}`);
+      }
+    }
+  }, [settings.primaryColor]);
 
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean; title: string; message: string; detail?: string;
@@ -65,7 +92,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900">
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f1a] flex font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
 
       <Sidebar 
         activeMenu={activeMenu}
@@ -76,7 +103,7 @@ export default function App() {
         onSync={syncFromSupabase}
       />
 
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-[#0b0f1a]">
         {activeMenu !== 'insumos' && activeMenu !== 'formulas' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && activeMenu !== 'configuracoes' && (() => {
           const hc = getModuleConfig(activeMenu);
           return (

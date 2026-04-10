@@ -102,21 +102,21 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
   const hiddenCards = allCards.filter(c => hiddenCardKeys.includes(c.id));
 
   return (
-    <div className="flex-1 overflow-auto bg-slate-50 relative custom-scrollbar">
-      <header className="bg-white border-b border-slate-200 px-8 py-6 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+    <div className="flex-1 overflow-auto bg-slate-50 dark:bg-[#0b0f1a] relative custom-scrollbar transition-colors duration-300">
+      <header className="bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 px-8 py-6 flex justify-between items-center sticky top-0 z-30 shadow-sm transition-colors duration-300">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-            <LayoutPanelTop className="w-7 h-7 text-[#202eac]" /> Dashboard
+          <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3">
+            <LayoutPanelTop className="w-7 h-7 text-[#202eac] dark:text-blue-400" /> Dashboard
           </h1>
-          <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Controle Industrial Ohana Clean</p>
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-widest">Controle Industrial Ohana Clean</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsEditing(!isEditing)}
             className={`px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${
               isEditing 
-                ? 'bg-[#202eac] text-white hover:bg-[#1a258a] scale-105' 
-                : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+                ? 'bg-[#202eac] dark:bg-blue-600 text-white hover:bg-[#1a258a] dark:hover:bg-blue-700 scale-105' 
+                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
             }`}
           >
             <Settings2 className="w-4 h-4" />

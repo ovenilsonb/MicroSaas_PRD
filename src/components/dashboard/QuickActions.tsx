@@ -44,64 +44,64 @@ const actions: QuickAction[] = [
 
 const colorMap = {
   blue: {
-    bg: 'bg-blue-50',
-    text: 'text-[#202eac]',
-    hoverBg: 'group-hover/btn:bg-[#202eac]',
+    bg: 'bg-blue-50 dark:bg-blue-900/40',
+    text: 'text-[#202eac] dark:text-blue-400',
+    hoverBg: 'group-hover/btn:bg-[#202eac] dark:group-hover/btn:bg-blue-600',
     hoverText: 'group-hover/btn:text-white',
-    border: 'border-slate-200 hover:border-[#202eac]',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-[#202eac] dark:hover:border-blue-500',
   },
   indigo: {
-    bg: 'bg-indigo-50',
-    text: 'text-indigo-600',
-    hoverBg: 'group-hover/btn:bg-indigo-600',
+    bg: 'bg-indigo-50 dark:bg-indigo-900/40',
+    text: 'text-indigo-600 dark:text-indigo-400',
+    hoverBg: 'group-hover/btn:bg-indigo-600 dark:group-hover/btn:bg-indigo-500',
     hoverText: 'group-hover/btn:text-white',
-    border: 'border-slate-200 hover:border-indigo-600',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-indigo-600 dark:hover:border-indigo-500',
   },
   amber: {
-    bg: 'bg-amber-50',
-    text: 'text-amber-600',
-    hoverBg: 'group-hover/btn:bg-amber-600',
+    bg: 'bg-amber-50 dark:bg-amber-900/40',
+    text: 'text-amber-600 dark:text-amber-400',
+    hoverBg: 'group-hover/btn:bg-amber-600 dark:group-hover/btn:bg-amber-500',
     hoverText: 'group-hover/btn:text-white',
-    border: 'border-slate-200 hover:border-amber-600',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-amber-600 dark:hover:border-amber-500',
   },
   emerald: {
-    bg: 'bg-emerald-50',
-    text: 'text-emerald-600',
-    hoverBg: 'group-hover/btn:bg-emerald-600',
+    bg: 'bg-emerald-50 dark:bg-emerald-900/40',
+    text: 'text-emerald-600 dark:text-emerald-400',
+    hoverBg: 'group-hover/btn:bg-emerald-600 dark:group-hover/btn:bg-emerald-500',
     hoverText: 'group-hover/btn:text-white',
-    border: 'border-slate-200 hover:border-emerald-600',
+    border: 'border-slate-200 dark:border-slate-800 hover:border-emerald-600 dark:hover:border-emerald-500',
   },
 };
 
 export default function QuickActions({ onAction, isEditing = false }: QuickActionsProps) {
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group h-full">
+    <div className="bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden group h-full transition-colors duration-300">
       {isEditing && (
-        <div className="drag-handle bg-slate-100 p-1 flex justify-center cursor-move border-b border-slate-200">
-          <GripHorizontal className="w-4 h-4 text-slate-400" />
+        <div className="drag-handle bg-slate-100 dark:bg-slate-800/50 p-1 flex justify-center cursor-move border-b border-slate-200 dark:border-slate-800">
+          <GripHorizontal className="w-4 h-4 text-slate-400 dark:text-slate-600" />
         </div>
       )}
-      <div className="p-6 flex-1 flex flex-col overflow-y-auto custom-scrollbar">
-        <h2 className="text-lg font-bold text-slate-800 mb-4 shrink-0">Ações Rápidas</h2>
-        <div className="space-y-3">
+      <div className="p-7 flex-1 flex flex-col overflow-y-auto custom-scrollbar">
+        <h2 className="text-[10px] font-black uppercase text-slate-400 dark:text-slate-500 tracking-[0.2em] mb-6 shrink-0">Ações Rápidas</h2>
+        <div className="space-y-3.5">
           {actions.map((action) => {
             const colors = colorMap[action.colorScheme || 'blue'];
             return (
               <button
                 key={action.id}
                 onClick={() => onAction(action.action)}
-                className={`w-full bg-white border ${colors.border} hover:shadow-md transition-all rounded-xl p-3.5 flex items-center justify-between group/btn`}
+                className={`w-full bg-slate-50/50 dark:bg-slate-900/30 border ${colors.border} hover:shadow-lg transition-all rounded-2xl p-4 flex items-center justify-between group/btn`}
               >
-                <div className="flex items-center gap-3">
-                  <div className={`w-10 h-10 ${colors.bg} ${colors.text} rounded-lg flex items-center justify-center ${colors.hoverBg} ${colors.hoverText} transition-colors shrink-0`}>
+                <div className="flex items-center gap-4">
+                  <div className={`w-11 h-11 ${colors.bg} ${colors.text} rounded-xl flex items-center justify-center ${colors.hoverBg} ${colors.hoverText} transition-all shrink-0 shadow-sm`}>
                     {action.icon}
                   </div>
                   <div className="text-left">
-                    <h4 className="font-bold text-slate-800 text-sm">{action.label}</h4>
-                    <p className="text-xs text-slate-500">{action.description}</p>
+                    <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm tracking-tight">{action.label}</h4>
+                    <p className="text-[10px] uppercase font-black tracking-widest text-slate-400 dark:text-slate-500 mt-0.5">{action.description}</p>
                   </div>
                 </div>
-                <ArrowRight className={`w-4 h-4 text-slate-300 group-hover/btn:text-[#202eac] transition-colors shrink-0`} />
+                <ArrowRight className={`w-4 h-4 text-slate-300 dark:text-slate-700 group-hover/btn:text-white transition-colors shrink-0`} />
               </button>
             );
           })}

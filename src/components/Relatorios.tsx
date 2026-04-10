@@ -227,7 +227,7 @@ export default function Relatorios() {
   };
 
   const cssPrintStyles = `
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Outfit:wght@400;700;900&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&family=${(settings.headerFont || 'Inter').replace(/ /g, '+')}:wght@400;700;900&family=Outfit:wght@400;700;900&display=swap');
     
     @page { margin: 12mm; size: A4; }
     
@@ -251,7 +251,7 @@ export default function Relatorios() {
       transform: translate(-50%, -50%) rotate(-45deg);
       font-size: 80px;
       font-weight: 900;
-      color: rgba(226, 232, 240, 0.45);
+      color: rgba(15, 23, 42, ${settings.watermarkOpacity || 0.05});
       white-space: nowrap;
       pointer-events: none;
       z-index: -1;
@@ -472,7 +472,7 @@ export default function Relatorios() {
         <style>${cssPrintStyles}</style>
       </head>
       <body>
-        <div class="watermark">FICHA TÉCNICA</div>
+        <div class="watermark">${settings.watermarkText || 'OHANA CLEAN'}</div>
         ${reportHeader('Ficha Técnica de Produto', `Fórmula: ${formula.name}`)}
 
         <div class="grid grid-4 text-center">
@@ -589,7 +589,7 @@ export default function Relatorios() {
         <style>${cssPrintStyles}</style>
       </head>
       <body>
-        <div class="watermark">MEMORIAL DE CÁLCULO</div>
+        <div class="watermark">${settings.watermarkText || 'OHANA CLEAN'}</div>
         ${reportHeader('Memorial de Cálculo Industrial', `Simulação ID: ${prop.id.slice(0, 8).toUpperCase()}`)}
 
         <div class="grid grid-4 text-center">
@@ -740,7 +740,7 @@ export default function Relatorios() {
         <style>${cssPrintStyles}</style>
       </head>
       <body>
-        <div class="watermark">ORDEM DE FABRICAÇÃO</div>
+          <div class="watermark">${settings.watermarkText || 'OHANA CLEAN'}</div>
         ${reportHeader('Ordem de Fabricação (OF)', `Lote Técnico: ${order.batch_number}`)}
 
         <div class="grid grid-3 text-center">
@@ -954,7 +954,7 @@ export default function Relatorios() {
         <style>${cssPrintStyles}</style>
       </head>
       <body>
-        <div class="watermark">TABELA DE PREÇOS</div>
+          <div class="watermark">${settings.watermarkText || 'OHANA CLEAN'}</div>
         ${reportHeader('Análise de Precificação e Margens', `Simulação Técnica: ${formula.name}`)}
 
         <div class="grid grid-3 text-center">
