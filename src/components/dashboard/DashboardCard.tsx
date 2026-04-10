@@ -4,40 +4,40 @@ import { DashboardCardProps } from '../../types/dashboard';
 
 const colorClasses = {
   blue: {
-    bg: 'bg-blue-50 dark:bg-blue-900/20',
-    text: 'text-[#202eac] dark:text-blue-400',
-    border: 'border-blue-200 dark:border-blue-800/50',
-    trend: 'text-blue-600 dark:text-blue-300',
+    bg: 'bg-blue-50',
+    text: 'text-[#202eac]',
+    border: 'border-blue-200',
+    trend: 'text-blue-600',
   },
   indigo: {
-    bg: 'bg-indigo-50 dark:bg-indigo-900/20',
-    text: 'text-indigo-600 dark:text-indigo-400',
-    border: 'border-indigo-200 dark:border-indigo-800/50',
-    trend: 'text-indigo-600 dark:text-indigo-300',
+    bg: 'bg-indigo-50',
+    text: 'text-indigo-600',
+    border: 'border-indigo-200',
+    trend: 'text-indigo-600',
   },
   amber: {
-    bg: 'bg-amber-50 dark:bg-amber-900/20',
-    text: 'text-amber-600 dark:text-amber-400',
-    border: 'border-amber-200 dark:border-amber-800/50',
-    trend: 'text-amber-600 dark:text-amber-300',
+    bg: 'bg-amber-50',
+    text: 'text-amber-600',
+    border: 'border-amber-200',
+    trend: 'text-amber-600',
   },
   emerald: {
-    bg: 'bg-emerald-50 dark:bg-emerald-900/20',
-    text: 'text-emerald-600 dark:text-emerald-400',
-    border: 'border-emerald-200 dark:border-emerald-800/50',
-    trend: 'text-emerald-600 dark:text-emerald-300',
+    bg: 'bg-emerald-50',
+    text: 'text-emerald-600',
+    border: 'border-emerald-200',
+    trend: 'text-emerald-600',
   },
   red: {
-    bg: 'bg-red-50 dark:bg-red-900/20',
-    text: 'text-red-600 dark:text-red-400',
-    border: 'border-red-200 dark:border-red-800/50',
-    trend: 'text-red-600 dark:text-red-300',
+    bg: 'bg-red-50',
+    text: 'text-red-600',
+    border: 'border-red-200',
+    trend: 'text-red-600',
   },
   purple: {
-    bg: 'bg-purple-50 dark:bg-purple-900/20',
-    text: 'text-purple-600 dark:text-purple-400',
-    border: 'border-purple-200 dark:border-purple-800/50',
-    trend: 'text-purple-600 dark:text-purple-300',
+    bg: 'bg-purple-50',
+    text: 'text-purple-600',
+    border: 'border-purple-200',
+    trend: 'text-purple-600',
   },
 };
 
@@ -77,22 +77,22 @@ export default function DashboardCard({
 
   return (
     <div 
-      className={`bg-white dark:bg-[#111827] rounded-3xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col overflow-hidden group transition-all hover:shadow-md h-full relative ${
-        onClick ? 'cursor-pointer hover:border-[#202eac]/30 dark:hover:border-blue-500/30' : ''
+      className={`bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col overflow-hidden group transition-all hover:shadow-md h-full relative ${
+        onClick ? 'cursor-pointer hover:border-[#202eac]/30' : ''
       }`}
       onClick={onClick}
     >
       {isEditing && (
         <>
-          <div className={`drag-handle bg-slate-100 dark:bg-slate-800/50 flex justify-center cursor-move border-b border-slate-200 dark:border-slate-800 active:bg-blue-50 dark:active:bg-blue-900/20 transition-colors ${
+          <div className={`drag-handle bg-slate-100 flex justify-center cursor-move border-b border-slate-200 active:bg-blue-50 transition-colors ${
             isCompact ? 'p-0.5' : 'p-1'
           }`}>
-            <GripHorizontal className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'} text-slate-400 dark:text-slate-600`} />
+            <GripHorizontal className={`${isCompact ? 'w-3 h-3' : 'w-4 h-4'} text-slate-400`} />
           </div>
           {onRemove && (
             <button 
               onClick={(e) => { e.stopPropagation(); onRemove(); }}
-              className={`absolute bg-rose-50 dark:bg-rose-900/30 text-rose-500 dark:text-rose-400 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all z-10 shadow-sm border border-rose-100 dark:border-rose-900/50 ${
+              className={`absolute bg-rose-50 text-rose-500 rounded-full flex items-center justify-center hover:bg-rose-500 hover:text-white transition-all z-10 shadow-sm border border-rose-100 ${
                 isCompact ? 'top-6 right-2 w-5 h-5' : 'top-10 right-3 w-7 h-7'
               }`}
               title="Remover Card"
@@ -119,14 +119,14 @@ export default function DashboardCard({
           )}
         </div>
         <div className={isCompact ? 'space-y-0' : 'space-y-1'}>
-          <h3 className={`text-slate-400 dark:text-slate-500 font-black uppercase tracking-[0.2em] ${isCompact ? 'text-[8px] leading-tight' : 'text-[10px]'}`}>
+          <h3 className={`text-slate-400 font-black uppercase tracking-[0.2em] ${isCompact ? 'text-[8px] leading-tight' : 'text-[10px]'}`}>
             {title}
           </h3>
-          <p className={`font-black text-slate-800 dark:text-slate-100 tracking-tight whitespace-nowrap overflow-hidden text-ellipsis ${
+          <p className={`font-black text-slate-800 tracking-tight whitespace-nowrap overflow-hidden text-ellipsis ${
             isCompact ? 'text-lg' : 'text-2xl'
           }`}>
             {isLoading ? (
-              <span className={`inline-block bg-slate-100 dark:bg-slate-800 animate-pulse rounded-lg ${isCompact ? 'w-16 h-6' : 'w-24 h-8'}`} />
+              <span className={`inline-block bg-slate-100 animate-pulse rounded-lg ${isCompact ? 'w-16 h-6' : 'w-24 h-8'}`} />
             ) : formatValue(value)}
           </p>
         </div>

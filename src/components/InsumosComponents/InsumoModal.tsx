@@ -101,7 +101,15 @@ export default function InsumoModal({
     }
     setActiveTab('geral');
     setMovementForm({ type: 'entrada', quantity: '', note: '', batch: '' });
-  }, [ingredient]);
+    setNewVariant({ 
+      name: '', 
+      codigo: '', 
+      cost_per_unit: '', 
+      supplier_id: '',
+      estoque_atual: '',
+      estoque_minimo: ''
+    });
+  }, [ingredient, isOpen]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

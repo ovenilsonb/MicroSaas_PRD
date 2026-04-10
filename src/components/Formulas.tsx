@@ -11,6 +11,7 @@ import { exportToJson, importFromJson, getBackupFilename } from '../lib/backupUt
 import { useToast } from './dashboard/Toast';
 import FormulaCard from './FormulasComponents/FormulaCard';
 import { ConfirmModal, ConfirmModalType } from './shared/ConfirmModal';
+import SuccessModal from './InsumosComponents/SuccessModal';
 
 interface Category {
   id: string;
@@ -112,7 +113,14 @@ export default function Formulas() {
   const [ingQuantity, setIngQuantity] = useState('');
   const [ingSearchTerm, setIngSearchTerm] = useState('');
   const [isIngDropdownOpen, setIsIngDropdownOpen] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'draft' | 'archived'>('all');
+  const [successModalInfo, setSuccessModalInfo] = useState({ title: '', message: '', itemName: '' });
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const qtyInputRef = useRef<HTMLInputElement>(null);
+
+
 
   const handleExport = () => {
     try {
@@ -198,7 +206,7 @@ export default function Formulas() {
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean; title: string; message: string; detail?: string;
     type: ConfirmModalType; confirmLabel?: string; onConfirm: () => void;
-  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => {} });
+  }>({ isOpen: false, title: '', message: '', type: 'warning', onConfirm: () => { } });
 
   // Category Management State
   const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
@@ -209,8 +217,10 @@ export default function Formulas() {
   useEffect(() => {
     if (currentFormula && viewMode === 'editor') {
       const totalQuantity = currentIngredients.reduce((sum, ing) => sum + (ing.quantity || 0), 0);
-      if (totalQuantity > 0 && totalQuantity !== currentFormula.yield_amount) {
-        setCurrentFormula(prev => prev ? { ...prev, yield_amount: totalQuantity } : null);
+      const roundedQuantity = Math.round(totalQuantity * 100) / 100;
+
+      if (totalQuantity > 0 && roundedQuantity !== currentFormula.yield_amount) {
+        setCurrentFormula(prev => prev ? { ...prev, yield_amount: roundedQuantity } : null);
       }
     }
   }, [currentIngredients, viewMode]);
@@ -247,7 +257,7 @@ export default function Formulas() {
           .from('ingredients')
           .select('id, name, variants:ingredient_variants(id, name, cost_per_unit)')
           .eq('produto_quimico', false);
-        
+
         if (packagingData) {
           const allVariants: any[] = [];
           packagingData.forEach((ing: any) => {
@@ -383,8 +393,16 @@ export default function Formulas() {
     return flattenedIngredients
       .filter(item => {
         if (ingSearchTerm.length === 0) return true;
+        // Condição: Pesquisar apenas após 3 caracteres conforme solicitado
+        if (ingSearchTerm.length < 3) return false;
+
         const term = normalizeString(ingSearchTerm);
-        return normalizeString(item.displayName).includes(term) || (item.apelido && normalizeString(item.apelido).includes(term));
+        return (
+          normalizeString(item.displayName).includes(term) ||
+          (item.apelido && normalizeString(item.apelido).includes(term)) ||
+          (item.codigo && normalizeString(item.codigo).includes(term)) ||
+          (item.variant_codigo && normalizeString(item.variant_codigo).includes(term))
+        );
       })
       .sort((a, b) => {
         if (a.produto_quimico && !b.produto_quimico) return -1;
@@ -392,6 +410,15 @@ export default function Formulas() {
         return a.displayName.localeCompare(b.displayName);
       });
   }, [flattenedIngredients, ingSearchTerm]);
+
+  // Auto-destaque do primeiro item da pesquisa
+  useEffect(() => {
+    if (isIngDropdownOpen && ingSearchTerm.length >= 3 && filteredAndSortedIngredients.length > 0) {
+      setHighlightedIndex(0);
+    } else {
+      setHighlightedIndex(-1);
+    }
+  }, [ingSearchTerm, filteredAndSortedIngredients.length, isIngDropdownOpen]);
 
   const selectedIngredient = useMemo(() => {
     if (!selectedIngId) return null;
@@ -696,7 +723,6 @@ export default function Formulas() {
           updated_at: new Date().toISOString(),
           formula_ingredients: currentIngredients,
           categories: categories.find(c => c.id === currentFormula.group_id) ? { name: categories.find(c => c.id === currentFormula.group_id)!.name } : null,
-          updated_at: new Date().toISOString()
         };
 
         if (currentFormula.id) {
@@ -711,8 +737,12 @@ export default function Formulas() {
       }
 
       await fetchData();
-      handleCloseEditor();
-      showToast('success', 'Fórmula Salva', 'Os dados da fórmula foram salvos com sucesso.');
+      setSuccessModalInfo({
+        title: currentFormula.id ? 'Fórmula Atualizada' : 'Fórmula Criada',
+        message: 'A formulação e seus ingredientes foram salvos com sucesso no sistema.',
+        itemName: currentFormula.name
+      });
+      setShowSuccessModal(true);
     } catch (error: any) {
       console.error('Erro ao salvar:', error);
       showToast('error', 'Erro ao Salvar', 'Não foi possível salvar a fórmula.');
@@ -790,8 +820,12 @@ export default function Formulas() {
       }
 
       await fetchData();
-      handleCloseEditor();
-      showToast('success', 'Nova Versão Salva', `A versão ${newVersion} da fórmula foi criada.`);
+      setSuccessModalInfo({
+        title: 'Nova Versão Criada',
+        message: `A versão ${newVersion} da fórmula foi gerada com sucesso e arquivada no histórico.`,
+        itemName: currentFormula.name
+      });
+      setShowSuccessModal(true);
     } catch (error: any) {
       console.error('Erro ao salvar nova versão:', error);
       showToast('error', 'Erro ao Salvar', 'Não foi possível criar a nova versão.');
@@ -868,11 +902,18 @@ export default function Formulas() {
   // --- Render Helpers ---
   const filteredFormulas = useMemo(() => {
     return formulas
-      .filter(f =>
-        f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        f.lm_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (f.groups?.name && f.groups.name.toLowerCase().includes(searchTerm.toLowerCase()))
-      )
+      .filter(f => {
+        // Search filter
+        const matchesSearch = 
+          f.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          f.lm_code?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          (f.groups?.name && f.groups.name.toLowerCase().includes(searchTerm.toLowerCase()));
+        
+        // Status filter
+        const matchesStatus = statusFilter === 'all' || f.status === statusFilter;
+        
+        return matchesSearch && matchesStatus;
+      })
       .sort((a, b) => {
         let aValue: any;
         let bValue: any;
@@ -925,7 +966,7 @@ export default function Formulas() {
 
         return sortOrder === 'asc' ? (aValue < bValue ? -1 : 1) : (aValue > bValue ? -1 : 1);
       });
-  }, [formulas, searchTerm, sortField, sortOrder]);
+  }, [formulas, searchTerm, sortField, sortOrder, statusFilter]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -1046,8 +1087,8 @@ export default function Formulas() {
                         className="flex-1 px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                       >
                         <option value="">Selecione...</option>
-                        {categories.map(c => (
-                          <option key={c.id} value={c.id}>{c.name}</option>
+                        {categories.map((c, idx) => (
+                          <option key={`cat-${c.id}-${idx}`} value={c.id}>{c.name}</option>
                         ))}
                       </select>
                       <button
@@ -1059,7 +1100,7 @@ export default function Formulas() {
                       </button>
                     </div>
                   </div>
-                  
+
                   {packagingVariants.length > 0 && (
                     <div>
                       <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Embalagem Padrão</label>
@@ -1073,8 +1114,8 @@ export default function Formulas() {
                           const packagingFilter = /embalagem|frasco|bolsa|tubo|pot|bottle|galão|bidão|dispenser|jarra|copo|plástico|vidro|bag|sachê/i;
                           const filtered = packagingVariants.filter(v => packagingFilter.test(v.name));
                           const options = filtered.length > 0 ? filtered : packagingVariants;
-                          return options.map(v => (
-                            <option key={v.id} value={v.id}>{v.name}</option>
+                          return options.map((v, idx) => (
+                            <option key={`pkg-${v.id}-${idx}`} value={v.id}>{v.name}</option>
                           ));
                         })()}
                       </select>
@@ -1095,8 +1136,8 @@ export default function Formulas() {
                           const labelFilter = /rótulo|etiqueta|label|adesivo|sticker|tag|papel|decoration|impresso/i;
                           const filtered = packagingVariants.filter(v => labelFilter.test(v.name));
                           const options = filtered.length > 0 ? filtered : packagingVariants;
-                          return options.map(v => (
-                            <option key={v.id} value={v.id}>{v.name}</option>
+                          return options.map((v, idx) => (
+                            <option key={`lbl-${v.id}-${idx}`} value={v.id}>{v.name}</option>
                           ));
                         })()}
                       </select>
@@ -1126,9 +1167,14 @@ export default function Formulas() {
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Volume Base (L/Kg) *</label>
                     <input
-                      type="number"
-                      value={currentFormula.base_volume || ''}
-                      onChange={e => setCurrentFormula({ ...currentFormula, base_volume: Number(e.target.value) })}
+                      type="text"
+                      value={currentFormula.base_volume?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || ''}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\./g, '').replace(',', '.');
+                        if (!isNaN(Number(val))) {
+                          setCurrentFormula({ ...currentFormula, base_volume: Number(val) });
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                     />
                   </div>
@@ -1139,9 +1185,9 @@ export default function Formulas() {
                       onChange={e => setCurrentFormula({ ...currentFormula, status: e.target.value as any })}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                     >
-                      <option value="draft">Rascunho</option>
-                      <option value="active">Ativa</option>
-                      <option value="archived">Arquivada</option>
+                      <option key="status-draft" value="draft">Rascunho</option>
+                      <option key="status-active" value="active">Ativa</option>
+                      <option key="status-archived" value="archived">Arquivada</option>
                     </select>
                   </div>
                 </div>
@@ -1150,11 +1196,16 @@ export default function Formulas() {
                   <div>
                     <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1">Rendimento</label>
                     <input
-                      type="number"
-                      value={currentFormula.yield_amount || ''}
-                      onChange={e => setCurrentFormula({ ...currentFormula, yield_amount: Number(e.target.value) })}
+                      type="text"
+                      value={currentFormula.yield_amount?.toLocaleString('pt-BR', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) || ''}
+                      onChange={e => {
+                        const val = e.target.value.replace(/\./g, '').replace(',', '.');
+                        if (!isNaN(Number(val))) {
+                          setCurrentFormula({ ...currentFormula, yield_amount: Number(val) });
+                        }
+                      }}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
-                      placeholder="Ex: 50"
+                      placeholder="Ex: 50,00"
                     />
                   </div>
                   <div>
@@ -1164,10 +1215,10 @@ export default function Formulas() {
                       onChange={e => setCurrentFormula({ ...currentFormula, yield_unit: e.target.value.toUpperCase() })}
                       className="w-full px-3 py-2 bg-slate-50 border border-slate-300 rounded-lg focus:bg-white focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                     >
-                      <option value="UN">Unidades (UN)</option>
-                      <option value="CX">Caixas (CX)</option>
-                      <option value="GL">Galões (GL)</option>
-                      <option value="LT">Litros (LT)</option>
+                      <option key="unit-un" value="UN">Unidades (UN)</option>
+                      <option key="unit-cx" value="CX">Caixas (CX)</option>
+                      <option key="unit-gl" value="GL">Galões (GL)</option>
+                      <option key="unit-lt" value="LT">Litros (LT)</option>
                       <option value="KG">Kilogramas (KG)</option>
                       <option value="FD">Fardos (FD)</option>
                     </select>
@@ -1287,7 +1338,37 @@ export default function Formulas() {
                             setIsIngDropdownOpen(true);
                             if (selectedIngId) setSelectedIngId('');
                           }}
-                          onFocus={() => setIsIngDropdownOpen(true)}
+                          onFocus={() => {
+                            setIsIngDropdownOpen(true);
+                          }}
+                          onKeyDown={e => {
+                            if (!isIngDropdownOpen || filteredAndSortedIngredients.length === 0) return;
+
+                            if (e.key === 'ArrowDown') {
+                              e.preventDefault();
+                              setHighlightedIndex(prev => (prev + 1) % filteredAndSortedIngredients.length);
+                            } else if (e.key === 'ArrowUp') {
+                              e.preventDefault();
+                              setHighlightedIndex(prev => (prev - 1 + filteredAndSortedIngredients.length) % filteredAndSortedIngredients.length);
+                            } else if (e.key === 'Enter') {
+                              const targetIndex = highlightedIndex >= 0 ? highlightedIndex : 0;
+                              const selected = filteredAndSortedIngredients[targetIndex];
+                              if (selected) {
+                                e.preventDefault();
+                                const uniqueId = selected.isVariant ? `${selected.id}|${selected.variant_id}` : `${selected.id}|`;
+                                setSelectedIngId(uniqueId);
+                                setIngSearchTerm(selected.displayName);
+                                setIsIngDropdownOpen(false);
+                                setHighlightedIndex(-1);
+                                setTimeout(() => {
+                                  qtyInputRef.current?.focus();
+                                }, 50);
+                              }
+                            } else if (e.key === 'Escape') {
+                              setIsIngDropdownOpen(false);
+                              setHighlightedIndex(-1);
+                            }
+                          }}
                           className="bg-transparent border-none outline-none w-full text-sm text-slate-800 placeholder:text-slate-400"
                         />
                         {selectedIngId && (
@@ -1307,37 +1388,54 @@ export default function Formulas() {
                       {isIngDropdownOpen && (
                         <div className="absolute z-50 w-full mt-1 bg-white border border-slate-200 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                           {filteredAndSortedIngredients.length > 0 ? (
-                            filteredAndSortedIngredients.map(ing => {
+                            filteredAndSortedIngredients.map((ing, idx) => {
                               const uniqueId = ing.isVariant ? `${ing.id}|${ing.variant_id}` : `${ing.id}|`;
                               return (
                                 <div
-                                  key={uniqueId}
-                                  className={`px-4 py-2.5 cursor-pointer hover:bg-slate-50 flex items-center justify-between border-b border-slate-50 last:border-0 ${selectedIngId === uniqueId ? 'bg-[#202eac]/5' : ''}`}
+                                  key={`${uniqueId}-${idx}`}
+                                  className={`px-4 py-2.5 cursor-pointer flex items-center justify-between border-b border-slate-50 last:border-0 transition-colors ${highlightedIndex === idx ? 'bg-[#202eac] text-white' : 'hover:bg-slate-50'
+                                    } ${selectedIngId === uniqueId && highlightedIndex !== idx ? 'bg-[#202eac]/5' : ''}`}
                                   onClick={() => {
                                     setSelectedIngId(uniqueId);
                                     setIngSearchTerm(ing.displayName);
                                     setIsIngDropdownOpen(false);
+                                    setHighlightedIndex(-1);
                                     if (ingQuantity) {
                                       setIngQuantity(formatInputQuantity(ingQuantity, ing.produto_quimico));
                                     }
+                                    // Focar automaticamente no campo de quantidade
+                                    setTimeout(() => {
+                                      qtyInputRef.current?.focus();
+                                    }, 50);
                                   }}
                                 >
                                   <div className="flex items-center gap-3">
                                     <div className={`w-2 h-2 rounded-full ${ing.produto_quimico ? 'bg-amber-400' : 'bg-slate-300'}`}></div>
                                     <div>
-                                      <div className="font-medium text-slate-800 text-sm">{ing.displayName}</div>
-                                      {ing.apelido && <div className="text-xs text-slate-400 italic">{ing.apelido}</div>}
+                                      <div className={`font-medium text-sm ${highlightedIndex === idx ? 'text-white' : 'text-slate-800'}`}>{ing.displayName}</div>
+                                      {(ing.apelido || ing.codigo || ing.variant_codigo) && (
+                                        <div className={`text-[10px] italic ${highlightedIndex === idx ? 'text-blue-100' : 'text-slate-400'}`}>
+                                          {[ing.apelido, ing.codigo || ing.variant_codigo].filter(Boolean).join(' • ')}
+                                        </div>
+                                      )}
                                     </div>
                                   </div>
-                                  <div className="text-xs font-bold text-slate-600">
+                                  <div className={`text-xs font-bold ${highlightedIndex === idx ? 'text-white' : 'text-slate-600'}`}>
                                     {formatCurrency(ing.cost_per_unit)}/{ing.unit?.toUpperCase()}
                                   </div>
                                 </div>
                               );
                             })
                           ) : (
-                            <div className="px-4 py-3 text-sm text-slate-500 text-center">
-                              Nenhum insumo encontrado.
+                            <div className="px-4 py-3 text-sm text-slate-500 text-center flex flex-col items-center gap-1">
+                              {ingSearchTerm.length > 0 && ingSearchTerm.length < 3 ? (
+                                <>
+                                  <span className="font-bold text-[#202eac]">Continue digitando...</span>
+                                  <span className="text-[10px]">Mínimo de 3 caracteres para pesquisar</span>
+                                </>
+                              ) : (
+                                "Nenhum insumo encontrado."
+                              )}
                             </div>
                           )}
                         </div>
@@ -1353,6 +1451,13 @@ export default function Formulas() {
                       <input
                         type="text"
                         value={ingQuantity}
+                        ref={qtyInputRef}
+                        onKeyDown={e => {
+                          if (e.key === 'Enter' && selectedIngId && ingQuantity) {
+                            e.preventDefault();
+                            handleAddIngredientToFormula();
+                          }
+                        }}
                         onChange={e => {
                           setIngQuantity(formatInputQuantity(e.target.value, selectedIngredient?.produto_quimico ?? true));
                         }}
@@ -1618,23 +1723,11 @@ export default function Formulas() {
                 <span className="text-sm text-slate-500">{formulas.length} fórmulas cadastradas</span>
               </div>
               <div className="flex items-center gap-3">
-                <label className="cursor-pointer px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium flex items-center gap-2 transition-all shadow-sm">
-                  <Upload className="w-4 h-4 text-emerald-600" /> 
-                  <span className="hidden sm:inline">Importar</span>
-                  <input type="file" accept=".json" className="hidden" onChange={handleImport} />
-                </label>
-                <button
-                  onClick={handleExport}
-                  className="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium flex items-center gap-2 transition-all shadow-sm"
-                >
-                  <Download className="w-4 h-4 text-[#202eac]" /> 
-                  <span className="hidden sm:inline">Exportar</span>
-                </button>
                 <button
                   onClick={() => handleOpenEditor()}
                   className="px-5 py-2.5 bg-gradient-to-r from-[#202eac] to-[#4b5ce8] text-white rounded-xl hover:shadow-lg hover:shadow-indigo-500/25 font-medium flex items-center gap-2 transition-all"
                 >
-                  <Plus className="w-4 h-4" /> 
+                  <Plus className="w-4 h-4" />
                   <span className="hidden sm:inline">Nova Fórmula</span>
                 </button>
               </div>
@@ -1647,7 +1740,7 @@ export default function Formulas() {
                 <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-lg shadow-blue-500/25 shrink-0">
                   <Beaker className="w-8 h-8 text-white" />
                 </div>
-                
+
                 {/* Content */}
                 <div className="flex-1">
                   <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
@@ -1657,7 +1750,7 @@ export default function Formulas() {
                   <p className="text-slate-600 text-sm mt-1.5 leading-relaxed max-w-3xl">
                     Gerencie todas as formulações utilizadas na produção. Controle versões, custos, rendimentos e instruções de preparo.
                   </p>
-                  
+
                   {/* Stats Badges */}
                   <div className="flex items-center gap-3 mt-4 flex-wrap">
                     <div className="flex items-center gap-2 bg-slate-100 px-3 py-1.5 rounded-lg">
@@ -1684,7 +1777,14 @@ export default function Formulas() {
             {/* Summary Cards - Horizontal Layout */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Total Fórmulas */}
-              <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-blue-300 transition-all duration-300">
+              <div 
+                onClick={() => setStatusFilter('all')}
+                className={`p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group cursor-pointer ${
+                  statusFilter === 'all' 
+                    ? 'bg-blue-50 border-blue-400 shadow-md ring-2 ring-blue-500/10' 
+                    : 'bg-gradient-to-br from-white to-slate-50 border-slate-200 shadow-sm hover:shadow-md hover:border-blue-300'
+                }`}
+              >
                 <div className="w-12 h-12 bg-gradient-to-br from-[#202eac] to-[#4b5ce8] rounded-xl flex items-center justify-center shadow-lg shadow-indigo-500/20 shrink-0">
                   <Beaker className="w-5 h-5 text-white" />
                 </div>
@@ -1695,7 +1795,14 @@ export default function Formulas() {
               </div>
 
               {/* Fórmulas Ativas */}
-              <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-emerald-300 transition-all duration-300">
+              <div 
+                onClick={() => setStatusFilter('active')}
+                className={`p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group cursor-pointer ${
+                  statusFilter === 'active' 
+                    ? 'bg-emerald-50 border-emerald-400 shadow-md ring-2 ring-emerald-500/10' 
+                    : 'bg-gradient-to-br from-white to-slate-50 border-slate-200 shadow-sm hover:shadow-md hover:border-emerald-300'
+                }`}
+              >
                 <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/20 shrink-0">
                   <CheckCircle2 className="w-5 h-5 text-white" />
                 </div>
@@ -1706,7 +1813,14 @@ export default function Formulas() {
               </div>
 
               {/* Em Rascunho */}
-              <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-amber-300 transition-all duration-300">
+              <div 
+                onClick={() => setStatusFilter('draft')}
+                className={`p-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 group cursor-pointer ${
+                  statusFilter === 'draft' 
+                    ? 'bg-amber-50 border-amber-400 shadow-md ring-2 ring-amber-500/10' 
+                    : 'bg-gradient-to-br from-white to-slate-50 border-slate-200 shadow-sm hover:shadow-md hover:border-amber-300'
+                }`}
+              >
                 <div className="w-12 h-12 bg-gradient-to-br from-amber-500 to-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-amber-500/20 shrink-0">
                   <AlertTriangle className="w-5 h-5 text-white" />
                 </div>
@@ -1717,7 +1831,10 @@ export default function Formulas() {
               </div>
 
               {/* Categorias */}
-              <div className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-purple-300 transition-all duration-300">
+              <div 
+                onClick={handleOpenCategoryModal}
+                className="bg-gradient-to-br from-white to-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:shadow-md hover:border-purple-300 transition-all duration-300 cursor-pointer"
+              >
                 <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-violet-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/20 shrink-0">
                   <LayoutGrid className="w-5 h-5 text-white" />
                 </div>
@@ -1785,10 +1902,26 @@ export default function Formulas() {
                   <ArrowUpZA className="w-4 h-4" />
                 </button>
               </div>
+
+              {/* Import/Export Actions Group */}
+              <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm ml-auto lg:ml-0">
+                <label className="cursor-pointer p-2 rounded-lg text-slate-400 hover:text-blue-600 hover:bg-blue-50 transition-all duration-200 group/tooltip relative" title="Importar JSON">
+                  <Upload className="w-4 h-4" />
+                  <input type="file" onChange={handleImport} accept=".json" className="hidden" />
+                </label>
+                <div className="w-px h-4 bg-slate-200 mx-0.5"></div>
+                <button
+                  onClick={handleExport}
+                  className="p-2 rounded-lg text-slate-400 hover:text-[#202eac] hover:bg-blue-50 transition-all duration-200"
+                  title="Exportar JSON"
+                >
+                  <Download className="w-4 h-4" />
+                </button>
+              </div>
             </div>
 
             {/* Content Area */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className={`transition-all duration-300 ${viewMode === 'list' ? 'bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden' : ''}`}>
               {isLoading ? (
                 <div className="flex flex-col items-center justify-center h-64">
                   <div className="w-10 h-10 border-4 border-blue-200 border-t-[#202eac] rounded-full animate-spin mb-4"></div>
@@ -1803,166 +1936,177 @@ export default function Formulas() {
                   <p className="text-slate-400 text-sm mt-1">Clique em "Nova Fórmula" para começar</p>
                 </div>
               ) : viewMode === 'grid' ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredFormulas.map((formula) => (
-                <FormulaCard
-                  key={formula.id}
-                  formula={formula}
-                  onClick={() => handleOpenEditor(formula)}
-                  onEdit={() => handleOpenEditor(formula)}
-                  onDuplicate={() => handleDuplicateFormula(formula)}
-                  onDelete={() => setDeleteModal({ isOpen: true, id: formula.id, name: formula.name })}
-                />
-              ))}
-            </div>
-          ) : (
-            <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
-                    <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('name')}>
-                      <div className="flex items-center gap-2">
-                        Nome da Fórmula
-                        {sortField === 'name' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
-                      </div>
-                    </th>
-                    <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('group')}>
-                      <div className="flex items-center gap-2">
-                        Categoria
-                        {sortField === 'group' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
-                      </div>
-                    </th>
-                    <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('volume')}>
-                      <div className="flex items-center justify-end gap-2">
-                        Volume
-                        {sortField === 'volume' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
-                      </div>
-                    </th>
-                    <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('version')}>
-                      <div className="flex items-center justify-end gap-2">
-                        Versão
-                        {sortField === 'version' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
-                      </div>
-                    </th>
-                    <th className="py-4 px-6 font-semibold text-center">Insumos</th>
-                    <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('cost')}>
-                      <div className="flex items-center justify-end gap-2">
-                        Custo Total
-                        {sortField === 'cost' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
-                      </div>
-                    </th>
-                    <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('costPerLiter')}>
-                      <div className="flex items-center justify-end gap-2">
-                        Custo/Litro
-                        {sortField === 'costPerLiter' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
-                      </div>
-                    </th>
-                    <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('status')}>
-                      <div className="flex items-center gap-2">
-                        Status
-                        {sortField === 'status' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
-                      </div>
-                    </th>
-                    <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('updated_at')}>
-                      <div className="flex items-center justify-end gap-2">
-                        Atualizado em
-                        {sortField === 'updated_at' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
-                      </div>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {filteredFormulas.map((formula) => {
-                    const totalCost = calculateTotalCost(formula.formula_ingredients || []);
-                    const costPerLiter = totalCost / (formula.base_volume || 1);
-                    const ingredientCount = formula.formula_ingredients?.length || 0;
-
-                    return (
-                      <tr key={formula.id} className="hover:bg-slate-50 transition-colors group cursor-pointer relative" onClick={() => handleOpenEditor(formula)}>
-                        <td className="py-4 px-6">
-                          <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors">{formula.name}</div>
-                          {formula.lm_code && <div className="text-[10px] text-slate-400 font-mono">LM: {formula.lm_code}</div>}
-                        </td>
-                        <td className="py-4 px-6 text-slate-600">
-                          {formula.categories?.name || formula.groups?.name || '-'}
-                        </td>
-                        <td className="py-4 px-6 text-slate-600 font-medium text-right">
-                          {(formula.base_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L
-                        </td>
-                        <td className="py-4 px-6 text-slate-500 font-mono text-xs text-right">
-                          {formula.version}
-                        </td>
-                        <td className="py-4 px-6 text-center">
-                          <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-bold">
-                            {ingredientCount} itens
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 font-bold text-emerald-600 text-right">
-                          {formatCurrency(totalCost)}
-                        </td>
-                        <td className="py-4 px-6 font-bold text-blue-600 text-right">
-                          {formatCurrency(costPerLiter)}
-                        </td>
-                        <td className="py-4 px-6">
-                          <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${getStatusColor(formula.status)}`}>
-                            {getStatusText(formula.status)}
-                          </span>
-                        </td>
-                        <td className="py-4 px-6 text-slate-400 text-xs text-right">
-                          {new Date(formula.updated_at || formula.created_at).toLocaleDateString('pt-BR')}
-                        </td>
-
-                        {/* Hover Actions Menu */}
-                        <td className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all pointer-events-none group-hover:pointer-events-auto">
-                          <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5 shadow-xl">
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleOpenEditor(formula);
-                              }}
-                              className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
-                              title="Editar"
-                            >
-                              <Pencil className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDuplicateFormula(formula);
-                              }}
-                              className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                              title="Duplicar"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setDeleteModal({ isOpen: true, id: formula.id, name: formula.name });
-                              }}
-                              className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                              title="Excluir"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                  {filteredFormulas.map((formula) => (
+                    <FormulaCard
+                      key={formula.id}
+                      formula={formula}
+                      onClick={() => handleOpenEditor(formula)}
+                      onEdit={() => handleOpenEditor(formula)}
+                      onDuplicate={() => handleDuplicateFormula(formula)}
+                      onDelete={() => setDeleteModal({ isOpen: true, id: formula.id, name: formula.name })}
+                    />
+                  ))}
+                </div>
+              ) : (
+                <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+                        <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('name')}>
+                          <div className="flex items-center gap-2">
+                            Nome da Fórmula
+                            {sortField === 'name' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
                           </div>
-                        </td>
+                        </th>
+                        <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('group')}>
+                          <div className="flex items-center gap-2">
+                            Categoria
+                            {sortField === 'group' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
+                          </div>
+                        </th>
+                        <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('volume')}>
+                          <div className="flex items-center justify-end gap-2">
+                            Volume
+                            {sortField === 'volume' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
+                          </div>
+                        </th>
+                        <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('version')}>
+                          <div className="flex items-center justify-end gap-2">
+                            Versão
+                            {sortField === 'version' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
+                          </div>
+                        </th>
+                        <th className="py-4 px-6 font-semibold text-center">Insumos</th>
+                        <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('cost')}>
+                          <div className="flex items-center justify-end gap-2">
+                            Custo Total
+                            {sortField === 'cost' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
+                          </div>
+                        </th>
+                        <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('costPerLiter')}>
+                          <div className="flex items-center justify-end gap-2">
+                            Custo/Litro
+                            {sortField === 'costPerLiter' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
+                          </div>
+                        </th>
+                        <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => handleSort('status')}>
+                          <div className="flex items-center gap-2">
+                            Status
+                            {sortField === 'status' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
+                          </div>
+                        </th>
+                        <th className="py-4 px-6 font-semibold cursor-pointer hover:bg-slate-100 transition-colors text-right" onClick={() => handleSort('updated_at')}>
+                          <div className="flex items-center justify-end gap-2">
+                            Atualizado em
+                            {sortField === 'updated_at' && (sortOrder === 'asc' ? <ArrowDownAZ className="w-3.5 h-3.5" /> : <ArrowUpZA className="w-3.5 h-3.5" />)}
+                          </div>
+                        </th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {filteredFormulas.map((formula) => {
+                        const totalCost = calculateTotalCost(formula.formula_ingredients || []);
+                        const costPerLiter = totalCost / (formula.base_volume || 1);
+                        const ingredientCount = formula.formula_ingredients?.length || 0;
+
+                        return (
+                          <tr key={formula.id} className="hover:bg-slate-50 transition-colors group cursor-pointer relative" onClick={() => handleOpenEditor(formula)}>
+                            <td className="py-4 px-6">
+                              <div className="font-bold text-slate-800 group-hover:text-[#202eac] transition-colors">{formula.name}</div>
+                              {formula.lm_code && <div className="text-[10px] text-slate-400 font-mono">LM: {formula.lm_code}</div>}
+                            </td>
+                            <td className="py-4 px-6 text-slate-600">
+                              {formula.categories?.name || formula.groups?.name || '-'}
+                            </td>
+                            <td className="py-4 px-6 text-slate-600 font-medium text-right">
+                              {(formula.base_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })} L
+                            </td>
+                            <td className="py-4 px-6 text-slate-500 font-mono text-xs text-right">
+                              {formula.version}
+                            </td>
+                            <td className="py-4 px-6 text-center">
+                              <span className="bg-slate-100 text-slate-600 px-2 py-0.5 rounded-md text-[10px] font-bold">
+                                {ingredientCount} itens
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 font-bold text-emerald-600 text-right">
+                              {formatCurrency(totalCost)}
+                            </td>
+                            <td className="py-4 px-6 font-bold text-blue-600 text-right">
+                              {formatCurrency(costPerLiter)}
+                            </td>
+                            <td className="py-4 px-6">
+                              <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold border ${getStatusColor(formula.status)}`}>
+                                {getStatusText(formula.status)}
+                              </span>
+                            </td>
+                            <td className="py-4 px-6 text-slate-400 text-xs text-right">
+                              {new Date(formula.updated_at || formula.created_at).toLocaleDateString('pt-BR')}
+                            </td>
+
+                            {/* Hover Actions Menu */}
+                            <td className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all pointer-events-none group-hover:pointer-events-auto">
+                              <div className="flex items-center gap-1.5 bg-white border border-slate-200 rounded-xl p-1.5 shadow-xl">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleOpenEditor(formula);
+                                  }}
+                                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Editar"
+                                >
+                                  <Pencil className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDuplicateFormula(formula);
+                                  }}
+                                  className="p-2 text-slate-400 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                                  title="Duplicar"
+                                >
+                                  <Copy className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteModal({ isOpen: true, id: formula.id, name: formula.name });
+                                  }}
+                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                                  title="Excluir"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
-        </div>
-        </div>
-      </>
-    );
-  }
+        </>
+      );
+    }
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 relative">
+      <SuccessModal
+        isOpen={showSuccessModal}
+        onClose={() => {
+          setShowSuccessModal(false);
+          handleCloseEditor();
+        }}
+        title={successModalInfo.title}
+        message={successModalInfo.message}
+        itemName={successModalInfo.itemName}
+      />
+      
       {mainContent}
 
       {/* Category Management Modal */}

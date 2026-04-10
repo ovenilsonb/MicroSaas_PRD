@@ -10,7 +10,7 @@ import {
   Ingredient, Variant,
   useInsumosData, StockMovement,
   InsumoStats, InsumoFilters, InsumoTable, InsumoGrid,
-  InsumoModal, InsumoPagination, DeleteConfirmDialog,
+  InsumoModal, InsumoPagination, DeleteConfirmDialog, SuccessModal
 } from './InsumosComponents';
 
 interface ErrorBoundaryState {
@@ -94,6 +94,17 @@ export default function Insumos() {
   const [isSaving, setIsSaving] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState<{ isOpen: boolean; id: string; name: string; formulas: any[]; isLoading: boolean }>({
     isOpen: false, id: '', name: '', formulas: [], isLoading: false
+  });
+  const [successModal, setSuccessModal] = useState<{ 
+    isOpen: boolean; 
+    title: string; 
+    message: string; 
+    itemName: string; 
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    itemName: ''
   });
 
   const [usageFormulas, setUsageFormulas] = useState<any[]>([]);
@@ -218,7 +229,14 @@ export default function Insumos() {
       const success = await saveIngredient(payload);
       if (success) {
         handleCloseModal();
-        showToast('success', 'Sucesso!', payload.id ? 'Insumo atualizado com sucesso.' : 'Insumo cadastrado com sucesso.');
+        setSuccessModal({
+          isOpen: true,
+          title: payload.id ? 'Insumo Atualizado!' : 'Insumo Cadastrado!',
+          message: payload.id 
+            ? 'As alterações foram salvas com sucesso no banco de dados Ohana Clean.' 
+            : 'O novo insumo foi registrado com sucesso e já está disponível para uso.',
+          itemName: payload.name
+        });
       } else {
         showToast('error', 'Erro ao Salvar', 'Não foi possível salvar o insumo.');
       }
@@ -260,7 +278,12 @@ export default function Insumos() {
     };
     const success = await saveIngredient(newPayload);
     if (success) {
-      showToast('success', 'Insumo Duplicado', `Uma cópia de "${ing.name}" foi criada.`);
+      setSuccessModal({
+        isOpen: true,
+        title: 'Insumo Duplicado!',
+        message: 'Uma cópia exata do insumo foi gerada com sucesso.',
+        itemName: newPayload.name
+      });
     }
   };
 
@@ -590,6 +613,14 @@ export default function Insumos() {
           isLoading={deleteDialog.isLoading}
           onConfirm={executeDelete}
           onCancel={() => setDeleteDialog({ isOpen: false, id: '', name: '', formulas: [], isLoading: false })}
+        />
+
+        <SuccessModal
+          isOpen={successModal.isOpen}
+          title={successModal.title}
+          message={successModal.message}
+          itemName={successModal.itemName}
+          onClose={() => setSuccessModal(prev => ({ ...prev, isOpen: false }))}
         />
       </div>
     </ErrorBoundary>

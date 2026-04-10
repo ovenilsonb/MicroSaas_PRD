@@ -49,6 +49,8 @@ export interface Simulation {
   formulaName: string;
   formulaVersion: string;
   targetVolume: number;
+  targetQuantity: number;
+  calculationMode: CalculationMode;
   totalCost: number;
   createdAt: string;
   displayName: string;

@@ -35,22 +35,22 @@ interface HeaderProps {
 
 export default function Header({ title, subtitle, icon: Icon, color = 'text-slate-700', actions, children }: HeaderProps) {
   return (
-    <header className="bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 px-8 py-5 shrink-0 transition-colors duration-300">
+    <header className="bg-white border-b border-slate-200 px-8 py-5 shrink-0 transition-colors duration-300">
       <div className="flex items-center justify-between">
         {/* Left Section - Title */}
         <div>
           <div className="flex items-center gap-4">
             {Icon && (
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#202eac]/10 to-[#202eac]/5 dark:from-blue-500/10 dark:to-blue-500/5 flex items-center justify-center">
-                <Icon className={`w-6 h-6 ${color} dark:text-blue-400`} />
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#202eac]/10 to-[#202eac]/5 flex items-center justify-center">
+                <Icon className={`w-6 h-6 ${color}`} />
               </div>
             )}
             <div>
-              <h1 className={`text-2xl font-bold ${color} dark:text-slate-100 tracking-tight`}>
+              <h1 className={`text-2xl font-bold ${color} tracking-tight`}>
                 {title}
               </h1>
               {subtitle && (
-                <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">
+                <p className="text-sm text-slate-500 font-medium mt-0.5">
                   {subtitle}
                 </p>
               )}
@@ -63,7 +63,7 @@ export default function Header({ title, subtitle, icon: Icon, color = 'text-slat
       </div>
 
       {children && (
-        <div className="mt-5 pt-5 border-t border-slate-100 dark:border-slate-800">
+        <div className="mt-5 pt-5 border-t border-slate-100">
           {children}
         </div>
       )}

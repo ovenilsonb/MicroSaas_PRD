@@ -17,7 +17,6 @@ export interface CompanySettings {
   logo: string | null;
   headerFont: string;
   primaryColor: string;
-  isDarkMode: boolean;
   watermarkText: string;
   watermarkOpacity: number;
   sidebarLayout: SidebarSection[];
@@ -33,7 +32,6 @@ const DEFAULT_SETTINGS: CompanySettings = {
   logo: null,
   headerFont: 'Inter',
   primaryColor: '#202eac',
-  isDarkMode: false,
   watermarkText: 'OHANA CLEAN',
   watermarkOpacity: 0.05,
   sidebarLayout: [

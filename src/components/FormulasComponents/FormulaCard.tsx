@@ -32,7 +32,10 @@ export default function FormulaCard({ formula, onClick, onEdit, onDuplicate, onD
   const custoPorLitro = formula.base_volume > 0 ? custoBase / formula.base_volume : 0;
 
   return (
-    <div className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group">
+    <div 
+      onClick={onClick}
+      className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group cursor-pointer"
+    >
       <div className="flex items-start justify-between mb-4">
         <div className={`px-3 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text}`}>
           {status === 'draft' ? 'Rascunho' : status === 'active' ? 'Ativo' : 'Arquivado'}

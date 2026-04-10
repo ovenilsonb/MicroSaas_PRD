@@ -135,7 +135,7 @@ export default function Sidebar({ activeMenu, setActiveMenu }: SidebarProps) {
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 px-4 py-4 overflow-y-auto custom-scrollbar">
+      <nav className="flex-1 px-4 py-4 overflow-y-auto custom-scrollbar left-scrollbar">
         <div className="space-y-8">
           {dynamicNavItems.map((section) => (
             <div key={section.id}>

@@ -58,20 +58,6 @@
   --bg-sidebar: var(--color-slate-900);
 }
 
-.dark {
-  --bg-main: #0b0f1a;
-  --bg-surface: #111827;
-  --bg-card: #1f2937;
-  --text-main: #f8fafc;
-  --text-dim: #94a3b8;
-  --border-active: #334155;
-  --bg-sidebar: #030712;
-  
-  /* Override core slates for dark mode accessibility if needed */
-  --color-slate-50: #0f172a;
-  --color-slate-100: #1e293b;
-  --color-slate-200: #334155;
-}
 
 :root {
   /* Shadows */

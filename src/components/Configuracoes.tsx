@@ -45,10 +45,10 @@ export default function Configuracoes() {
     <div className="flex-1 overflow-auto bg-slate-50 dark:bg-[#0b0f1a] custom-scrollbar transition-colors duration-300">
       <header className="bg-white dark:bg-[#111827] border-b border-slate-200 dark:border-slate-800 px-8 py-6 flex justify-between items-center sticky top-0 z-30 shadow-sm">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3">
-            <Settings className="w-7 h-7 text-[#202eac] dark:text-blue-400" /> Configurações
+          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
+            <Settings className="w-7 h-7 text-[#202eac]" /> Configurações
           </h1>
-          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-widest">Personalize sua experiência Ohana Clean</p>
+          <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Personalize sua experiência Ohana Clean</p>
         </div>
         <button 
           onClick={handleSave}
@@ -65,8 +65,8 @@ export default function Configuracoes() {
             onClick={() => setActiveTab('profile')}
             className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-sm font-bold transition-all ${
               activeTab === 'profile' 
-                ? 'bg-blue-50 dark:bg-blue-900/30 text-[#202eac] dark:text-blue-400 shadow-sm' 
-                : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800/50'
+                ? 'bg-blue-50 text-[#202eac] shadow-sm' 
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-50'
             }`}
           >
             <Building2 className="w-4 h-4" /> Perfil & Identidade
@@ -412,30 +412,6 @@ export default function Configuracoes() {
                 </header>
                 
                 <div className="space-y-6">
-                  {/* Toggle Modo Escuro */}
-                  <div className="flex items-center justify-between p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 transition-all">
-                    <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-white dark:bg-slate-800 rounded-2xl flex items-center justify-center shadow-sm">
-                        {localSettings.isDarkMode ? <Moon className="w-6 h-6 text-indigo-400" /> : <Sun className="w-6 h-6 text-amber-500" />}
-                      </div>
-                      <div>
-                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">Modo de Visualização</p>
-                        <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Alterne entre o tema Claro e Escuro para todo o sistema.</p>
-                      </div>
-                    </div>
-                    <button 
-                      onClick={() => setLocalSettings(prev => ({ ...prev, isDarkMode: !prev.isDarkMode }))}
-                      className={`relative inline-flex h-8 w-16 items-center rounded-full transition-all duration-300 focus:outline-none ${
-                        localSettings.isDarkMode ? 'bg-blue-600' : 'bg-slate-300'
-                      }`}
-                    >
-                      <span
-                        className={`inline-block h-6 w-6 transform rounded-full bg-white transition-transform duration-300 shadow-lg ${
-                          localSettings.isDarkMode ? 'translate-x-9' : 'translate-x-1'
-                        }`}
-                      />
-                    </button>
-                  </div>
 
                   {/* Configurações de Marca d'Água */}
                   <div className="p-6 bg-slate-50 dark:bg-slate-900/50 rounded-2xl border border-slate-100 dark:border-slate-800 space-y-6">

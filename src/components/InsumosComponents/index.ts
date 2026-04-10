@@ -10,3 +10,4 @@ export { default as InsumoModal } from './InsumoModal';
 export { default as InsumoPagination } from './InsumoPagination';
 export { default as StockMovementPanel } from './StockMovementPanel';
 export { default as DeleteConfirmDialog } from './DeleteConfirmDialog';
+export { default as SuccessModal } from './SuccessModal';

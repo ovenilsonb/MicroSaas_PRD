@@ -31,7 +31,7 @@ import Sidebar from './components/Sidebar';
 
 function LoadingFallback() {
   return (
-    <div className="flex-1 flex items-center justify-center bg-slate-50 dark:bg-[#0b0f1a]">
+    <div className="flex-1 flex items-center justify-center bg-slate-50">
       <div className="text-center">
         <div className="w-12 h-12 border-4 border-[var(--primary)] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
         <p className="text-slate-500 dark:text-slate-400 font-medium">Sincronizando ambiente industrial...</p>
@@ -45,13 +45,6 @@ export default function App() {
   const { settings } = useCompanySettings();
   const [activeMenu, setActiveMenu] = useState('dashboard');
 
-  useEffect(() => {
-    if (settings.isDarkMode) {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  }, [settings.isDarkMode]);
 
   // Aplicação Dinâmica da Cor Primária
   useEffect(() => {
@@ -92,7 +85,7 @@ export default function App() {
 
   return (
     <ToastProvider>
-      <div className="min-h-screen bg-slate-50 dark:bg-[#0b0f1a] flex font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
+      <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 transition-colors duration-300">
 
       <Sidebar 
         activeMenu={activeMenu}
@@ -103,7 +96,7 @@ export default function App() {
         onSync={syncFromSupabase}
       />
 
-      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-[#0b0f1a]">
+      <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
         {activeMenu !== 'insumos' && activeMenu !== 'formulas' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && activeMenu !== 'configuracoes' && (() => {
           const hc = getModuleConfig(activeMenu);
           return (
