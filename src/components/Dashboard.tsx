@@ -70,7 +70,8 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
     setActiveMenu(action);
   };
 
-  const onLayoutChange = (_layout: Layout[], allLayouts: ResponsiveLayouts) => {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const onLayoutChange = (_layout: any, allLayouts: any) => {
     setLayouts(allLayouts);
     if (isEditing) {
       localStorage.setItem('dashboardLayouts_v2', JSON.stringify(allLayouts));
@@ -103,21 +104,21 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
   const hiddenCards = allCards.filter(c => hiddenCardKeys.includes(c.id));
 
   return (
-    <div className="flex-1 overflow-auto bg-slate-50 relative custom-scrollbar transition-colors duration-300">
-      <header className="bg-white border-b border-slate-200 px-8 py-6 flex justify-between items-center sticky top-0 z-30 shadow-sm transition-colors duration-300">
+    <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950 relative custom-scrollbar transition-colors duration-300">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-6 flex justify-between items-center sticky top-0 z-30 shadow-sm transition-colors duration-300">
         <div>
-          <h1 className="text-2xl font-black text-slate-800 flex items-center gap-3">
-            <LayoutPanelTop className="w-7 h-7 text-[#202eac]" /> Dashboard
+          <h1 className="text-2xl font-black text-slate-800 dark:text-slate-100 flex items-center gap-3">
+            <LayoutPanelTop className="w-7 h-7 text-[#202eac] dark:text-blue-400" /> Dashboard
           </h1>
-          <p className="text-xs font-bold text-slate-400 mt-1 uppercase tracking-widest">Controle Industrial Ohana Clean</p>
+          <p className="text-xs font-bold text-slate-400 dark:text-slate-500 mt-1 uppercase tracking-widest">Controle Industrial Ohana Clean</p>
         </div>
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setIsEditing(!isEditing)}
             className={`px-5 py-2.5 rounded-xl font-bold text-sm flex items-center gap-2 transition-all shadow-sm ${
-              isEditing 
-                ? 'bg-[#202eac] text-white hover:bg-[#1a258a] scale-105' 
-                : 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200'
+              isEditing
+                ? 'bg-[#202eac] dark:bg-blue-600 text-white hover:bg-[#1a258a] dark:hover:bg-blue-700 scale-105'
+                : 'bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700'
             }`}
           >
             <Settings2 className="w-4 h-4" />
@@ -131,19 +132,19 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
         {isEditing && (
           <div className="mb-8 space-y-6 animate-in fade-in slide-in-from-top-4 duration-500">
             {/* Dica de Edição */}
-            <div className="p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-center justify-between shadow-sm">
+            <div className="p-4 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded-2xl flex items-center justify-between shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 bg-blue-500 text-white rounded-xl flex items-center justify-center shadow-md shadow-blue-500/20">
                   <Settings2 className="w-5 h-5" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-blue-900">Modo de Personalização Ativo</p>
-                  <p className="text-xs text-blue-700 font-medium">Arraste os cards para organizar ou use o "X" para ocultar indicadores.</p>
+                  <p className="text-sm font-bold text-blue-900 dark:text-blue-200">Modo de Personalização Ativo</p>
+                  <p className="text-xs text-blue-700 dark:text-blue-300 font-medium">Arraste os cards para organizar ou use o "X" para ocultar indicadores.</p>
                 </div>
               </div>
               <button 
                 onClick={resetLayout}
-                className="px-4 py-2 text-xs font-black text-blue-700 hover:text-white hover:bg-blue-600 rounded-xl transition-all border border-blue-200 uppercase tracking-widest"
+                className="px-4 py-2 text-xs font-black text-blue-700 dark:text-blue-300 hover:text-white hover:bg-blue-600 rounded-xl transition-all border border-blue-200 dark:border-blue-700 uppercase tracking-widest"
               >
                 Resetar para o Padrão
               </button>
@@ -151,8 +152,8 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
 
             {/* Banco de Cards Ocultos */}
             {hiddenCards.length > 0 && (
-              <div className="p-6 bg-white border border-dashed border-slate-300 rounded-[24px]">
-                <h3 className="text-xs font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <div className="p-6 bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 rounded-[24px]">
+                <h3 className="text-xs font-black text-slate-400 dark:text-slate-500 uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
                   <Plus className="w-4 h-4" /> Indicadores Disponíveis
                 </h3>
                 <div className="flex flex-wrap gap-3">
@@ -160,9 +161,9 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
                     <button
                       key={card.id}
                       onClick={() => handleAddCard(card.id)}
-                      className="px-4 py-2.5 bg-slate-50 hover:bg-blue-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-600 hover:text-[#202eac] hover:border-[#202eac]/30 transition-all flex items-center gap-2 group"
+                      className="px-4 py-2.5 bg-slate-50 dark:bg-slate-800 hover:bg-blue-50 dark:hover:bg-blue-900/30 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-[#202eac] dark:hover:text-blue-400 hover:border-[#202eac]/30 dark:hover:border-blue-500/30 transition-all flex items-center gap-2 group"
                     >
-                      <Plus className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#202eac]" />
+                      <Plus className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 group-hover:text-[#202eac] dark:group-hover:text-blue-400" />
                       {card.title}
                     </button>
                   ))}
@@ -178,7 +179,7 @@ export default function Dashboard({ setActiveMenu }: { setActiveMenu: (menu: str
           breakpoints={BREAKPOINTS}
           cols={COLS}
           rowHeight={60}
-          onLayoutChange={onLayoutChange}
+          onLayoutChange={onLayoutChange as any}
           onBreakpointChange={setCurrentBreakpoint}
           draggableHandle=".drag-handle"
           isDraggable={isEditing}

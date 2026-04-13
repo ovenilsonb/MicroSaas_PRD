@@ -32,16 +32,16 @@ class ErrorBoundary extends Component<{children: ReactNode}, ErrorBoundaryState>
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-950">
           <div className="flex-1 flex items-center justify-center p-8">
-            <div className="bg-white rounded-2xl border border-red-200 shadow-lg p-8 max-w-md text-center">
-              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 dark:border-red-800 shadow-lg p-8 max-w-md text-center">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-8 h-8" />
               </div>
-              <h2 className="text-xl font-bold text-slate-800 mb-2">Algo deu errado</h2>
-              <p className="text-slate-600 mb-4">O módulo de Insumos encontrou um erro.</p>
-              <div className="bg-slate-100 p-3 rounded-lg mb-4 text-left overflow-auto max-h-32">
-                <code className="text-xs text-red-600">{this.state.error?.message}</code>
+              <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Algo deu errado</h2>
+              <p className="text-slate-600 dark:text-slate-400 mb-4">O módulo de Insumos encontrou um erro.</p>
+              <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg mb-4 text-left overflow-auto max-h-32">
+                <code className="text-xs text-red-600 dark:text-red-400">{this.state.error?.message}</code>
               </div>
               <button onClick={() => this.setState({ hasError: false })}
                 className="px-6 py-2 bg-[#202eac] text-white font-medium rounded-lg hover:bg-blue-800 transition-colors flex items-center gap-2 mx-auto">
@@ -492,30 +492,30 @@ export default function Insumos() {
 
   return (
     <ErrorBoundary>
-      <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+      <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-950">
         <div className="flex-1 overflow-auto p-8">
           <div className="max-w-7xl mx-auto space-y-6">
 
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                  <Package className="w-6 h-6 text-[#202eac]" /> Insumos
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                  <Package className="w-6 h-6 text-[#202eac] dark:text-blue-400" /> Insumos
                 </h2>
-                <span className="text-sm text-slate-500">{stats.total} itens cadastrados</span>
-                <span className="text-xs text-slate-400 flex items-center gap-1" title="Ctrl+N: Novo | Ctrl+F: Buscar | Esc: Fechar modal">
+                <span className="text-sm text-slate-500 dark:text-slate-400">{stats.total} itens cadastrados</span>
+                <span className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1" title="Ctrl+N: Novo | Ctrl+F: Buscar | Esc: Fechar modal">
                   <Keyboard className="w-3.5 h-3.5" /> Atalhos
                 </span>
               </div>
               <div className="flex items-center gap-3">
-                <label className="cursor-pointer px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium flex items-center gap-2 transition-all shadow-sm">
-                  <Upload className="w-4 h-4 text-emerald-600" />
+                <label className="cursor-pointer px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 font-medium flex items-center gap-2 transition-all shadow-sm">
+                  <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="hidden sm:inline">Importar</span>
                   <input ref={fileInputRef} type="file" accept=".json" className="hidden" onChange={handleImport} aria-label="Importar insumos" />
                 </label>
                 <button onClick={handleExport}
-                  className="px-4 py-2.5 bg-white border border-slate-200 text-slate-600 rounded-xl hover:bg-slate-50 hover:border-slate-300 font-medium flex items-center gap-2 transition-all shadow-sm"
+                  className="px-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 hover:border-slate-300 dark:hover:border-slate-600 font-medium flex items-center gap-2 transition-all shadow-sm"
                   aria-label="Exportar insumos">
-                  <Download className="w-4 h-4 text-[#202eac]" />
+                  <Download className="w-4 h-4 text-[#202eac] dark:text-blue-400" />
                   <span className="hidden sm:inline">Exportar</span>
                 </button>
                 <button onClick={() => handleOpenModal()}
@@ -547,12 +547,12 @@ export default function Insumos() {
             {isLoading ? (
               <div className="space-y-4"><CardSkeleton count={4} /><TableSkeleton rows={8} /></div>
             ) : filteredIngredients.length === 0 ? (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-12 text-center">
-                <div className="w-16 h-16 bg-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Package className="w-8 h-8 text-slate-400" />
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm p-12 text-center">
+                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Package className="w-8 h-8 text-slate-400 dark:text-slate-500" />
                 </div>
-                <p className="text-slate-600 font-medium">Nenhum insumo encontrado</p>
-                <p className="text-slate-400 text-sm mt-1">Clique em "Adicionar Insumo" para começar</p>
+                <p className="text-slate-600 dark:text-slate-400 font-medium">Nenhum insumo encontrado</p>
+                <p className="text-slate-400 dark:text-slate-500 text-sm mt-1">Clique em "Adicionar Insumo" para começar</p>
               </div>
             ) : viewMode === 'list' ? (
               <>

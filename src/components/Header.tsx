@@ -35,13 +35,13 @@ interface HeaderProps {
 
 export default function Header({ title, subtitle, icon: Icon, color = 'text-slate-700', actions, children }: HeaderProps) {
   return (
-    <header className="bg-white border-b border-slate-200 px-8 py-5 shrink-0 transition-colors duration-300">
+    <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-8 py-5 shrink-0 transition-colors duration-300">
       <div className="flex items-center justify-between">
         {/* Left Section - Title */}
         <div>
           <div className="flex items-center gap-4">
             {Icon && (
-              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#202eac]/10 to-[#202eac]/5 flex items-center justify-center">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-[#202eac]/10 to-[#202eac]/5 dark:from-blue-500/20 dark:to-blue-500/10 flex items-center justify-center">
                 <Icon className={`w-6 h-6 ${color}`} />
               </div>
             )}

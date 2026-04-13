@@ -129,6 +129,15 @@
   background: var(--color-slate-400);
 }
 
+/* Dark mode scrollbar */
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--color-slate-600);
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--color-slate-500);
+}
+
 /* RTL Support for Sidebar */
 .left-scrollbar {
   direction: rtl;

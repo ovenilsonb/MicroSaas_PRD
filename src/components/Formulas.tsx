@@ -359,6 +359,8 @@ export default function Formulas() {
     }
   };
 
+  const fetchGroups = fetchCategories; // alias for backward compat
+
   const normalizeString = (str: string) => {
     return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
   };
@@ -813,7 +815,7 @@ export default function Formulas() {
           created_at: new Date().toISOString(),
           updated_at: new Date().toISOString(),
           formula_ingredients: currentIngredients,
-          groups: groups.find(g => g.id === currentFormula.group_id) ? { name: groups.find(g => g.id === currentFormula.group_id)!.name } : null,
+          groups: categories.find(g => g.id === currentFormula.group_id) ? { name: categories.find(g => g.id === currentFormula.group_id)!.name } : null,
         };
         localFormulas.push(formulaData);
         localStorage.setItem('local_formulas', JSON.stringify(localFormulas));
@@ -995,9 +997,9 @@ export default function Formulas() {
     const totalVolume = calculateTotalVolume(currentIngredients);
 
     mainContent = (
-      <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden relative">
+      <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden relative">
         {/* Editor Header */}
-        <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between shrink-0 z-10 shadow-sm">
+        <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 px-6 py-4 flex items-center justify-between shrink-0 z-10 shadow-sm">
           <div className="flex items-center gap-4">
             <button
               onClick={handleCloseEditor}
@@ -1051,7 +1053,7 @@ export default function Formulas() {
 
             {/* LEFT COLUMN: Dados Cadastrais */}
             <div className="lg:col-span-4 space-y-6">
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
                 <h2 className="font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <Info className="w-4 h-4 text-[#202eac]" /> Dados Principais
                 </h2>
@@ -1158,7 +1160,7 @@ export default function Formulas() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5 space-y-4">
                 <h2 className="font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3">
                   <Package className="w-4 h-4 text-[#202eac]" /> Produção & Controle
                 </h2>
@@ -1291,7 +1293,7 @@ export default function Formulas() {
             <div className="lg:col-span-8 space-y-6 flex flex-col">
 
               {/* Composição */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm flex flex-col flex-1">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col flex-1">
                 <div className="p-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 rounded-t-xl">
                   <h2 className="font-bold text-slate-800 flex items-center gap-2">
                     <Beaker className="w-5 h-5 text-[#202eac]" /> Composição da Fórmula
@@ -1685,7 +1687,7 @@ export default function Formulas() {
               </div>
 
               {/* Observações / Instruções */}
-              <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-5">
+              <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-5">
                 <h2 className="font-bold text-slate-800 flex items-center gap-2 border-b border-slate-100 pb-3 mb-4">
                   <FileText className="w-4 h-4 text-[#202eac]" /> Observações / Modo de Preparo
                 </h2>

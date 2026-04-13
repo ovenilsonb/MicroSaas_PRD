@@ -4,7 +4,7 @@ import { Users, AlertCircle } from 'lucide-react';
 export default function Usuarios() {
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-8 py-6 shrink-0">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-6 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-[#202eac]/10 p-2 rounded-lg">
@@ -21,7 +21,7 @@ export default function Usuarios() {
       </header>
       
       <main className="flex-1 p-8 overflow-y-auto custom-scrollbar flex items-center justify-center">
-        <div className="text-center bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-md w-full">
+        <div className="text-center bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 shadow-sm max-w-md w-full">
           <div className="w-16 h-16 bg-slate-50 border border-slate-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <Users className="w-8 h-8 text-slate-400" />
           </div>

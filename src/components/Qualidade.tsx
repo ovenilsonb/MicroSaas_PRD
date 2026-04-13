@@ -495,7 +495,7 @@ export default function Qualidade() {
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
       {/* HEADER */}
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
             <ShieldCheck className="w-6 h-6 text-[#202eac]" /> Qualidade
@@ -503,15 +503,15 @@ export default function Qualidade() {
           <p className="text-sm text-slate-500 mt-1">Análise de parâmetros e liberação de lotes</p>
         </div>
         <div className="flex items-center gap-4 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
-          <div className="px-4 py-2 bg-white rounded-lg shadow-sm border border-slate-200">
+          <div className="px-4 py-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200">
             <div className="text-[10px] font-bold text-slate-400 uppercase">Aguardando</div>
             <div className="text-xl font-black text-amber-600">{checks.filter(c => c.status === 'pending').length}</div>
           </div>
-          <div className="px-4 py-2 bg-white rounded-lg shadow-sm border border-slate-200">
+          <div className="px-4 py-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200">
             <div className="text-[10px] font-bold text-slate-400 uppercase">Aprovados</div>
             <div className="text-xl font-black text-emerald-600">{checks.filter(c => c.status === 'approved').length}</div>
           </div>
-          <div className="px-4 py-2 bg-white rounded-lg shadow-sm border border-slate-200">
+          <div className="px-4 py-2 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-slate-200">
             <div className="text-[10px] font-bold text-slate-400 uppercase">Reprovados</div>
             <div className="text-xl font-black text-red-600">{checks.filter(c => c.status === 'rejected').length}</div>
           </div>
@@ -519,7 +519,7 @@ export default function Qualidade() {
       </header>
 
       {/* TABS NAVIGATION */}
-      <div className="bg-white border-b border-slate-200 px-8 flex gap-6 shrink-0">
+      <div className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 flex gap-6 shrink-0">
         <button
           onClick={() => setActiveTab('pending')}
           className={`py-4 font-bold text-sm border-b-2 transition-all flex items-center gap-2 ${activeTab === 'pending' ? 'border-[#202eac] text-[#202eac]' : 'border-transparent text-slate-500 hover:text-slate-800'}`}
@@ -538,7 +538,7 @@ export default function Qualidade() {
         <div className="max-w-6xl mx-auto">
           
           {/* SEARCH BAR */}
-          <div className="bg-white p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 mb-6">
+          <div className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 mb-6">
             <Search className="w-5 h-5 text-slate-400 ml-2" />
             <input
               type="text"
@@ -561,7 +561,7 @@ export default function Qualidade() {
                   {isLoading ? (
                     <div className="text-center py-12 text-slate-400">Carregando lotes...</div>
                   ) : pendingChecks.length === 0 ? (
-                    <div className="text-center py-12 bg-white rounded-2xl border border-slate-200 shadow-sm text-slate-400 italic">
+                    <div className="text-center py-12 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm text-slate-400 italic">
                       🎉 Nenhum lote pendente de análise!
                     </div>
                   ) : (
@@ -571,7 +571,7 @@ export default function Qualidade() {
                         onClick={() => handleSelectCheck(check)}
                         className={`w-full p-5 rounded-2xl border-2 transition-all flex flex-col gap-3 text-left ${selectedCheck?.id === check.id
                           ? 'border-[#202eac] bg-blue-50'
-                          : 'border-white bg-white hover:border-slate-200 shadow-sm'
+                          : 'border-white bg-white dark:bg-slate-900 hover:border-slate-200 shadow-sm'
                           }`}
                       >
                         <div className="flex items-center justify-between">
@@ -604,10 +604,10 @@ export default function Qualidade() {
               {/* FORM */}
               <div className="lg:col-span-7">
                 {selectedCheck && selectedCheck.status === 'pending' ? (
-                  <div className="bg-white rounded-3xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-right-4">
+                  <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 shadow-xl overflow-hidden animate-in fade-in slide-in-from-right-4">
                     <div className="p-6 border-b border-slate-100 bg-[#202eac] text-white flex items-center justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="bg-white/20 p-3 rounded-2xl">
+                        <div className="bg-white dark:bg-slate-900/20 p-3 rounded-2xl">
                           <FlaskConical className="w-6 h-6" />
                         </div>
                         <div>
@@ -704,7 +704,7 @@ export default function Qualidade() {
                         </div>
                         <div className="flex gap-3">
                           <button onClick={() => handleApproveReject('rejected')} disabled={isSaving || !analyst}
-                            className="px-6 py-3 bg-white border-2 border-red-500 text-red-500 font-black rounded-2xl hover:bg-red-50 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50">
+                            className="px-6 py-3 bg-white dark:bg-slate-900 border-2 border-red-500 text-red-500 font-black rounded-2xl hover:bg-red-50 transition-all flex items-center gap-2 shadow-lg disabled:opacity-50">
                             <XCircle className="w-4 h-4" /> REPROVAR (PERDA)
                           </button>
                           <button onClick={() => handleApproveReject('approved')} disabled={isSaving || !analyst}
@@ -716,7 +716,7 @@ export default function Qualidade() {
                     </div>
                   </div>
                 ) : (
-                  <div className="h-full bg-white rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center opacity-60">
+                  <div className="h-full bg-white dark:bg-slate-900 rounded-3xl border-2 border-dashed border-slate-200 flex flex-col items-center justify-center p-12 text-center opacity-60">
                     <ShieldCheck className="w-16 h-16 text-slate-200 mb-4" />
                     <h3 className="text-xl font-bold text-slate-400">Selecione um Lote Pendente</h3>
                     <p className="text-sm text-slate-400 max-w-xs mt-2">Clique em um dos lotes na Fila de Inspeção para realizar a análise e decidir o destino produtivo.</p>
@@ -728,7 +728,7 @@ export default function Qualidade() {
 
           {/* ------------- ABA 2: HISTORY ------------- */}
           {activeTab === 'history' && (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden animate-in fade-in slide-in-from-bottom-2">
               <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                 <h2 className="font-bold text-slate-700 text-sm flex items-center gap-2">
                   <FileSpreadsheet className="w-4 h-4 text-[#202eac]" /> Desempenho e Histórico de Qualidade
@@ -736,14 +736,14 @@ export default function Qualidade() {
                 <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl">
                   <button
                     onClick={() => setViewMode('grid')}
-                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-900 text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                     title="Visualização em Grade"
                   >
                     <LayoutGrid className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => setViewMode('list')}
-                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+                    className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-900 text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
                     title="Visualização em Lista"
                   >
                     <List className="w-4 h-4" />
@@ -764,7 +764,7 @@ export default function Qualidade() {
                         <div>
                           <div className="flex flex-col gap-1.5 mb-2">
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white border border-slate-200 text-slate-500">
+                              <span className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 text-slate-500">
                                 OF: {check.production_orders?.batch_number}
                               </span>
                               {isApproved ? (
@@ -785,7 +785,7 @@ export default function Qualidade() {
                             <div className="text-xs text-slate-500"><span className="font-bold">Visc:</span> {check.viscosity_value || '-'}</div>
                           </div>
                           {check.notes && (
-                            <div className="mt-2 text-[10px] text-slate-500 bg-white p-2 rounded border border-slate-100 line-clamp-2">
+                            <div className="mt-2 text-[10px] text-slate-500 bg-white dark:bg-slate-900 p-2 rounded border border-slate-100 line-clamp-2">
                               {check.notes}
                             </div>
                           )}
@@ -866,7 +866,7 @@ export default function Qualidade() {
                                 <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 shadow-xl z-20 flex items-center gap-2">
                                   <button 
                                     onClick={(e) => { e.stopPropagation(); handlePrint(check); }}
-                                    className="p-3 bg-white border border-slate-200 text-blue-600 hover:bg-[#202eac] hover:text-white rounded-2xl transition-all shadow-lg flex items-center gap-2"
+                                    className="p-3 bg-white dark:bg-slate-900 border border-slate-200 text-blue-600 hover:bg-[#202eac] hover:text-white rounded-2xl transition-all shadow-lg flex items-center gap-2"
                                     title="Imprimir Laudo"
                                   >
                                     <Printer className="w-4 h-4" />

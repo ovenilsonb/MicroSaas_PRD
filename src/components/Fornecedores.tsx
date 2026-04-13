@@ -321,7 +321,7 @@ export default function Fornecedores() {
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-8 py-6 shrink-0">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-6 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-blue-50 p-2 rounded-lg">
@@ -336,7 +336,7 @@ export default function Fornecedores() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleExport}
-              className="px-4 py-2 text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors font-medium flex items-center gap-2"
+              className="px-4 py-2 text-slate-600 bg-white dark:bg-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors font-medium flex items-center gap-2"
               title="Exportar para JSON"
             >
               <Download className="w-4 h-4" />
@@ -351,7 +351,7 @@ export default function Fornecedores() {
                 title="Importar de JSON"
               />
               <button
-                className="px-4 py-2 text-slate-600 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors font-medium flex items-center gap-2"
+                className="px-4 py-2 text-slate-600 bg-white dark:bg-slate-900 border border-slate-200 rounded-lg hover:bg-slate-50 transition-colors font-medium flex items-center gap-2"
               >
                 <Upload className="w-4 h-4" />
                 Importar
@@ -373,7 +373,7 @@ export default function Fornecedores() {
           
           {/* Dashboard Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-[#202eac]/30 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-[#202eac]/30 transition-all">
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <Building2 className="w-6 h-6 text-[#202eac]" />
               </div>
@@ -383,7 +383,7 @@ export default function Fornecedores() {
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-emerald-200 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-emerald-200 transition-all">
               <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <TrendingUp className="w-6 h-6 text-emerald-600" />
               </div>
@@ -395,7 +395,7 @@ export default function Fornecedores() {
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-red-200 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-red-200 transition-all">
               <div className="w-12 h-12 rounded-xl bg-red-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <AlertTriangle className="w-6 h-6 text-red-600" />
               </div>
@@ -408,7 +408,7 @@ export default function Fornecedores() {
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-purple-200 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-purple-200 transition-all">
               <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <Database className="w-6 h-6 text-purple-600" />
               </div>
@@ -419,7 +419,7 @@ export default function Fornecedores() {
             </div>
           </div>
 
-          <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+          <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
             <div className="relative flex-1 flex items-center gap-3">
               <Search className="w-5 h-5 text-slate-400 ml-2" />
               <input
@@ -452,12 +452,12 @@ export default function Fornecedores() {
 
           {/* Content Area */}
           {isLoading ? (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500">
               <div className="w-10 h-10 border-4 border-blue-100 border-t-[#202eac] rounded-full animate-spin mx-auto mb-4" />
               Carregando fornecedores...
             </div>
           ) : filteredSuppliers.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500 flex flex-col items-center">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500 flex flex-col items-center">
               <Building2 className="w-12 h-12 text-slate-300 mb-4" />
               <p className="text-lg font-medium text-slate-700">Nenhum fornecedor encontrado</p>
               <p className="text-sm mt-1">Clique em "Novo Fornecedor" para começar a cadastrar.</p>
@@ -468,7 +468,7 @@ export default function Fornecedores() {
                 <div 
                   key={supplier.id} 
                   onClick={() => handleOpenModal(supplier)}
-                  className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-5 flex flex-col group cursor-pointer hover:border-[#202eac]/30"
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-5 flex flex-col group cursor-pointer hover:border-[#202eac]/30"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -533,7 +533,7 @@ export default function Fornecedores() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm overflow-hidden text-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -605,7 +605,7 @@ export default function Fornecedores() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Building2 className="w-5 h-5 text-[#202eac]" />
@@ -647,7 +647,7 @@ export default function Fornecedores() {
                         required
                         value={formData.name || ''}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                         placeholder="Nome da empresa"
                       />
                     </div>
@@ -658,7 +658,7 @@ export default function Fornecedores() {
                         type="text"
                         value={formData.cnpj || ''}
                         onChange={e => setFormData({ ...formData, cnpj: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-mono text-sm"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-mono text-sm"
                         placeholder="00.000.000/0000-00"
                       />
                     </div>
@@ -669,7 +669,7 @@ export default function Fornecedores() {
                         type="text"
                         value={formData.phone || ''}
                         onChange={e => setFormData({ ...formData, phone: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                         placeholder="(00) 00000-0000"
                       />
                     </div>
@@ -680,7 +680,7 @@ export default function Fornecedores() {
                         type="email"
                         value={formData.email || ''}
                         onChange={e => setFormData({ ...formData, email: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                         placeholder="contato@empresa.com.br"
                       />
                     </div>
@@ -691,7 +691,7 @@ export default function Fornecedores() {
                         type="text"
                         value={formData.address || ''}
                         onChange={e => setFormData({ ...formData, address: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                         placeholder="Rua, Número, Bairro"
                       />
                     </div>
@@ -702,7 +702,7 @@ export default function Fornecedores() {
                         type="text"
                         value={formData.city || ''}
                         onChange={e => setFormData({ ...formData, city: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                         placeholder="Cidade"
                       />
                     </div>
@@ -713,7 +713,7 @@ export default function Fornecedores() {
                         type="text"
                         value={formData.state || ''}
                         onChange={e => setFormData({ ...formData, state: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all uppercase"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all uppercase"
                         placeholder="SP"
                         maxLength={2}
                       />
@@ -724,7 +724,7 @@ export default function Fornecedores() {
                       <textarea
                         value={formData.notes || ''}
                         onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all resize-none h-24"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all resize-none h-24"
                         placeholder="Informações adicionais sobre o fornecedor..."
                       />
                     </div>
@@ -749,7 +749,7 @@ export default function Fornecedores() {
                               className={`px-3 py-1.5 text-xs font-semibold rounded-full border transition-all ${
                                 isSelected 
                                   ? 'bg-[#202eac] border-[#202eac] text-white' 
-                                  : 'bg-white border-slate-200 text-slate-600 hover:border-[#202eac] hover:text-[#202eac]'
+                                  : 'bg-white dark:bg-slate-900 border-slate-200 text-slate-600 hover:border-[#202eac] hover:text-[#202eac]'
                               }`}
                             >
                               {tag}

@@ -1056,7 +1056,7 @@ export default function Relatorios() {
 
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
             <FileBarChart className="w-6 h-6 text-[#202eac]" />
@@ -1071,7 +1071,7 @@ export default function Relatorios() {
 
           {/* Top Stats */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-blue-50 text-[#202eac] rounded-lg">
                   <Package className="w-5 h-5" />
@@ -1081,7 +1081,7 @@ export default function Relatorios() {
               <div className="text-2xl font-black text-slate-800">{stats.totalIngredients}</div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-purple-50 text-purple-600 rounded-lg">
                   <Beaker className="w-5 h-5" />
@@ -1091,7 +1091,7 @@ export default function Relatorios() {
               <div className="text-2xl font-black text-slate-800">{stats.totalFormulas}</div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-emerald-50 text-emerald-600 rounded-lg">
                   <DollarSign className="w-5 h-5" />
@@ -1101,7 +1101,7 @@ export default function Relatorios() {
               <div className="text-2xl font-black text-emerald-600">{formatCurrency(stats.totalInventoryValue)}</div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm">
               <div className="flex items-center gap-3 mb-3">
                 <div className="p-2 bg-orange-50 text-orange-600 rounded-lg">
                   <Activity className="w-5 h-5" />
@@ -1113,7 +1113,7 @@ export default function Relatorios() {
           </div>
 
           {/* Central de Documentos & Impressões (Movido para o topo) */}
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm mt-8">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 shadow-sm mt-8">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
               <Printer className="w-5 h-5 text-[#202eac]" />
               Central de Documentos & Impressão (PDF)
@@ -1142,7 +1142,7 @@ export default function Relatorios() {
                       <select
                         value={selectedFormulaId}
                         onChange={(e) => setSelectedFormulaId(e.target.value)}
-                        className="w-full pl-4 pr-10 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
+                        className="w-full pl-4 pr-10 py-3.5 bg-white dark:bg-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
                       >
                         <option value="">Escolha uma fórmula...</option>
                         {formulas.map(f => (
@@ -1187,7 +1187,7 @@ export default function Relatorios() {
                       <select
                         value={selectedOrderId}
                         onChange={(e) => setSelectedOrderId(e.target.value)}
-                        className="w-full pl-4 pr-10 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
+                        className="w-full pl-4 pr-10 py-3.5 bg-white dark:bg-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500 transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
                       >
                         <option value="">Escolha um lote fabricado...</option>
                         {orders.map(o => (
@@ -1232,7 +1232,7 @@ export default function Relatorios() {
                       <select
                         value={selectedProportionId}
                         onChange={(e) => setSelectedProportionId(e.target.value)}
-                        className="w-full pl-4 pr-10 py-3.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
+                        className="w-full pl-4 pr-10 py-3.5 bg-white dark:bg-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 transition-all text-sm font-medium text-slate-700 appearance-none shadow-sm cursor-pointer"
                       >
                         <option value="">Escolha uma simulação...</option>
                         {savedProportions.map(p => (
@@ -1265,7 +1265,7 @@ export default function Relatorios() {
                     {savedProportions.length > 1 && (
                       <button
                         onClick={handleClearAllProportions}
-                        className="flex-1 py-1.5 bg-white text-slate-400 font-bold rounded-xl text-[10px] uppercase border border-slate-200 flex items-center justify-center gap-2"
+                        className="flex-1 py-1.5 bg-white dark:bg-slate-900 text-slate-400 font-bold rounded-xl text-[10px] uppercase border border-slate-200 flex items-center justify-center gap-2"
                       >
                         <Trash2 className="w-3 h-3" /> Limpar Tudo
                       </button>
@@ -1299,7 +1299,7 @@ export default function Relatorios() {
                         setSelectedPricingFormulaId(e.target.value);
                         setSelectedPricingCapacity('');
                       }}
-                      className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer"
+                      className="w-full pl-3 pr-8 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer"
                     >
                       <option value="">Selecione...</option>
                       {formulas.filter(f => pricingEntries.some(e => e.formulaId === f.id)).map(f => (
@@ -1313,7 +1313,7 @@ export default function Relatorios() {
                     <select
                       value={selectedPricingType}
                       onChange={(e) => setSelectedPricingType(e.target.value as any)}
-                      className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer"
+                      className="w-full pl-3 pr-8 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer"
                     >
                       <option value="varejo">Varejo</option>
                       <option value="atacado">Atacado</option>
@@ -1327,7 +1327,7 @@ export default function Relatorios() {
                       disabled={!selectedPricingFormulaId}
                       value={selectedPricingCapacity}
                       onChange={(e) => setSelectedPricingCapacity(e.target.value)}
-                      className="w-full pl-3 pr-8 py-2.5 bg-white border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer disabled:opacity-50"
+                      className="w-full pl-3 pr-8 py-2.5 bg-white dark:bg-slate-900 border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 text-xs font-bold text-slate-700 appearance-none cursor-pointer disabled:opacity-50"
                     >
                       <option value="">Escolha...</option>
                       {[...new Set(pricingEntries
@@ -1361,7 +1361,7 @@ export default function Relatorios() {
           </div>
 
           {/* Insights Section */}
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm mt-8">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 shadow-sm mt-8">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
               <TrendingUp className="w-5 h-5 text-[#202eac]" />
               Insights de Produção
@@ -1369,7 +1369,7 @@ export default function Relatorios() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div className="space-y-4">
                 <div className="flex items-center gap-4 p-4 bg-slate-50 rounded-xl border border-slate-100">
-                  <div className="p-3 bg-white rounded-lg shadow-sm text-[#202eac]">
+                  <div className="p-3 bg-white dark:bg-slate-900 rounded-lg shadow-sm text-[#202eac]">
                     <BarChart3 className="w-6 h-6" />
                   </div>
                   <div>
@@ -1385,7 +1385,7 @@ export default function Relatorios() {
               </div>
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col justify-center items-center text-center">
-                <div className="w-16 h-16 bg-white rounded-full flex items-center justify-center shadow-sm mb-4 text-[#202eac]">
+                <div className="w-16 h-16 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-sm mb-4 text-[#202eac]">
                   <Activity className="w-8 h-8" />
                 </div>
                 <h4 className="font-bold text-slate-800">Saúde do Inventário</h4>
@@ -1405,7 +1405,7 @@ export default function Relatorios() {
           </div>
 
           {/* Performance Industrial */}
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm mt-8">
+          <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl border border-slate-200 shadow-sm mt-8">
             <h3 className="text-lg font-bold text-slate-800 mb-6 flex items-center gap-2">
               <ShieldCheck className="w-5 h-5 text-[#202eac]" />
               Performance Industrial & Qualidade
@@ -1413,7 +1413,7 @@ export default function Relatorios() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-emerald-600">
+                <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-sm mb-3 text-emerald-600">
                   <CheckCircle2 className="w-6 h-6" />
                 </div>
                 <div className="text-3xl font-black text-slate-800">{productionStats.completedOrdersCount}</div>
@@ -1422,7 +1422,7 @@ export default function Relatorios() {
               </div>
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-amber-500">
+                <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-sm mb-3 text-amber-500">
                   <Activity className="w-6 h-6" />
                 </div>
                 <div className="text-3xl font-black text-slate-800">{productionStats.approvalRate.toFixed(1)}%</div>
@@ -1431,7 +1431,7 @@ export default function Relatorios() {
               </div>
 
               <div className="bg-slate-50 p-6 rounded-2xl border border-slate-100 flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm mb-3 text-red-500">
+                <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-full flex items-center justify-center shadow-sm mb-3 text-red-500">
                   <XCircle className="w-6 h-6" />
                 </div>
                 <div className="text-3xl font-black text-slate-800">{productionStats.rejectedQCCount}</div>
@@ -1445,7 +1445,7 @@ export default function Relatorios() {
           {/* Painel de Alertas de Logística (Movido para a base) */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mt-8">
             {/* Low Stock Section */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
                   <AlertTriangle className="w-4 h-4 text-orange-500" />
@@ -1476,7 +1476,7 @@ export default function Relatorios() {
             </div>
 
             {/* Expiry Section */}
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
               <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
                 <h3 className="font-bold text-slate-800 flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-blue-500" />

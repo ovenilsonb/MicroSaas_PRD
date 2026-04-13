@@ -338,7 +338,7 @@ export default function Clientes() {
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-8 py-6 shrink-0">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-6 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-blue-50 p-2 rounded-lg">
@@ -351,7 +351,7 @@ export default function Clientes() {
           </div>
 
           <div className="flex items-center gap-3">
-            <div className="flex items-center bg-white border border-slate-200 rounded-lg p-1 shadow-sm h-10">
+            <div className="flex items-center bg-white dark:bg-slate-900 border border-slate-200 rounded-lg p-1 shadow-sm h-10">
               <button
                 onClick={handleExport}
                 className="flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-[#202eac] hover:bg-blue-50 rounded-md transition-all active:scale-95"
@@ -388,7 +388,7 @@ export default function Clientes() {
 
           {/* KPI Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-[#202eac]/30 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-[#202eac]/30 transition-all">
               <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <Users className="w-6 h-6 text-[#202eac]" />
               </div>
@@ -398,7 +398,7 @@ export default function Clientes() {
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-emerald-200 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-emerald-200 transition-all">
               <div className="w-12 h-12 rounded-xl bg-emerald-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <BadgeDollarSign className="w-6 h-6 text-emerald-600" />
               </div>
@@ -408,7 +408,7 @@ export default function Clientes() {
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-orange-200 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-orange-200 transition-all">
               <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <MapPin className="w-6 h-6 text-orange-600" />
               </div>
@@ -418,7 +418,7 @@ export default function Clientes() {
               </div>
             </div>
 
-            <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-purple-200 transition-all">
+            <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 group hover:border-purple-200 transition-all">
               <div className="w-12 h-12 rounded-xl bg-purple-50 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
                 <TrendingUp className="w-6 h-6 text-purple-600" />
               </div>
@@ -431,7 +431,7 @@ export default function Clientes() {
             </div>
           </div>
 
-          <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+          <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
             <div className="relative flex-1 flex items-center gap-3">
               <Search className="w-5 h-5 text-slate-400 ml-2" />
               <input
@@ -462,12 +462,12 @@ export default function Clientes() {
 
           {/* Content Area */}
           {isLoading ? (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500">
               <div className="w-10 h-10 border-4 border-blue-100 border-t-[#202eac] rounded-full animate-spin mx-auto mb-4" />
               Carregando clientes...
             </div>
           ) : filteredClients.length === 0 ? (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500 flex flex-col items-center">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm p-12 text-center text-slate-500 flex flex-col items-center">
               <Users className="w-12 h-12 text-slate-300 mb-4" />
               <p className="text-lg font-medium text-slate-700">Nenhum cliente encontrado</p>
               <p className="text-sm mt-1">Clique em "Novo Cliente" para começar a cadastrar.</p>
@@ -478,7 +478,7 @@ export default function Clientes() {
                 <div 
                   key={client.id} 
                   onClick={() => handleOpenModal(client)}
-                  className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-5 flex flex-col group cursor-pointer hover:border-[#202eac]/30"
+                  className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-5 flex flex-col group cursor-pointer hover:border-[#202eac]/30"
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -542,7 +542,7 @@ export default function Clientes() {
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden text-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 shadow-sm overflow-hidden text-sm">
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
@@ -612,7 +612,7 @@ export default function Clientes() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleOpenModal(client); }}
-                              className="p-1 px-1.5 text-[#202eac] hover:bg-white rounded transition-colors flex items-center gap-1 text-[10px] font-bold"
+                              className="p-1 px-1.5 text-[#202eac] hover:bg-white dark:bg-slate-900 rounded transition-colors flex items-center gap-1 text-[10px] font-bold"
                             >
                               <Edit2 className="w-3 h-3" />
                               EDITAR
@@ -621,7 +621,7 @@ export default function Clientes() {
                             <button
                               type="button"
                               onClick={(e) => { e.stopPropagation(); handleDelete(client.id, client.name); }}
-                              className="p-1 px-1.5 text-red-600 hover:bg-white rounded transition-colors flex items-center gap-1 text-[10px] font-bold"
+                              className="p-1 px-1.5 text-red-600 hover:bg-white dark:bg-slate-900 rounded transition-colors flex items-center gap-1 text-[10px] font-bold"
                             >
                               <Trash2 className="w-3 h-3" />
                               EXCLUIR
@@ -641,7 +641,7 @@ export default function Clientes() {
       {/* Modal */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-slate-50">
               <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
                 <Users className="w-5 h-5 text-[#202eac]" />
@@ -691,7 +691,7 @@ export default function Clientes() {
                         required
                         value={formData.name || ''}
                         onChange={e => setFormData({ ...formData, name: e.target.value })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                         placeholder="Nome completo ou nome da empresa"
                       />
                     </div>
@@ -731,7 +731,7 @@ export default function Clientes() {
                         value={formData.cnpj_cpf || ''}
                         onChange={e => setFormData({ ...formData, cnpj_cpf: formatCpfCnpj(e.target.value, formData.document_type) })}
                         maxLength={formData.document_type === 'CNPJ' ? 18 : 14}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-mono text-sm"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-mono text-sm"
                         placeholder={formData.document_type === 'CNPJ' ? '00.000.000/0000-00' : '000.000.000-00'}
                       />
                     </div>
@@ -744,7 +744,7 @@ export default function Clientes() {
                           value={formData.phone || ''}
                           onChange={e => setFormData({ ...formData, phone: formatPhoneNumber(e.target.value) })}
                           maxLength={15}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                           placeholder="(00) 00000-0000"
                         />
                       </div>
@@ -755,7 +755,7 @@ export default function Clientes() {
                           value={formData.whatsapp || ''}
                           onChange={e => setFormData({ ...formData, whatsapp: formatPhoneNumber(e.target.value) })}
                           maxLength={15}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                           placeholder="(00) 00000-0000"
                         />
                       </div>
@@ -767,7 +767,7 @@ export default function Clientes() {
                         type="email"
                         value={formData.email || ''}
                         onChange={e => setFormData({ ...formData, email: e.target.value.toLowerCase() })}
-                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                        className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                         placeholder="contato@cliente.com.br"
                       />
                     </div>
@@ -779,7 +779,7 @@ export default function Clientes() {
                           type="text"
                           value={formData.address || ''}
                           onChange={e => setFormData({ ...formData, address: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                           placeholder="Rua, Avenida, etc."
                         />
                       </div>
@@ -789,7 +789,7 @@ export default function Clientes() {
                           type="text"
                           value={formData.number || ''}
                           onChange={e => setFormData({ ...formData, number: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                           placeholder="000"
                         />
                       </div>
@@ -802,7 +802,7 @@ export default function Clientes() {
                           type="text"
                           value={formData.neighborhood || ''}
                           onChange={e => setFormData({ ...formData, neighborhood: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                           placeholder="Bairro"
                         />
                       </div>
@@ -812,7 +812,7 @@ export default function Clientes() {
                           type="text"
                           value={formData.city || ''}
                           onChange={e => setFormData({ ...formData, city: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                           placeholder="Cidade"
                         />
                       </div>
@@ -821,7 +821,7 @@ export default function Clientes() {
                         <select
                           value={formData.state || ''}
                           onChange={e => setFormData({ ...formData, state: e.target.value })}
-                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all"
                         >
                           <option value="">Selecione</option>
                           {BRAZILIAN_STATES.map(uf => (
@@ -847,7 +847,7 @@ export default function Clientes() {
                     <select
                       value={formData.tabela_preco || 'Varejo'}
                       onChange={e => setFormData({ ...formData, tabela_preco: e.target.value })}
-                      className="w-full px-3 py-2.5 bg-white border border-blue-200 rounded-lg font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all shadow-sm"
+                      className="w-full px-3 py-2.5 bg-white dark:bg-slate-900 border border-blue-200 rounded-lg font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all shadow-sm"
                     >
                       <option value="Varejo">Varejo (Consumidor Final)</option>
                       <option value="Atacado">Atacado (Revenda / Grandes Volumes)</option>
@@ -863,7 +863,7 @@ export default function Clientes() {
                     <p className="text-xs text-slate-500 mb-2">
                       Adicione nichos (ex: Lava Rápido, Residencial, Condomínio) digitando e pressionando Enter.
                     </p>
-                    <div className="border border-slate-300 rounded-lg p-2 bg-white focus-within:ring-2 focus-within:ring-[#202eac]/20 focus-within:border-[#202eac] transition-all">
+                    <div className="border border-slate-300 rounded-lg p-2 bg-white dark:bg-slate-900 focus-within:ring-2 focus-within:ring-[#202eac]/20 focus-within:border-[#202eac] transition-all">
                       <div className="flex flex-wrap gap-2 mb-2">
                         {formData.tags && formData.tags.map(tag => (
                           <span key={tag} className="flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold bg-slate-100 text-slate-700 rounded-md border border-slate-200">
@@ -902,7 +902,7 @@ export default function Clientes() {
                     <textarea
                       value={formData.notes || ''}
                       onChange={e => setFormData({ ...formData, notes: e.target.value })}
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all resize-none h-24"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-900 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all resize-none h-24"
                       placeholder="Informações adicionais, horário de entrega, contatos extras..."
                     />
                   </div>

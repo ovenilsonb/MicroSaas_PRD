@@ -35,24 +35,24 @@ export default function InsumoFilters({
   return (
     <>
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 w-64 focus-within:border-[#202eac] focus-within:ring-2 focus-within:ring-[#202eac]/10 transition-all">
-          <Search className="w-4 h-4 text-slate-400 shrink-0" />
+        <div className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-2 w-64 focus-within:border-[#202eac] dark:focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-[#202eac]/10 transition-all">
+          <Search className="w-4 h-4 text-slate-400 dark:text-slate-500 shrink-0" />
           <input
             type="text"
             placeholder="Buscar..."
             value={searchTerm}
             onChange={(e) => onSearchChange(e.target.value)}
-            className="flex-1 outline-none text-sm text-slate-700 placeholder:text-slate-400 min-w-0"
+            className="flex-1 outline-none text-sm text-slate-700 dark:text-slate-200 placeholder:text-slate-400 dark:placeholder:text-slate-500 min-w-0 bg-transparent"
           />
           {searchTerm && (
-            <button onClick={() => onSearchChange('')} className="text-slate-400 hover:text-slate-600 shrink-0">
+            <button onClick={() => onSearchChange('')} className="text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 shrink-0">
               <X className="w-3.5 h-3.5" />
             </button>
           )}
         </div>
 
         <select
-          className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm text-sm text-slate-600 outline-none focus:border-[#202eac] cursor-pointer uppercase"
+          className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-sm text-slate-600 dark:text-slate-300 outline-none focus:border-[#202eac] dark:focus:border-blue-500 cursor-pointer uppercase"
           value={filterType}
           onChange={(e) => onFilterTypeChange(e.target.value)}
           aria-label="Filtrar por tipo"
@@ -63,7 +63,7 @@ export default function InsumoFilters({
         </select>
 
         <select
-          className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm text-sm text-slate-600 outline-none focus:border-[#202eac] cursor-pointer uppercase"
+          className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-sm text-slate-600 dark:text-slate-300 outline-none focus:border-[#202eac] dark:focus:border-blue-500 cursor-pointer uppercase"
           value={filterSupplier}
           onChange={(e) => onFilterSupplierChange(e.target.value)}
           aria-label="Filtrar por fornecedor"
@@ -75,7 +75,7 @@ export default function InsumoFilters({
         </select>
 
         <select
-          className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm text-sm text-slate-600 outline-none focus:border-[#202eac] cursor-pointer uppercase"
+          className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm text-sm text-slate-600 dark:text-slate-300 outline-none focus:border-[#202eac] dark:focus:border-blue-500 cursor-pointer uppercase"
           value={filterStock}
           onChange={(e) => onFilterStockChange(e.target.value)}
           aria-label="Filtrar por estoque"
@@ -89,7 +89,7 @@ export default function InsumoFilters({
         {activeFiltersCount > 0 && (
           <button
             onClick={onClearFilters}
-            className="flex items-center gap-1.5 px-3 py-2 bg-red-50 text-red-600 rounded-xl border border-red-200 text-sm font-medium hover:bg-red-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-xl border border-red-200 dark:border-red-800 text-sm font-medium hover:bg-red-100 dark:hover:bg-red-900/50 transition-colors"
           >
             <X className="w-3.5 h-3.5" /> Limpar {activeFiltersCount} filtro{activeFiltersCount > 1 ? 's' : ''}
           </button>
@@ -100,34 +100,34 @@ export default function InsumoFilters({
         {sortConfigsCount > 1 && (
           <button
             onClick={onClearSorts}
-            className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 text-amber-600 rounded-xl border border-amber-200 text-sm font-medium hover:bg-amber-100 transition-colors"
+            className="flex items-center gap-1.5 px-3 py-2 bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 rounded-xl border border-amber-200 dark:border-amber-800 text-sm font-medium hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
             title="Limpar ordenações extras"
           >
             <Filter className="w-3.5 h-3.5" /> {sortConfigsCount} ordenações
           </button>
         )}
 
-        <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <button
             onClick={() => onViewModeChange('list')}
-            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
             title="Lista"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
           </button>
           <button
             onClick={() => onViewModeChange('grid')}
-            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+            className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'}`}
             title="Blocos"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
           </button>
         </div>
 
-        <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
           <button
             onClick={onSortOrderToggle}
-            className="p-2 rounded-lg transition-all duration-200 text-slate-400 hover:text-slate-600 hover:bg-slate-50"
+            className="p-2 rounded-lg transition-all duration-200 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800"
             title="Inverter ordem"
           >
             {sortOrder === 'asc' ? (

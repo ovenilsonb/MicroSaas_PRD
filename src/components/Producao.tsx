@@ -764,7 +764,7 @@ export default function Producao() {
   return (
     <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
             <Factory className="w-6 h-6 text-[#202eac]" />
@@ -792,30 +792,30 @@ export default function Producao() {
             <div className="space-y-6">
               {/* KPI Cards */}
               <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
                   <div className="w-12 h-12 bg-blue-50 text-[#202eac] rounded-xl flex items-center justify-center"><Factory className="w-6 h-6" /></div>
                   <div><p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Total de OFs</p><h3 className="text-2xl font-black text-slate-800">{stats.total}</h3></div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
                   <div className="w-12 h-12 bg-cyan-50 text-cyan-600 rounded-xl flex items-center justify-center"><ClipboardList className="w-6 h-6" /></div>
                   <div><p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Planejadas</p><h3 className="text-2xl font-black text-slate-800">{stats.planned}</h3></div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
                   <div className="w-12 h-12 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center animate-pulse"><Play className="w-6 h-6" /></div>
                   <div><p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Em Produção</p><h3 className="text-2xl font-black text-slate-800">{stats.inProgress}</h3></div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
                   <div className="w-12 h-12 bg-indigo-50 text-indigo-600 rounded-xl flex items-center justify-center"><ShieldCheck className="w-6 h-6" /></div>
                   <div><p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Em Qualidade</p><h3 className="text-2xl font-black text-slate-800">{stats.inQuality}</h3></div>
                 </div>
-                <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
+                <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4 hover:shadow-md transition-shadow">
                   <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-xl flex items-center justify-center"><CheckCircle2 className="w-6 h-6" /></div>
                   <div><p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Finalizadas</p><h3 className="text-2xl font-black text-slate-800">{stats.completed}</h3></div>
                 </div>
               </div>
 
               {/* Search */}
-              <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+              <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
                 <Search className="w-5 h-5 text-slate-400 ml-2" />
                 <input type="text" placeholder="Buscar por lote ou fórmula..." className="flex-1 outline-none text-sm p-1" value={searchTerm} onChange={e => setSearchTerm(e.target.value)} />
               </div>
@@ -827,7 +827,7 @@ export default function Producao() {
                   <p className="text-slate-500 font-medium">Carregando ordens...</p>
                 </div>
               ) : filteredOrders.length === 0 ? (
-                <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center max-w-lg mx-auto mt-10 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 p-12 text-center max-w-lg mx-auto mt-10 shadow-sm">
                   <div className="w-20 h-20 bg-blue-50 text-[#202eac] rounded-full flex items-center justify-center mx-auto mb-6"><Factory className="w-10 h-10" /></div>
                   <h3 className="text-xl font-bold text-slate-800 mb-2">Nenhuma OF encontrada</h3>
                   <p className="text-slate-500 mb-8">Crie uma nova ordem de fabricação para começar a produzir.</p>
@@ -836,7 +836,7 @@ export default function Producao() {
                   </button>
                 </div>
               ) : (
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                   <table className="w-full text-left border-collapse">
                     <thead>
                       <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-[11px] uppercase tracking-wider">
@@ -916,7 +916,7 @@ export default function Producao() {
           {/* ═══════════════ CREATE VIEW ═══════════════ */}
           {viewMode === 'create' && (
             <div className="max-w-2xl mx-auto">
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
                 <div className="p-6 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
                   <h2 className="font-bold text-slate-800 flex items-center gap-2"><Plus className="w-5 h-5 text-[#202eac]" /> Nova Ordem de Fabricação</h2>
                 </div>
@@ -962,7 +962,7 @@ export default function Producao() {
                             value={plannedVolume} 
                             onChange={e => setPlannedVolume(e.target.value)}
                             placeholder="DIGITE O VOLUME"
-                            className={`w-full px-4 py-3 bg-white border rounded-xl outline-none font-black text-slate-800 transition-all ${
+                            className={`w-full px-4 py-3 bg-white dark:bg-slate-900 border rounded-xl outline-none font-black text-slate-800 transition-all ${
                               !plannedVolume 
                                 ? 'border-amber-400 animate-pulse-amber ring-2 ring-amber-50' 
                                 : 'border-slate-200 focus:ring-2 focus:ring-[#202eac]/20'
@@ -1040,7 +1040,7 @@ export default function Producao() {
                           <div className="mt-4 space-y-4 animate-in fade-in slide-in-from-top-2 duration-300">
 
                             {/* Volume Status Bar */}
-                            <div className="bg-white rounded-xl border border-slate-200 p-4 space-y-3">
+                            <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 p-4 space-y-3">
                               <div className="flex items-center justify-between">
                                 <span className="text-xs font-bold text-slate-500 uppercase">Volume do Lote</span>
                                 <span className="text-sm font-black text-slate-800">{(parseFloat(plannedVolume) || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}L</span>
@@ -1091,7 +1091,7 @@ export default function Producao() {
                                   const embKey = `${pkg.id}_${pkg.variant_id || 'base'}`;
                                   const qty = packagingQty[embKey] || 0;
                                   return (
-                                    <div key={embKey} className={`p-3 rounded-xl border transition-all ${qty > 0 ? 'border-[#202eac]/30 bg-blue-50/30' : 'border-slate-100 bg-white hover:border-slate-200'
+                                    <div key={embKey} className={`p-3 rounded-xl border transition-all ${qty > 0 ? 'border-[#202eac]/30 bg-blue-50/30' : 'border-slate-100 bg-white dark:bg-slate-900 hover:border-slate-200'
                                       }`}>
                                       <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1113,7 +1113,7 @@ export default function Producao() {
                                           </button>
                                           <input type="number" min="0" value={qty}
                                             onChange={e => updatePackagingQty(embKey, parseInt(e.target.value) || 0, rotulo)}
-                                            className="w-14 text-center text-sm font-bold bg-white border border-slate-200 rounded-lg py-1.5 outline-none focus:ring-2 focus:ring-[#202eac]/20"
+                                            className="w-14 text-center text-sm font-bold bg-white dark:bg-slate-900 border border-slate-200 rounded-lg py-1.5 outline-none focus:ring-2 focus:ring-[#202eac]/20"
                                           />
                                           <button type="button"
                                             onClick={() => updatePackagingQty(embKey, (packagingQty[embKey] || 0) + 1, rotulo)}
@@ -1171,7 +1171,7 @@ export default function Producao() {
                                           });
                                           setPackagingQty(newQty);
                                         }}
-                                        className="flex items-center gap-2 px-3 py-2 bg-white/80 rounded-lg border border-blue-200 hover:border-[#202eac] hover:bg-white text-xs font-bold text-slate-700 transition-all text-left"
+                                        className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-900/80 rounded-lg border border-blue-200 hover:border-[#202eac] hover:bg-white dark:bg-slate-900 text-xs font-bold text-slate-700 transition-all text-left"
                                       >
                                         <span className="text-[#202eac]">#{idx + 1}</span>
                                         <span>{parts.join(' + ')}</span>
@@ -1214,7 +1214,7 @@ export default function Producao() {
             return (
               <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
                 {/* OF Header Card */}
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm p-6">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-14 h-14 bg-[#202eac]/10 text-[#202eac] rounded-2xl flex items-center justify-center"><Factory className="w-7 h-7" /></div>
@@ -1248,7 +1248,7 @@ export default function Producao() {
                   {/* LEFT: Process Flow + Checklist */}
                   <div className="lg:col-span-1 space-y-6">
                     {/* Process Flow */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
                       <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2"><Zap className="w-4 h-4 text-[#202eac]" /> Fluxo de Processo</h3>
                       <div className="space-y-0">
                         {PROCESS_FLOW.map((pf, idx) => {
@@ -1297,7 +1297,7 @@ export default function Producao() {
                     </div>
 
                     {/* Checklist */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm p-6 space-y-4">
                       <div className="flex items-center justify-between">
                         <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2"><ClipboardList className="w-4 h-4 text-amber-500" /> Checklist de Processo</h3>
                         <span className="text-[10px] font-bold text-slate-400">{stepsCompleted}/{stepsTotal}</span>
@@ -1322,7 +1322,7 @@ export default function Producao() {
                   {/* RIGHT: Ingredients & Batches */}
                   <div className="lg:col-span-2 space-y-6">
                     {/* Ingredients Table with Batch Registration */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                       <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                         <h3 className="font-bold text-slate-700 text-sm flex items-center gap-2">
                           <Beaker className="w-4 h-4 text-purple-500" /> Insumos & Rastreabilidade
@@ -1408,15 +1408,15 @@ export default function Producao() {
 
                     {/* Quick Info Cards */}
                     <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+                      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Custo/Litro</div>
                         <div className="text-xl font-black text-[#202eac]">{fmt(totalCost / (selectedOrder.planned_volume || 1))}</div>
                       </div>
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+                      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Volume Planejado</div>
                         <div className="text-xl font-black text-slate-800">{(selectedOrder.planned_volume || 0).toLocaleString('pt-BR', { maximumFractionDigits: 3 })}L</div>
                       </div>
-                      <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
+                      <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm text-center">
                         <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Insumos</div>
                         <div className="text-xl font-black text-slate-800">{scaled.length} <span className="text-xs font-medium text-slate-400">itens</span></div>
                       </div>

@@ -31,15 +31,15 @@ export default function InsumoTable({
   };
 
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
       <table className="w-full text-left border-collapse">
         <thead>
-          <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 text-sm uppercase">
+          <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 text-sm uppercase">
             <th className="py-4 px-4 font-semibold w-8"></th>
-            <th className="py-4 px-4 font-semibold w-32 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => onSort('validade_indeterminada')}>
+            <th className="py-4 px-4 font-semibold w-32 text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" onClick={() => onSort('validade_indeterminada')}>
               Validade{getSortIndicator('validade_indeterminada')}
             </th>
-            <th className="py-4 px-4 font-semibold text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => onSort('name')}>
+            <th className="py-4 px-4 font-semibold text-center cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors" onClick={() => onSort('name')}>
               Nome / Código{getSortIndicator('name')}
             </th>
             <th className="py-4 px-4 font-semibold w-20 text-center cursor-pointer hover:bg-slate-100 transition-colors" onClick={() => onSort('unit')}>
@@ -62,7 +62,7 @@ export default function InsumoTable({
             </th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
           {ingredients.map((ing) => {
             const estoqueAtual = ing.estoque_atual || 0;
             const estoqueMinimo = ing.estoque_minimo || 0;
@@ -105,7 +105,7 @@ export default function InsumoTable({
             return (
               <tr
                 key={ing.id}
-                className={`hover:bg-blue-50/80 even:bg-slate-100/60 transition-colors group border-b border-slate-200/60 last:border-none cursor-pointer ${isDragged ? 'opacity-50' : ''} ${isDragOver ? 'bg-blue-50 border-t-2 border-t-[#202eac]' : ''}`}
+                className={`hover:bg-blue-50/80 dark:hover:bg-blue-900/30 even:bg-slate-100/60 dark:even:bg-slate-800/60 transition-colors group border-b border-slate-200/60 dark:border-slate-700/60 last:border-none cursor-pointer ${isDragged ? 'opacity-50' : ''} ${isDragOver ? 'bg-blue-50 dark:bg-blue-900/30 border-t-2 border-t-[#202eac]' : ''}`}
                 onClick={() => onOpenModal(ing)}
                 draggable
                 onDragStart={(e) => { e.stopPropagation(); onDragStart(ing.id); }}
@@ -114,7 +114,7 @@ export default function InsumoTable({
                 onDragEnd={onDragEnd}
               >
                 <td className="py-3 px-2 cursor-grab active:cursor-grabbing" onClick={e => e.stopPropagation()}>
-                  <GripVertical className="w-4 h-4 text-slate-300 group-hover:text-slate-500" />
+                  <GripVertical className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-slate-500 dark:group-hover:text-slate-400" />
                 </td>
                 <td className="py-3 px-4 text-center">
                   <div className="flex flex-col items-center gap-1">
@@ -123,11 +123,11 @@ export default function InsumoTable({
                   </div>
                 </td>
                 <td className="py-4 px-4">
-                  <div className="font-bold text-slate-800 uppercase">{ing.name}</div>
-                  <div className="text-xs text-slate-400 mt-0.5 uppercase">{ing.codigo || 'Sem código'}</div>
+                  <div className="font-bold text-slate-800 dark:text-slate-100 uppercase">{ing.name}</div>
+                  <div className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 uppercase">{ing.codigo || 'Sem código'}</div>
                 </td>
                 <td className="py-4 px-4">
-                  <span className="px-2.5 py-1 bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg">
+                  <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold rounded-lg">
                     {ing.unit?.toUpperCase()}
                   </span>
                 </td>
@@ -158,7 +158,7 @@ export default function InsumoTable({
                       })()}
                     </div>
                   ) : (
-                    <span className="font-bold text-slate-800">{formatCurrency(ing.cost_per_unit)}</span>
+                    <span className="font-bold text-slate-800 dark:text-slate-200">{formatCurrency(ing.cost_per_unit)}</span>
                   )}
                 </td>
                 <td className="py-4 px-4 text-center">
@@ -170,10 +170,10 @@ export default function InsumoTable({
                   <span className="px-2 py-1 bg-slate-50 rounded-md uppercase">{ing.fornecedor || '-'}</span>
                 </td>
                 <td className="py-4 px-4 text-center">
-                  <div className={`font-bold ${isEstoqueBaixo ? 'text-red-600' : 'text-emerald-600'}`}>
+                  <div className={`font-bold ${isEstoqueBaixo ? 'text-red-600 dark:text-red-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                     {estoqueAtual.toLocaleString('pt-BR', { minimumFractionDigits: 0, maximumFractionDigits: 3 })}
                   </div>
-                  <div className="w-full h-1.5 bg-slate-200 rounded-full mt-2 overflow-hidden flex">
+                  <div className="w-full h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full mt-2 overflow-hidden flex">
                     <div
                       className={`h-full rounded-full transition-all duration-500 ${isEstoqueBaixo ? 'bg-red-500' : 'bg-gradient-to-r from-amber-400 to-emerald-500'}`}
                       style={{ width: `${percentualEstoque}%` }}
@@ -182,11 +182,11 @@ export default function InsumoTable({
                 </td>
                 <td className="py-3 px-4 text-center relative">
                   {ing.produto_quimico ? (
-                    <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center mx-auto" title="Produto Químico">
+                    <div className="w-8 h-8 rounded-lg bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 flex items-center justify-center mx-auto" title="Produto Químico">
                       <TestTubes className="w-4.5 h-4.5" />
                     </div>
                   ) : (
-                    <div className="w-8 h-8 rounded-lg bg-slate-50 text-slate-600 border border-slate-200 flex items-center justify-center mx-auto" title="Outros">
+                    <div className="w-8 h-8 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700 flex items-center justify-center mx-auto" title="Outros">
                       <Box className="w-4 h-4" />
                     </div>
                   )}

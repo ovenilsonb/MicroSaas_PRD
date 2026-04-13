@@ -418,7 +418,7 @@ export default function Compras() {
       case 'enviado': return 'bg-blue-50 text-blue-600 border-blue-100';
       case 'recebido': return 'bg-emerald-50 text-emerald-600 border-emerald-100';
       case 'cancelado': return 'bg-red-50 text-red-600 border-red-100';
-      default: return 'bg-slate-50 text-slate-500';
+      default: return 'bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400';
     }
   };
 
@@ -450,9 +450,9 @@ export default function Compras() {
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden pt-6">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden pt-6">
       {/* Header com Abas */}
-      <header className="px-8 flex items-center justify-between border-b border-slate-200 bg-white shadow-sm">
+      <header className="px-8 flex items-center justify-between border-b border-slate-200 bg-white dark:bg-slate-900 shadow-sm">
         <div className="flex items-center gap-1">
           <button
             onClick={() => setActiveTab('ordens')}
@@ -480,7 +480,7 @@ export default function Compras() {
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="relative flex items-center px-4 py-2 bg-slate-50 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-[#202eac]/20 focus-within:border-[#202eac] transition-all">
+          <div className="relative flex items-center px-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-[#202eac]/20 focus-within:border-[#202eac] transition-all">
             <Search className="w-4 h-4 text-slate-400 mr-2" />
             <input 
               type="text" 
@@ -491,17 +491,17 @@ export default function Compras() {
             />
           </div>
 
-          <div className="flex items-center gap-1 bg-slate-50 p-1 rounded-xl border border-slate-200">
+          <div className="flex items-center gap-1 bg-slate-50 dark:bg-slate-950 p-1 rounded-xl border border-slate-200">
             <button 
               onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-white dark:bg-slate-900 text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
               title="Lista"
             >
               <List className="w-4 h-4" />
             </button>
             <button 
               onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
+              className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-white dark:bg-slate-900 text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600'}`}
               title="Blocos"
             >
               <LayoutGrid className="w-4 h-4" />
@@ -524,14 +524,14 @@ export default function Compras() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-6 mb-10">
           <div 
             onClick={() => { setStatusFilter('todos'); setActiveTab('ordens'); }}
-            className={`p-5 rounded-2xl border transition-all cursor-pointer ${statusFilter === 'todos' && activeTab === 'ordens' ? 'bg-white border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white border-slate-200 shadow-sm hover:border-[#202eac]/30 hover:shadow-md'}`}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer ${statusFilter === 'todos' && activeTab === 'ordens' ? 'bg-white dark:bg-slate-900 border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white dark:bg-slate-900 border-slate-200 shadow-sm hover:border-[#202eac]/30 hover:shadow-md'}`}
           >
             <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${statusFilter === 'todos' ? 'bg-[#202eac] text-white' : 'bg-blue-50 text-blue-600'}`}>
                 <FileText className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Total Pedidos</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Pedidos</p>
                 <h3 className="text-2xl font-bold text-slate-800">{stats.total}</h3>
               </div>
             </div>
@@ -539,14 +539,14 @@ export default function Compras() {
 
           <div 
             onClick={() => { setStatusFilter('enviado'); setActiveTab('ordens'); }}
-            className={`p-5 rounded-2xl border transition-all cursor-pointer ${statusFilter === 'enviado' ? 'bg-white border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white border-slate-200 shadow-sm hover:border-[#202eac]/30 hover:shadow-md'}`}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer ${statusFilter === 'enviado' ? 'bg-white dark:bg-slate-900 border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white dark:bg-slate-900 border-slate-200 shadow-sm hover:border-[#202eac]/30 hover:shadow-md'}`}
           >
             <div className="flex items-center gap-4">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${statusFilter === 'enviado' ? 'bg-[#202eac] text-white' : 'bg-amber-50 text-amber-600'}`}>
                 <Clock className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Aguardando</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Aguardando</p>
                 <h3 className="text-2xl font-bold text-slate-800">{stats.waiting}</h3>
               </div>
             </div>
@@ -554,26 +554,26 @@ export default function Compras() {
 
           <div 
             onClick={() => { setStatusFilter('atrasado'); setActiveTab('ordens'); }}
-            className={`p-5 rounded-2xl border transition-all cursor-pointer ${statusFilter === 'atrasado' ? 'bg-white border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white border-slate-200 shadow-sm hover:border-[#202eac]/30 hover:shadow-md'}`}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer ${statusFilter === 'atrasado' ? 'bg-white dark:bg-slate-900 border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white dark:bg-slate-900 border-slate-200 shadow-sm hover:border-[#202eac]/30 hover:shadow-md'}`}
           >
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${statusFilter === 'atrasado' ? 'bg-rose-500 text-white' : (stats.overdue > 0 ? 'bg-rose-50 text-rose-600 animate-pulse' : 'bg-slate-50 text-slate-400')}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${statusFilter === 'atrasado' ? 'bg-rose-500 text-white' : (stats.overdue > 0 ? 'bg-rose-50 text-rose-600 animate-pulse' : 'bg-slate-50 dark:bg-slate-950 text-slate-400')}`}>
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Em Atraso</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Em Atraso</p>
                 <h3 className={`text-2xl font-bold ${stats.overdue > 0 ? 'text-rose-600' : 'text-slate-800'}`}>{stats.overdue}</h3>
               </div>
             </div>
           </div>
 
-          <div className="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+          <div className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-100 shadow-sm">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center shadow-sm">
                 <DollarSign className="w-6 h-6 text-emerald-600" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Investimento</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Investimento</p>
                 <h3 className="text-2xl font-bold text-slate-800">
                   {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(stats.investment)}
                 </h3>
@@ -581,13 +581,13 @@ export default function Compras() {
             </div>
           </div>
 
-          <div className={`p-5 rounded-2xl border transition-all cursor-pointer ${activeTab === 'sugestoes' ? 'bg-white border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white border-slate-100 shadow-sm hover:border-[#202eac]/30 hover:shadow-md'}`} onClick={() => setActiveTab('sugestoes')}>
+          <div className={`p-5 rounded-2xl border transition-all cursor-pointer ${activeTab === 'sugestoes' ? 'bg-white dark:bg-slate-900 border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white dark:bg-slate-900 border-slate-100 shadow-sm hover:border-[#202eac]/30 hover:shadow-md'}`} onClick={() => setActiveTab('sugestoes')}>
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm transition-colors ${activeTab === 'sugestoes' ? 'bg-[#202eac] text-white' : (stats.critical > 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 text-slate-400')}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm transition-colors ${activeTab === 'sugestoes' ? 'bg-[#202eac] text-white' : (stats.critical > 0 ? 'bg-rose-100 text-rose-600' : 'bg-slate-50 dark:bg-slate-950 text-slate-400')}`}>
                 <ShoppingCart className={`w-6 h-6 ${stats.critical > 0 && activeTab !== 'sugestoes' ? 'animate-bounce' : ''}`} />
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Alertas</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Alertas</p>
                 <h3 className={`text-2xl font-bold ${stats.critical > 0 ? 'text-rose-600' : 'text-slate-800'}`}>{stats.critical}</h3>
               </div>
             </div>
@@ -595,14 +595,14 @@ export default function Compras() {
 
           <div 
             onClick={() => { setStatusFilter('cancelado'); setActiveTab('ordens'); }}
-            className={`p-5 rounded-2xl border transition-all cursor-pointer ${statusFilter === 'cancelado' ? 'bg-white border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white border-slate-100 shadow-sm hover:border-red-200 hover:shadow-md'}`}
+            className={`p-5 rounded-2xl border transition-all cursor-pointer ${statusFilter === 'cancelado' ? 'bg-white dark:bg-slate-900 border-[#202eac] shadow-md ring-1 ring-[#202eac]/20' : 'bg-white dark:bg-slate-900 border-slate-100 shadow-sm hover:border-red-200 hover:shadow-md'}`}
           >
             <div className="flex items-center gap-4">
-              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${statusFilter === 'cancelado' ? 'bg-red-500 text-white' : 'bg-slate-50 text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors'}`}>
+              <div className={`w-12 h-12 rounded-xl flex items-center justify-center shadow-sm ${statusFilter === 'cancelado' ? 'bg-red-500 text-white' : 'bg-slate-50 dark:bg-slate-950 text-slate-400 group-hover:bg-red-50 group-hover:text-red-500 transition-colors'}`}>
                 <XCircle className="w-6 h-6" />
               </div>
               <div>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Cancelados</p>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cancelados</p>
                 <h3 className={`text-2xl font-bold ${statusFilter === 'cancelado' ? 'text-red-600' : 'text-slate-400'}`}>{stats.cancelled}</h3>
               </div>
             </div>
@@ -612,16 +612,16 @@ export default function Compras() {
         {activeTab === 'ordens' ? (
           <div className="space-y-6">
             {filteredOrders.length === 0 ? (
-              <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200">
+              <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200">
                 <ShoppingCart className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                 <h3 className="text-lg font-bold text-slate-800 mb-2">Nenhuma Ordem Encontrada</h3>
-                <p className="text-sm text-slate-500 max-w-sm mx-auto uppercase">Sua busca não retornou resultados ou você ainda não possui pedidos registrados.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto uppercase">Sua busca não retornou resultados ou você ainda não possui pedidos registrados.</p>
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {filteredOrders.map(order => (
-                  <div key={order.id} className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:border-[#202eac]/30 hover:shadow-md transition-all overflow-hidden flex flex-col group h-full">
-                    <div className={`px-5 py-3 flex items-center justify-between border-b border-slate-100 bg-slate-50/50`}>
+                  <div key={order.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm hover:border-[#202eac]/30 hover:shadow-md transition-all overflow-hidden flex flex-col group h-full">
+                    <div className={`px-5 py-3 flex items-center justify-between border-b border-slate-100 bg-slate-50 dark:bg-slate-950/50`}>
                       <span className={`text-[10px] font-bold uppercase tracking-widest flex items-center gap-2 ${getStatusColor(order.status).split(' ')[1]}`}>
                         {getStatusIcon(order.status)}
                         {order.status}
@@ -635,7 +635,7 @@ export default function Compras() {
                         <div className="w-12 h-12 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100 group-hover:scale-105 transition-transform"><FileText className="w-6 h-6 text-indigo-600" /></div>
                         <div>
                           <h3 className="text-lg font-bold text-slate-800 group-hover:text-[#202eac] transition-colors">{order.number}</h3>
-                          <p className="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">{order.supplier_name || 'Individual'}</p>
+                          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1 uppercase tracking-wider">{order.supplier_name || 'Individual'}</p>
                         </div>
                       </div>
                       <div className="mt-auto pt-5 border-t border-slate-50 flex items-center justify-between">
@@ -650,11 +650,11 @@ export default function Compras() {
                 ))}
               </div>
             ) : (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-100 text-[10.5px] font-bold text-slate-500 uppercase tracking-wider">
+                      <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-100 text-[10.5px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         <th className="py-4 px-6">Nº Pedido</th>
                         <th className="py-4 px-6">Fornecedor</th>
                         <th className="py-4 px-6">Emissão</th>
@@ -676,7 +676,7 @@ export default function Compras() {
                           <td className="py-4 px-6 font-semibold text-slate-600 text-sm uppercase">{order.supplier_name || '-'}</td>
                           <td className="py-4 px-6 text-xs text-slate-400 font-bold uppercase tracking-tight">{fmtDateTime(order.created_at)}</td>
                           <td className="py-4 px-6 text-center">
-                            <span className="px-2 py-1 bg-slate-50 text-slate-500 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-100">
+                            <span className="px-2 py-1 bg-slate-50 dark:bg-slate-950 text-slate-500 dark:text-slate-400 rounded-lg text-[10px] font-black uppercase tracking-widest border border-slate-100">
                               {order.items.length} {order.items.length === 1 ? 'item' : 'itens'}
                             </span>
                           </td>
@@ -714,7 +714,7 @@ export default function Compras() {
                             <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-all translate-x-4 group-hover:translate-x-0">
                               <button 
                                 onClick={(e) => { e.stopPropagation(); handlePrintOrder(order); }} 
-                                className="px-3 py-2 bg-white text-slate-500 hover:text-[#202eac] rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-2 group/btn"
+                                className="px-3 py-2 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-[#202eac] rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-2 group/btn"
                               >
                                 <Printer className="w-4 h-4" />
                                 <span className="text-[10px] font-bold uppercase tracking-wider">Imprimir</span>
@@ -722,7 +722,7 @@ export default function Compras() {
                               
                               <button 
                                 onClick={(e) => { e.stopPropagation(); handleEdit(order); }} 
-                                className="px-3 py-2 bg-white text-slate-500 hover:text-[#202eac] rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-2 group/btn"
+                                className="px-3 py-2 bg-white dark:bg-slate-900 text-slate-500 dark:text-slate-400 hover:text-[#202eac] rounded-xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-2 group/btn"
                               >
                                 <FileText className="w-4 h-4" />
                                 <span className="text-[10px] font-bold uppercase tracking-wider">Editar</span>
@@ -760,17 +760,17 @@ export default function Compras() {
         ) : (
           <div className="">
             {suggestions.length === 0 ? (
-              <div className="text-center py-24 bg-white rounded-3xl border border-dashed border-slate-200 shadow-sm">
+              <div className="text-center py-24 bg-white dark:bg-slate-900 rounded-3xl border border-dashed border-slate-200 shadow-sm">
                 <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto mb-4" />
                 <h3 className="text-lg font-bold text-slate-800 mb-2">Estoque em Equilíbrio</h3>
-                <p className="text-sm text-slate-500 max-w-sm mx-auto uppercase">Todos os insumos estão acima do nível de segurança.</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mx-auto uppercase">Todos os insumos estão acima do nível de segurança.</p>
               </div>
             ) : viewMode === 'grid' ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {suggestions.map((group, index) => (
-                  <div key={index} className="bg-white rounded-[24px] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col group h-full">
+                  <div key={index} className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden flex flex-col group h-full">
                     {/* Card Header */}
-                    <div className="p-6 bg-slate-50/50 border-b border-slate-100 flex items-start justify-between">
+                    <div className="p-6 bg-slate-50 dark:bg-slate-950/50 border-b border-slate-100 flex items-start justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-[#202eac]/10 rounded-xl flex items-center justify-center border border-[#202eac]/20 group-hover:scale-110 transition-transform">
                           <AlertTriangle className="w-5 h-5 text-[#202eac]" />
@@ -786,7 +786,7 @@ export default function Compras() {
                     <div className="p-6 flex-1 space-y-4">
                       <div className="space-y-2">
                         {group.items.slice(0, 3).map((item, i) => (
-                          <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 border border-slate-100/50">
+                          <div key={i} className="flex items-center justify-between p-2 rounded-lg bg-slate-50 dark:bg-slate-950 border border-slate-100/50">
                             <div className="flex flex-col">
                               <span className="text-[11px] font-bold text-slate-700 line-clamp-1">{item.ingredient.name}</span>
                               <span className="text-[9px] text-slate-400">Atual: {fmtQty(item.ingredient.estoque_atual || 0)} {item.ingredient.unit}</span>
@@ -805,7 +805,7 @@ export default function Compras() {
                     </div>
 
                     {/* Card Footer */}
-                    <div className="p-5 bg-white border-t border-slate-50">
+                    <div className="p-5 bg-white dark:bg-slate-900 border-t border-slate-50">
                       <button 
                         onClick={() => handleCreateFromSuggestion(group)} 
                         className="w-full py-3 bg-[#202eac] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#1a258a] transition-all flex items-center justify-center gap-2 shadow-lg shadow-indigo-500/10 active:scale-95 group-hover:shadow-indigo-500/30"
@@ -820,11 +820,11 @@ export default function Compras() {
             ) : (
               <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
                 {suggestions.map((group, index) => (
-                  <div key={index} className="bg-white rounded-[24px] border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group relative">
+                  <div key={index} className="bg-white dark:bg-slate-900 rounded-[24px] border border-slate-200 shadow-sm hover:shadow-md transition-all overflow-hidden flex flex-col group relative">
                     <div className="absolute top-0 left-0 w-1.5 h-full bg-[#202eac]"></div>
-                    <div className="bg-slate-50/80 px-8 py-5 flex items-center justify-between border-b border-slate-100">
+                    <div className="bg-slate-50 dark:bg-slate-950/80 px-8 py-5 flex items-center justify-between border-b border-slate-100">
                       <div className="flex items-center gap-4">
-                        <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center shadow-sm border border-slate-200 group-hover:scale-105 transition-transform">
+                        <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm border border-slate-200 group-hover:scale-105 transition-transform">
                           <AlertTriangle className="w-6 h-6 text-amber-500" />
                         </div>
                         <div>
@@ -843,7 +843,7 @@ export default function Compras() {
                     <div className="overflow-x-auto">
                       <table className="w-full text-left table-fixed">
                         <thead>
-                          <tr className="bg-slate-50/30 border-b border-slate-100 text-[10px] font-bold text-slate-500 uppercase tracking-wider">
+                          <tr className="bg-slate-50 dark:bg-slate-950/30 border-b border-slate-100 text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                             <th className="px-8 py-4 w-1/3">Insumo</th>
                             <th className="px-6 py-4 text-center w-40">Estoque Mínimo</th>
                             <th className="px-6 py-4 text-center w-40">Estoque Atual</th>
@@ -861,7 +861,7 @@ export default function Compras() {
                                   </span>
                                 </div>
                               </td>
-                              <td className="px-6 py-4 text-center text-slate-500 font-semibold">{fmtQty(item.ingredient.estoque_minimo || 0)}</td>
+                              <td className="px-6 py-4 text-center text-slate-500 dark:text-slate-400 font-semibold">{fmtQty(item.ingredient.estoque_minimo || 0)}</td>
                               <td className="px-6 py-4 text-center">
                                 <span className="px-3 py-1 bg-red-50 text-red-600 rounded-full font-black text-[11px] border border-red-100 shadow-sm">
                                   {fmtQty(item.ingredient.estoque_atual || 0)}
@@ -877,7 +877,7 @@ export default function Compras() {
                         </tbody>
                       </table>
                     </div>
-                    <div className="bg-slate-50/50 px-8 py-4 text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] text-center border-t border-slate-100">
+                    <div className="bg-slate-50 dark:bg-slate-950/50 px-8 py-4 text-[10px] text-slate-400 font-black uppercase tracking-[0.2em] text-center border-t border-slate-100">
                       Total de itens para este fornecedor: {group.items.length}
                     </div>
                   </div>
@@ -891,9 +891,9 @@ export default function Compras() {
       {/* Editor Modal ("Nova Janela") */}
       {isModalOpen && currentOrder && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-[32px] shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[90vh]">
+          <div className="bg-white dark:bg-slate-900 rounded-[32px] shadow-2xl w-full max-w-4xl overflow-hidden animate-in zoom-in-95 duration-200 my-auto flex flex-col max-h-[90vh]">
             {/* Modal Header */}
-            <div className="px-8 py-5 border-b border-slate-200 flex items-center justify-between bg-slate-50">
+            <div className="px-8 py-5 border-b border-slate-200 flex items-center justify-between bg-slate-50 dark:bg-slate-950">
               <div>
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
                   <div className="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center border border-indigo-100">
@@ -905,7 +905,7 @@ export default function Compras() {
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 bg-white text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all border border-slate-200 shadow-sm"
+                className="p-2 bg-white dark:bg-slate-900 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-all border border-slate-200 shadow-sm"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -915,11 +915,11 @@ export default function Compras() {
             <div className="p-8 overflow-y-auto custom-scrollbar flex-1">
               <div className="grid grid-cols-2 gap-6 mb-8">
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Fornecedor *</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Fornecedor *</label>
                   <select 
                     value={currentOrder.supplier_id || ''} 
                     onChange={(e) => setCurrentOrder(prev => ({ ...prev, supplier_id: e.target.value, supplier_name: e.target.options[e.target.selectedIndex].text }))}
-                    className="w-full h-11 px-4 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-semibold text-slate-700 outline-none uppercase"
+                    className="w-full h-11 px-4 bg-white dark:bg-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-semibold text-slate-700 outline-none uppercase"
                   >
                     <option value="">Selecione o fornecedor...</option>
                     <option value="unknown">Fornecedor Avulso / Não Listado</option>
@@ -927,12 +927,12 @@ export default function Compras() {
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Previsão de Entrega</label>
+                  <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Previsão de Entrega</label>
                   <input 
                     type="date" 
                     value={currentOrder.expected_date || ''} 
                     onChange={(e) => setCurrentOrder(prev => ({ ...prev, expected_date: e.target.value }))}
-                    className="w-full h-11 px-4 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-semibold text-slate-700 outline-none" 
+                    className="w-full h-11 px-4 bg-white dark:bg-slate-900 border border-slate-300 rounded-xl focus:ring-2 focus:ring-[#202eac]/20 focus:border-[#202eac] transition-all font-semibold text-slate-700 outline-none" 
                   />
                 </div>
               </div>
@@ -945,9 +945,9 @@ export default function Compras() {
                   </h3>
                   <span className="text-[10px] bg-slate-100 text-slate-400 px-2 py-0.5 rounded-full font-black uppercase tracking-widest">{currentOrder.items?.length || 0} Itens</span>
                 </div>
-                <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-white">
+                <div className="rounded-2xl border border-slate-200 overflow-hidden shadow-sm bg-white dark:bg-slate-900">
                   <table className="w-full text-left text-sm">
-                    <thead className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                    <thead className="bg-slate-50 dark:bg-slate-950 text-[10px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
                       <tr>
                         <th className="px-6 py-3">Insumo</th>
                         <th className="px-6 py-3 w-24 text-center">Unidade</th>
@@ -959,7 +959,7 @@ export default function Compras() {
                     </thead>
                     <tbody className="divide-y divide-slate-100 font-bold text-slate-700 uppercase tracking-tight">
                       {currentOrder.items?.map((item, index) => (
-                        <tr key={index} className="hover:bg-slate-50/30 transition-colors">
+                        <tr key={index} className="hover:bg-slate-50 dark:bg-slate-950/30 transition-colors">
                           <td className="px-6 py-3">
                             {item.ingredient_id ? (
                               <div className="flex flex-col gap-1.5">
@@ -984,7 +984,7 @@ export default function Compras() {
                               <select 
                                 value={item.ingredient_id}
                                 onChange={(e) => handleIngredientChange(index, e.target.value)}
-                                className="w-full h-9 bg-slate-50 border border-slate-200 rounded-lg px-2 text-xs font-bold uppercase outline-none focus:border-[#202eac] transition-all"
+                                className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-lg px-2 text-xs font-bold uppercase outline-none focus:border-[#202eac] transition-all"
                               >
                                 <option value="">SELECIONE UM INSUMO...</option>
                                 {ingredients.map(ing => (
@@ -994,7 +994,7 @@ export default function Compras() {
                             )}
                           </td>
                           <td className="px-6 py-3 text-center">
-                            <span className="px-2 py-1 bg-slate-100 text-slate-500 rounded text-[10px] font-black uppercase tracking-widest">{item.unit || '-'}</span>
+                            <span className="px-2 py-1 bg-slate-100 text-slate-500 dark:text-slate-400 rounded text-[10px] font-black uppercase tracking-widest">{item.unit || '-'}</span>
                           </td>
                           <td className="px-6 py-3">
                             <input 
@@ -1008,7 +1008,7 @@ export default function Compras() {
                                 const newTotal = newItems.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0);
                                 setCurrentOrder(prev => ({ ...prev, items: newItems, total_value: newTotal }));
                               }}
-                              className="w-full h-9 bg-slate-50 border border-slate-200 rounded-lg text-center outline-none focus:border-[#202eac]/40 transition-colors shadow-inner" 
+                              className="w-full h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-lg text-center outline-none focus:border-[#202eac]/40 transition-colors shadow-inner" 
                             />
                           </td>
                           <td className="px-6 py-3">
@@ -1026,7 +1026,7 @@ export default function Compras() {
                                   const newTotal = newItems.reduce((acc, curr) => acc + (curr.quantity * curr.unit_price), 0);
                                   setCurrentOrder(prev => ({ ...prev, items: newItems, total_value: newTotal }));
                                 }}
-                                className="w-24 h-9 bg-slate-50 border border-slate-200 rounded-lg text-center outline-none focus:border-[#202eac]/40 transition-colors shadow-inner" 
+                                className="w-24 h-9 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-lg text-center outline-none focus:border-[#202eac]/40 transition-colors shadow-inner" 
                               />
                             </div>
                           </td>
@@ -1040,7 +1040,7 @@ export default function Compras() {
                       ))}
                       {(!currentOrder.items || currentOrder.items.length === 0) && (
                         <tr>
-                          <td colSpan={6} className="px-6 py-10 text-center text-slate-300 font-bold uppercase tracking-[0.2em] bg-slate-50/30">Nenhum item adicionado à ordem.</td>
+                          <td colSpan={6} className="px-6 py-10 text-center text-slate-300 font-bold uppercase tracking-[0.2em] bg-slate-50 dark:bg-slate-950/30">Nenhum item adicionado à ordem.</td>
                         </tr>
                       )}
                     </tbody>
@@ -1048,7 +1048,7 @@ export default function Compras() {
                   <div className="bg-indigo-50/30 px-6 py-5 flex items-center justify-between border-t border-slate-100">
                     <button 
                       onClick={handleAddRow}
-                      className="px-5 py-2.5 bg-white text-[#202eac] rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm hover:shadow-md transition-all border border-indigo-100 flex items-center gap-2 hover:-translate-y-0.5"
+                      className="px-5 py-2.5 bg-white dark:bg-slate-900 text-[#202eac] rounded-xl text-xs font-bold uppercase tracking-widest shadow-sm hover:shadow-md transition-all border border-indigo-100 flex items-center gap-2 hover:-translate-y-0.5"
                     >
                       <Plus className="w-4 h-4" /> Adicionar Insumo
                     </button>
@@ -1061,27 +1061,27 @@ export default function Compras() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Observações do Pedido</label>
+                <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Observações do Pedido</label>
                 <textarea 
                   value={currentOrder.notes || ''} 
                   onChange={(e) => setCurrentOrder(prev => ({ ...prev, notes: e.target.value }))}
-                  className="w-full p-4 bg-slate-50 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#202eac]/10 focus:border-[#202eac] transition-all font-semibold text-slate-700 outline-none min-h-[100px] uppercase text-sm" 
+                  className="w-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-2xl focus:ring-2 focus:ring-[#202eac]/10 focus:border-[#202eac] transition-all font-semibold text-slate-700 outline-none min-h-[100px] uppercase text-sm" 
                   placeholder="Instruções para entrega, cotações recebidas, etc..."
                 />
               </div>
             </div>
 
             {/* Modal Footer */}
-            <div className="px-8 py-5 border-t border-slate-100 flex gap-3 bg-slate-50/50">
+            <div className="px-8 py-5 border-t border-slate-100 flex gap-3 bg-slate-50 dark:bg-slate-950/50">
               <button 
                 onClick={() => setIsModalOpen(false)} 
-                className="px-6 py-3 bg-white border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-100 transition-all text-xs uppercase tracking-[0.1em] shadow-sm"
+                className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 text-slate-600 font-bold rounded-2xl hover:bg-slate-100 transition-all text-xs uppercase tracking-[0.1em] shadow-sm"
               >
                 Descartar Alt.
               </button>
               <button 
                 onClick={() => handlePrintOrder(currentOrder as PurchaseOrder)}
-                className="px-5 py-3 bg-white border border-indigo-100 text-[#202eac] font-bold rounded-2xl hover:bg-indigo-50 transition-all text-xs uppercase tracking-[0.1em] shadow-sm flex items-center gap-2"
+                className="px-5 py-3 bg-white dark:bg-slate-900 border border-indigo-100 text-[#202eac] font-bold rounded-2xl hover:bg-indigo-50 transition-all text-xs uppercase tracking-[0.1em] shadow-sm flex items-center gap-2"
                 title="Imprimir Relatório da OC"
               >
                 <Printer className="w-4 h-4" />

@@ -64,9 +64,9 @@ class ErrorBoundary extends Component<{children: ReactNode}, ErrorBoundaryState>
   render() {
     if (this.state.hasError) {
       return (
-        <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50">
+        <div className="flex-1 flex flex-col h-full overflow-hidden bg-slate-50 dark:bg-slate-950">
           <div className="flex-1 flex items-center justify-center p-8">
-            <div className="bg-white rounded-2xl border border-red-200 shadow-lg p-8 max-w-md text-center">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 shadow-lg p-8 max-w-md text-center">
               <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
                 <AlertTriangle className="w-8 h-8" />
               </div>
@@ -415,15 +415,15 @@ export default function Proporcao() {
 
   return (
     <ErrorBoundary>
-      <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
+      <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
         {selectedFormula ? (
           <div className="flex-1 flex flex-col h-full overflow-hidden">
             {/* Calculadora Header - Premium Standard */}
-            <div className="bg-white border-b border-slate-200 px-8 py-3 flex items-center justify-between shrink-0 shadow-sm z-10">
+            <div className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-3 flex items-center justify-between shrink-0 shadow-sm z-10">
               <div className="flex items-center gap-5">
                 <button
                   onClick={() => setSelectedFormula(null)}
-                  className="w-10 h-10 flex items-center justify-center bg-slate-50 text-slate-500 rounded-xl hover:bg-[#202eac] hover:text-white hover:shadow-lg hover:shadow-indigo-500/20 transition-all duration-300 group"
+                  className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-950 text-slate-500 rounded-xl hover:bg-[#202eac] hover:text-white hover:shadow-lg hover:shadow-indigo-500/20 transition-all duration-300 group"
                 >
                   <ArrowLeft className="w-5 h-5 group-hover:-translate-x-0.5 transition-transform" />
                 </button>
@@ -462,10 +462,10 @@ export default function Proporcao() {
               </div>
             </div>
 
-            <div className="flex-1 overflow-auto bg-slate-50/50 p-8 pt-6">
+            <div className="flex-1 overflow-auto bg-slate-50 dark:bg-slate-950/50 p-8 pt-6">
               <div className="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
                 <aside className="lg:col-span-4 space-y-6">
-                  <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
+                  <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm space-y-6">
                     <div className="space-y-4">
                       <label className="text-[11px] font-black text-slate-400 uppercase tracking-widest ml-1">Modo de Cálculo</label>
                       <ToggleGroup
@@ -512,7 +512,7 @@ export default function Proporcao() {
                           {(showAllSimulations ? allSimulations : recentSimulations).map((sim: Simulation) => (
                             <div
                               key={sim.id}
-                              className="p-3 bg-slate-50 border border-slate-100 rounded-xl flex items-center justify-between group cursor-default"
+                              className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-100 rounded-xl flex items-center justify-between group cursor-default"
                             >
                               <div className="flex flex-col min-w-0">
                                 <span className="text-[10px] font-bold text-slate-700 truncate">
@@ -593,9 +593,9 @@ export default function Proporcao() {
                 </div>
               </div>
 
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-                <div className="p-4 border-b border-slate-200 bg-slate-50/50 flex items-center gap-4">
-                   <div className="bg-white px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 w-64 focus-within:border-[#202eac] transition-all">
+              <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div className="p-4 border-b border-slate-200 bg-slate-50 dark:bg-slate-950/50 flex items-center gap-4">
+                   <div className="bg-white dark:bg-slate-900 px-3 py-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-2 w-64 focus-within:border-[#202eac] transition-all">
                     <Search className="w-4 h-4 text-slate-400" />
                     <input
                       type="text"
@@ -610,7 +610,7 @@ export default function Proporcao() {
                 <div className="overflow-x-auto">
                   <table className="w-full text-left border-collapse">
                     <thead>
-                      <tr className="bg-slate-50 border-b border-slate-200 text-slate-600 text-sm">
+                      <tr className="bg-slate-50 dark:bg-slate-950 border-b border-slate-200 text-slate-600 text-sm">
                         <th className="py-4 px-6 font-semibold" onClick={() => handleSort('name')}>Fórmula</th>
                         <th className="py-4 px-6 font-semibold" onClick={() => handleSort('lm_code')}>Código LM</th>
                         <th className="py-4 px-6 font-semibold text-right" onClick={() => handleSort('base_volume')}>Volume Base</th>
@@ -646,13 +646,13 @@ export default function Proporcao() {
                 </div>
 
                 {totalPages > 1 && (
-                  <div className="p-4 bg-slate-50 border-t border-slate-200 flex justify-center">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950 border-t border-slate-200 flex justify-center">
                     <div className="flex items-center gap-1">
                       {Array.from({ length: totalPages }, (_, i) => (
                         <button
                           key={i}
                           onClick={() => setCurrentPage(i + 1)}
-                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === i+1 ? 'bg-[#202eac] text-white shadow-md' : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+                          className={`w-8 h-8 rounded-lg text-xs font-bold transition-all ${currentPage === i+1 ? 'bg-[#202eac] text-white shadow-md' : 'bg-white dark:bg-slate-900 text-slate-600 hover:bg-slate-100'}`}
                         >
                           {i + 1}
                         </button>

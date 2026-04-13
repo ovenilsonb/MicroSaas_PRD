@@ -656,7 +656,7 @@ export default function Precificacao() {
     2: { bg: 'bg-amber-50', text: 'text-amber-700', border: 'border-amber-200' },
     5: { bg: 'bg-purple-50', text: 'text-purple-700', border: 'border-purple-200' },
   };
-  const getCapColor = (cap: number) => capacityColors[cap] || { bg: 'bg-slate-50', text: 'text-slate-700', border: 'border-slate-200' };
+  const getCapColor = (cap: number) => capacityColors[cap] || { bg: 'bg-slate-50 dark:bg-slate-950', text: 'text-slate-700', border: 'border-slate-200' };
 
   // Count how many volumes are priced for a formula
   const getVolumePricingStatus = (formulaId: string) => {
@@ -801,10 +801,10 @@ export default function Precificacao() {
 
   if (selectedFormula && detailCalc) {
     return (
-      <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
+      <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
 
         {/* Header */}
-        <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
+        <header className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-4">
             <button onClick={() => setSelectedFormula(null)} className="flex items-center gap-2 px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl transition-all border border-slate-200 shadow-sm">
               <ArrowLeft className="w-4 h-4" /> Voltar
@@ -826,21 +826,21 @@ export default function Precificacao() {
           <div className="px-8 pt-6 pb-2 flex items-center justify-between gap-3 flex-wrap border-b border-slate-200">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm font-bold text-slate-600 mr-2">Tipo de Preço:</span>
-              <button onClick={() => setSelectedPriceType('varejo')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'varejo' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-white text-slate-600 border border-slate-200 hover:border-emerald-400 hover:text-emerald-600'}`}>
+              <button onClick={() => setSelectedPriceType('varejo')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'varejo' ? 'bg-emerald-500 text-white shadow-lg shadow-emerald-200' : 'bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 hover:border-emerald-400 hover:text-emerald-600'}`}>
                 <ShoppingCart className="w-4 h-4" /> Varejo
               </button>
-              <button onClick={() => setSelectedPriceType('atacado')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'atacado' ? 'bg-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-white text-slate-600 border border-slate-200 hover:border-amber-400 hover:text-amber-600'}`}>
+              <button onClick={() => setSelectedPriceType('atacado')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'atacado' ? 'bg-amber-500 text-white shadow-lg shadow-amber-200' : 'bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 hover:border-amber-400 hover:text-amber-600'}`}>
                 <Store className="w-4 h-4" /> Atacado
               </button>
-              <button onClick={() => setSelectedPriceType('fardo')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'fardo' ? 'bg-purple-500 text-white shadow-lg shadow-purple-200' : 'bg-white text-slate-600 border border-slate-200 hover:border-purple-400 hover:text-purple-600'}`}>
+              <button onClick={() => setSelectedPriceType('fardo')} className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedPriceType === 'fardo' ? 'bg-purple-500 text-white shadow-lg shadow-purple-200' : 'bg-white dark:bg-slate-900 text-slate-600 border border-slate-200 hover:border-purple-400 hover:text-purple-600'}`}>
                 <PackageCheck className="w-4 h-4" /> Fardo
               </button>
             </div>
             <div className="flex items-center gap-2">
-              <button onClick={() => setShowResetModal(true)} className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2" title="Zerar preços">
+              <button onClick={() => setShowResetModal(true)} className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 bg-white dark:bg-slate-900 border border-slate-200 hover:bg-slate-50 dark:bg-slate-950 transition-colors flex items-center gap-2" title="Zerar preços">
                 <Eraser className="w-4 h-4" /> Zerar
               </button>
-              <button onClick={discardChanges} className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2">
+              <button onClick={discardChanges} className="px-4 py-2 rounded-xl text-sm font-bold text-slate-600 bg-white dark:bg-slate-900 border border-slate-200 hover:bg-slate-50 dark:bg-slate-950 transition-colors flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" /> Descartar
               </button>
               <button onClick={savePricing} className="px-5 py-2 rounded-xl text-sm font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200 transition-all flex items-center gap-2">
@@ -864,7 +864,7 @@ export default function Precificacao() {
                   onClick={() => switchCapacity(cap)}
                   className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${selectedCapacity === cap
                     ? 'bg-[#202eac] text-white shadow-lg shadow-blue-200 scale-105'
-                    : `bg-white text-slate-600 border ${capColor.border} hover:border-[#202eac] hover:text-[#202eac]`
+                    : `bg-white dark:bg-slate-900 text-slate-600 border ${capColor.border} hover:border-[#202eac] hover:text-[#202eac]`
                     }`}
                 >
                   {formatCapacity(cap)}
@@ -886,12 +886,12 @@ export default function Precificacao() {
 
           {/* Availability Toggle */}
           <div className="px-8 mt-2">
-            <label className={`flex items-center gap-3 w-fit px-4 py-2.5 rounded-2xl cursor-pointer transition-all border ${isCurrentTypeDisabled() ? 'bg-slate-100 border-slate-300' : 'bg-white border-slate-200 hover:border-red-200 shadow-sm'}`}>
+            <label className={`flex items-center gap-3 w-fit px-4 py-2.5 rounded-2xl cursor-pointer transition-all border ${isCurrentTypeDisabled() ? 'bg-slate-100 border-slate-300' : 'bg-white dark:bg-slate-900 border-slate-200 hover:border-red-200 shadow-sm'}`}>
               <div
                 onClick={handleToggleAvailability}
                 className={`w-10 h-5 rounded-full relative transition-colors ${isCurrentTypeDisabled() ? 'bg-red-500' : 'bg-slate-200'}`}
               >
-                <div className={`absolute top-1 left-1 w-3 h-3 bg-white rounded-full transition-transform ${isCurrentTypeDisabled() ? 'translate-x-5' : ''}`} />
+                <div className={`absolute top-1 left-1 w-3 h-3 bg-white dark:bg-slate-900 rounded-full transition-transform ${isCurrentTypeDisabled() ? 'translate-x-5' : ''}`} />
               </div>
               <span className={`text-sm font-bold ${isCurrentTypeDisabled() ? 'text-red-600' : 'text-slate-600'}`}>
                 Não comercializar {selectedPriceType.toUpperCase()} para este volume ({formatCapacity(selectedCapacity)})
@@ -903,7 +903,7 @@ export default function Precificacao() {
           {showResetModal && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
               <div className="max-w-lg w-full">
-                <div className="bg-white rounded-2xl border border-red-200 shadow-xl overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-red-200 shadow-xl overflow-hidden">
                   <div className="bg-red-50 px-6 py-4 border-b border-red-100 flex items-center justify-between">
                     <div className="flex items-center gap-3">
                       <Eraser className="w-5 h-5 text-red-600" />
@@ -921,7 +921,7 @@ export default function Precificacao() {
                     {/* Option 1: Current selection only */}
                     <button
                       onClick={handleResetCurrent}
-                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition-colors text-left group"
+                      className="w-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl hover:border-red-300 hover:bg-red-50 transition-colors text-left group"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-bold text-sm text-slate-800 group-hover:text-red-700">Preço Atual Apenas</span>
@@ -934,7 +934,7 @@ export default function Precificacao() {
                     {/* Option 2: All of this price type for this formula */}
                     <button
                       onClick={handleResetAllOfType}
-                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-amber-300 hover:bg-amber-50 transition-colors text-left group"
+                      className="w-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl hover:border-amber-300 hover:bg-amber-50 transition-colors text-left group"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-bold text-sm text-slate-800 group-hover:text-amber-700">Tipo {selectedPriceType} (todos os volumes)</span>
@@ -947,7 +947,7 @@ export default function Precificacao() {
                     {/* Option 3: All pricing for this formula */}
                     <button
                       onClick={handleResetAllFormula}
-                      className="w-full p-4 bg-slate-50 border border-slate-200 rounded-xl hover:border-red-400 hover:bg-red-50 transition-colors text-left group"
+                      className="w-full p-4 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl hover:border-red-400 hover:bg-red-50 transition-colors text-left group"
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-bold text-sm text-slate-800 group-hover:text-red-700">Todas Precificações da Fórmula</span>
@@ -975,7 +975,7 @@ export default function Precificacao() {
               <div className="lg:col-span-7 space-y-5">
 
                 {/* Cost Composition Block */}
-                <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-200 shadow-sm">
                   <h3 className="font-bold text-slate-700 flex items-center gap-2 mb-5">
                     <Calculator className="w-4 h-4 text-[#202eac]" />
                     Composição de Custos ({formatCapacity(selectedCapacity)})
@@ -1030,7 +1030,7 @@ export default function Precificacao() {
                           const cost = parseCost(fi.variants?.cost_per_unit || fi.ingredients?.cost_per_unit);
                           const qty = fi.quantity * (selectedCapacity / (selectedFormula.base_volume || 1));
                           return (
-                            <div key={idx} className="grid grid-cols-12 gap-2 p-2 rounded-lg bg-slate-50 text-[11px] items-center border border-slate-100">
+                            <div key={idx} className="grid grid-cols-12 gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-950 text-[11px] items-center border border-slate-100">
                               <div className="col-span-6 font-bold text-slate-700">{fi.ingredients?.name}</div>
                               <div className="col-span-3 text-right font-mono">{qty.toFixed(3)} {fi.ingredients?.unit}</div>
                               <div className="col-span-3 text-right font-bold text-slate-600">{fmt(qty * cost)}</div>
@@ -1051,7 +1051,7 @@ export default function Precificacao() {
                     </div>
 
                     {/* Breakdown de custos */}
-                    <div className="grid grid-cols-1 gap-2 bg-white/10 rounded-xl p-3">
+                    <div className="grid grid-cols-1 gap-2 bg-white dark:bg-slate-900/10 rounded-xl p-3">
                       <div className="flex justify-between items-center text-white/80 text-xs">
                         <span className="flex items-center gap-2">
                           <Package className="w-3.5 h-3.5" />
@@ -1095,7 +1095,7 @@ export default function Precificacao() {
                 {/* Pricing Cards Grid - Only show selected price type */}
                 <div className="grid grid-cols-1 gap-5">
                   {selectedPriceType === 'varejo' && (
-                    <div className={`bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow ${isVarejoDisabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
+                    <div className={`bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow ${isVarejoDisabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center">
@@ -1107,8 +1107,8 @@ export default function Precificacao() {
                       </div>
                       <PriceAdjuster value={varejoPrice} onChange={setVarejoPrice} cents={95} color="green" />
                       <div className="flex gap-2 mt-5">
-                        <MetricBlock label="Custo/Un" value={fmt(detailCalc.custoTotal)} colorClass="bg-slate-50" />
-                        <MetricBlock label="Markup" value={`${detailCalc.varejoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
+                        <MetricBlock label="Custo/Un" value={fmt(detailCalc.custoTotal)} colorClass="bg-slate-50 dark:bg-slate-950" />
+                        <MetricBlock label="Markup" value={`${detailCalc.varejoMarkup.toFixed(1)}%`} colorClass="bg-slate-50 dark:bg-slate-950" />
                         <MetricBlock label="Margem" value={`${detailCalc.varejoMargem.toFixed(1)}%`} colorClass={`${detailCalc.varejoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.varejoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                         <MetricBlock label="Lucro" value={fmt(detailCalc.varejoLucro)} colorClass="bg-emerald-50 !text-emerald-700 font-black" />
                       </div>
@@ -1130,7 +1130,7 @@ export default function Precificacao() {
                   )}
 
                   {selectedPriceType === 'atacado' && (
-                    <div className={`bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow ${isAtacadoDisabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
+                    <div className={`bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow ${isAtacadoDisabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
@@ -1142,8 +1142,8 @@ export default function Precificacao() {
                       </div>
                       <PriceAdjuster value={atacadoPrice} onChange={setAtacadoPrice} cents={90} color="orange" />
                       <div className="flex gap-2 mt-5">
-                        <MetricBlock label="Custo/Un" value={fmt(detailCalc.custoTotal)} colorClass="bg-slate-50" />
-                        <MetricBlock label="Markup" value={`${detailCalc.atacadoMarkup.toFixed(1)}%`} colorClass="bg-slate-50" />
+                        <MetricBlock label="Custo/Un" value={fmt(detailCalc.custoTotal)} colorClass="bg-slate-50 dark:bg-slate-950" />
+                        <MetricBlock label="Markup" value={`${detailCalc.atacadoMarkup.toFixed(1)}%`} colorClass="bg-slate-50 dark:bg-slate-950" />
                         <MetricBlock label="Margem" value={`${detailCalc.atacadoMargem.toFixed(1)}%`} colorClass={`${detailCalc.atacadoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.atacadoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                         <MetricBlock label="Lucro" value={fmt(detailCalc.atacadoLucro)} colorClass="bg-amber-50 !text-amber-700 font-black" />
                       </div>
@@ -1165,7 +1165,7 @@ export default function Precificacao() {
                   )}
 
                   {selectedPriceType === 'fardo' && (
-                    <div className={`bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow ${isFardoDisabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
+                    <div className={`bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-200 shadow-sm hover:shadow-md transition-shadow ${isFardoDisabled ? 'opacity-50 grayscale pointer-events-none' : ''}`}>
                       <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                           <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -1173,9 +1173,9 @@ export default function Precificacao() {
                           </div>
                           <h4 className="font-bold text-slate-700">Preço {getPackTerm(selectedCapacity)}</h4>
                         </div>
-                        <div className="flex items-center gap-3 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
+                        <div className="flex items-center gap-3 bg-slate-50 dark:bg-slate-950 px-3 py-1.5 rounded-xl border border-slate-200">
                           <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">Itens na {getPackTerm(selectedCapacity)}</span>
-                          <div className="flex items-center gap-1 bg-white rounded-lg border border-slate-200 p-0.5">
+                          <div className="flex items-center gap-1 bg-white dark:bg-slate-900 rounded-lg border border-slate-200 p-0.5">
                             <button onClick={() => setFardoQty(Math.max(1, fardoQty - 1))} className="w-7 h-7 rounded-md flex items-center justify-center text-slate-500 hover:bg-slate-100 transition-colors">
                               <Minus className="w-3 h-3" />
                             </button>
@@ -1189,7 +1189,7 @@ export default function Precificacao() {
                       <div className="flex items-center gap-6 flex-wrap">
                         <PriceAdjuster value={fardoPrice} onChange={setFardoPrice} cents={80} color="purple" />
                         <div className="flex-1 flex gap-2">
-                          <MetricBlock label={`Custo ${getPackTerm(selectedCapacity)}`} value={fmt(detailCalc.custoTotal * fardoQty)} colorClass="bg-slate-50" />
+                          <MetricBlock label={`Custo ${getPackTerm(selectedCapacity)}`} value={fmt(detailCalc.custoTotal * fardoQty)} colorClass="bg-slate-50 dark:bg-slate-950" />
                           <MetricBlock label="Markup" value={`${detailCalc.fardoMarkup.toFixed(1)}%`} colorClass={`${detailCalc.fardoMarkup >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.fardoMarkup >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                           <MetricBlock label="Margem" value={`${detailCalc.fardoMargem.toFixed(1)}%`} colorClass={`${detailCalc.fardoMargem >= 20 ? 'bg-emerald-50 text-emerald-600' : detailCalc.fardoMargem >= 10 ? 'bg-amber-50 text-amber-600' : 'bg-red-50 text-red-600'}`} />
                           <MetricBlock label="Lucro/Un" value={fmt(detailCalc.fardoLucro / fardoQty)} colorClass="bg-purple-50 !text-purple-700 font-black" />
@@ -1229,7 +1229,7 @@ export default function Precificacao() {
               <div className="lg:col-span-5 space-y-5">
 
                 {/* Donut: Composição do Preço */}
-                <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-200 shadow-sm">
                   <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-4">
                     <DollarSign className="w-4 h-4 text-[#202eac]" />
                     Composição do Preço (Varejo)
@@ -1269,7 +1269,7 @@ export default function Precificacao() {
                 </div>
 
                 {/* Bar Chart: Comparativo de Margens */}
-                <div className="bg-white p-6 rounded-[28px] border border-slate-200 shadow-sm">
+                <div className="bg-white dark:bg-slate-900 p-6 rounded-[28px] border border-slate-200 shadow-sm">
                   <h4 className="font-bold text-slate-700 flex items-center gap-2 mb-4">
                     <BarChart3 className="w-4 h-4 text-[#202eac]" />
                     Comparativo de Margens (%)
@@ -1329,7 +1329,7 @@ export default function Precificacao() {
   // ═══════════════════════════════════════════════════════════
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
       <div className="flex-1 overflow-auto p-8">
         <div className="max-w-7xl mx-auto space-y-8">
 
@@ -1377,7 +1377,7 @@ export default function Precificacao() {
 
           {/* Summary Cards */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 flex items-center justify-center text-[#202eac]">
                 <PackageCheck className="w-7 h-7" />
               </div>
@@ -1386,7 +1386,7 @@ export default function Precificacao() {
                 <span className="text-3xl font-black text-slate-800">{stats.total}</span>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500">
                 <AlertCircle className="w-7 h-7" />
               </div>
@@ -1395,7 +1395,7 @@ export default function Precificacao() {
                 <span className="text-3xl font-black text-slate-800">{stats.pending}</span>
               </div>
             </div>
-            <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-3xl border border-slate-200 shadow-sm flex items-center gap-5">
               <div className="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-500">
                 <TrendingUp className="w-7 h-7" />
               </div>
@@ -1409,7 +1409,7 @@ export default function Precificacao() {
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             {/* Search + Controls - Left Side */}
             <div className="flex gap-3 items-center flex-1">
-              <div className="flex-1 bg-white px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 max-w-md transition-all focus-within:ring-2 focus-within:ring-[#202eac]/20 focus-within:border-[#202eac] focus-within:shadow-indigo-500/10">
+              <div className="flex-1 bg-white dark:bg-slate-900 px-4 py-3 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3 max-w-md transition-all focus-within:ring-2 focus-within:ring-[#202eac]/20 focus-within:border-[#202eac] focus-within:shadow-indigo-500/10">
                 <Search className="w-5 h-5 text-slate-400" />
                 <input
                   type="text"
@@ -1424,17 +1424,17 @@ export default function Precificacao() {
                   </button>
                 )}
               </div>
-              <div className="flex items-center gap-1.5 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
+              <div className="flex items-center gap-1.5 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 shadow-sm">
                 <button
                   onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'list' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:bg-slate-950'}`}
                   title="Lista"
                 >
                   <List className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  className={`p-2 rounded-lg transition-all duration-200 ${viewMode === 'grid' ? 'bg-gradient-to-br from-[#202eac] to-[#4b5ce8] text-white shadow-md' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:bg-slate-950'}`}
                   title="Blocos"
                 >
                   <LayoutGrid className="w-4 h-4" />
@@ -1442,7 +1442,7 @@ export default function Precificacao() {
               </div>
               <button
                 onClick={() => setIsSettingsOpen(true)}
-                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 transition-all bg-white border border-slate-200 shadow-sm"
+                className="p-2 rounded-lg text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:bg-slate-950 transition-all bg-white dark:bg-slate-900 border border-slate-200 shadow-sm"
                 title="Configurar Colunas"
               >
                 <Settings className="w-4 h-4" />
@@ -1450,8 +1450,8 @@ export default function Precificacao() {
             </div>
 
             {/* Export/Import - Right Side */}
-            <div className="flex items-center gap-2 bg-white p-1.5 rounded-xl border border-slate-200 shadow-sm">
-              <label className="cursor-pointer px-3 py-2 rounded-lg transition-all font-medium flex items-center gap-2 text-slate-600 hover:text-[#202eac] hover:bg-slate-50">
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-900 p-1.5 rounded-xl border border-slate-200 shadow-sm">
+              <label className="cursor-pointer px-3 py-2 rounded-lg transition-all font-medium flex items-center gap-2 text-slate-600 hover:text-[#202eac] hover:bg-slate-50 dark:bg-slate-950">
                 <Upload className="w-4 h-4 text-emerald-600" />
                 <span className="hidden sm:inline">Importar</span>
                 <input type="file" accept=".json" onChange={handleImport} className="hidden" />
@@ -1490,7 +1490,7 @@ export default function Precificacao() {
                 <button
                   key={tab.id}
                   onClick={() => setStatusFilter(tab.id as any)}
-                  className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl transition-all duration-200 border-b-2 font-bold text-xs uppercase tracking-wider min-w-fit ${isActive ? 'border-[#202eac] bg-blue-50/50 text-[#202eac]' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                  className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl transition-all duration-200 border-b-2 font-bold text-xs uppercase tracking-wider min-w-fit ${isActive ? 'border-[#202eac] bg-blue-50/50 text-[#202eac]' : 'border-transparent text-slate-400 hover:text-slate-600 hover:bg-slate-50 dark:bg-slate-950'}`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? 'text-[#202eac]' : tab.color || 'text-slate-400'}`} />
                   {tab.label}
@@ -1506,12 +1506,12 @@ export default function Precificacao() {
 
           {/* Loading */}
           {isLoading ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center text-slate-500 shadow-sm">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 p-12 text-center text-slate-500 shadow-sm">
               Carregando fórmulas...
             </div>
           ) : filteredFormulas.length === 0 ? (
-            <div className="bg-white rounded-[32px] border border-slate-200 p-20 text-center">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
+            <div className="bg-white dark:bg-slate-900 rounded-[32px] border border-slate-200 p-20 text-center">
+              <div className="w-20 h-20 bg-slate-50 dark:bg-slate-950 rounded-full flex items-center justify-center mx-auto mb-6 text-slate-300">
                 <Search className="w-10 h-10" />
               </div>
               <h3 className="text-xl font-bold text-slate-800 mb-2">
@@ -1535,7 +1535,7 @@ export default function Precificacao() {
                   <button
                     key={formula.id}
                     onClick={() => openFormula(formula)}
-                    className="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-[#202eac] hover:shadow-md transition-all text-left group"
+                    className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 shadow-sm hover:border-[#202eac] hover:shadow-md transition-all text-left group"
                   >
                     {/* Header row: category + status */}
                     <div className="flex items-center justify-between mb-3">
@@ -1565,7 +1565,7 @@ export default function Precificacao() {
                     {/* Mini pricing table per volume */}
                     <div className="mt-4 space-y-0 rounded-xl overflow-hidden border border-slate-100">
                       {/* Header */}
-                      <div className="grid grid-cols-4 gap-0 text-[9px] font-black text-slate-400 uppercase tracking-wider bg-slate-50 px-3 py-2 border-b border-slate-100">
+                      <div className="grid grid-cols-4 gap-0 text-[9px] font-black text-slate-400 uppercase tracking-wider bg-slate-50 dark:bg-slate-950 px-3 py-2 border-b border-slate-100">
                         <div>Volume</div>
                         <div className="text-right">Varejo</div>
                         <div className="text-right">Atacado</div>
@@ -1602,12 +1602,12 @@ export default function Precificacao() {
             </div>
           ) : (
             /* ═══ LIST / TABLE VIEW — with volume breakdown ═══ */
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleColumnDragEnd}>
                 <SortableContext items={columns.filter(c => c.visible).map(c => c.id)} strategy={horizontalListSortingStrategy}>
                   <table className="w-full text-sm">
                     <thead>
-                      <tr className="border-b border-slate-100 bg-slate-50">
+                      <tr className="border-b border-slate-100 bg-slate-50 dark:bg-slate-950">
                         {columns.filter(c => c.visible).map((col) => (
                           <SortableHeader
                             key={col.id}
@@ -1689,7 +1689,7 @@ export default function Precificacao() {
                           <tr
                             key={formula.id}
                             onClick={() => openFormula(formula)}
-                            className="border-b border-slate-50 hover:bg-slate-50/50 transition-colors cursor-pointer group"
+                            className="border-b border-slate-50 hover:bg-slate-50 dark:bg-slate-950/50 transition-colors cursor-pointer group"
                           >
                             {columns.filter(c => c.visible).map(col => (
                               <td key={col.id} className={getTdClass(col.id)}>

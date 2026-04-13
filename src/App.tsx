@@ -6,6 +6,7 @@ import {
 import { useStorageMode } from './contexts/StorageModeContext';
 import { isSupabaseConfigured } from './lib/supabase';
 import { ToastProvider, useToast } from './components/dashboard/Toast';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { exportToJson, importFromJson, getBackupFilename } from './lib/backupUtils';
 import Header, { getModuleConfig } from './components/Header';
 import { ConfirmModal, ConfirmModalType } from './components/shared/ConfirmModal';
@@ -84,8 +85,9 @@ export default function App() {
   };
 
   return (
+    <ThemeProvider>
     <ToastProvider>
-      <div className="min-h-screen bg-slate-50 flex font-sans text-slate-900 transition-colors duration-300">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-950 flex font-sans text-slate-900 dark:text-slate-100 transition-colors duration-300">
 
       <Sidebar 
         activeMenu={activeMenu}
@@ -168,6 +170,7 @@ export default function App() {
       />
     </div>
     </ToastProvider>
+    </ThemeProvider>
   );
 }
 

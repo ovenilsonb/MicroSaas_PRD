@@ -15,9 +15,12 @@ import {
   FlaskConical,
   ChevronRight,
   Bell,
-  User
+  User,
+  Moon,
+  Sun
 } from 'lucide-react';
 import { useCompanySettings } from '../hooks/useCompanySettings';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface NavItemProps {
   icon: React.ReactNode;
@@ -84,6 +87,7 @@ export const ALL_NAV_ITEMS = [
 
 export default function Sidebar({ activeMenu, setActiveMenu }: SidebarProps) {
   const { settings } = useCompanySettings();
+  const { theme, toggleTheme } = useTheme();
 
   // Mapear o layout dinâmico para os itens com ícones
   const dynamicNavItems = (settings.sidebarLayout || []).map(section => ({
@@ -160,6 +164,21 @@ export default function Sidebar({ activeMenu, setActiveMenu }: SidebarProps) {
 
       {/* Footer */}
       <div className="p-4 border-t border-white/5 bg-slate-900/40">
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl text-sm font-medium text-slate-400 hover:bg-white/5 hover:text-white transition-all mb-1"
+          aria-label={theme === 'dark' ? 'Mudar para modo claro' : 'Mudar para modo escuro'}
+        >
+          {theme === 'dark'
+            ? <Sun className="w-5 h-5 text-slate-500" />
+            : <Moon className="w-5 h-5 text-slate-500" />
+          }
+          <span className="flex-1 text-left font-medium">
+            {theme === 'dark' ? 'Modo Claro' : 'Modo Escuro'}
+          </span>
+        </button>
+
         <NavItem 
           icon={<Settings />}
           label="Configurações"

@@ -715,7 +715,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
   const checkStockAndConfirm = (order: SaleOrder) => {
     let hasInsufficientStock = false;
-    const missingItems: { item: SaleOrderItem; formula: any; catalogItem: any }[] = [];
+    const missingItems: { item: SaleOrderItem; formula: any; catalogItem: any; currentStock: number }[] = [];
 
     order.items.forEach(item => {
       const catalogItem = sellableCatalog.find(c => c.id === item.finished_good_id);
@@ -994,7 +994,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
   const getStatusConfig = (status: SaleStatus) => {
     switch (status) {
-      case 'rascunho': return { label: 'Rascunho', color: 'bg-slate-100 text-slate-600 border-slate-200', icon: <Edit2 className="w-3 h-3" /> };
+      case 'rascunho': return { label: 'Rascunho', color: 'bg-slate-100 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700', icon: <Edit2 className="w-3 h-3" /> };
       case 'producao': return { label: 'Aguardando Produção', color: 'bg-amber-50 text-amber-700 border-amber-200', icon: <PackageOpen className="w-3 h-3" /> };
       case 'separacao': return { label: 'Em Separação', color: 'bg-blue-50 text-blue-700 border-blue-200', icon: <Package className="w-3 h-3" /> };
       case 'retirada': return { label: 'Pronto p/ Retirada', color: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: <User className="w-3 h-3" /> };
@@ -1003,7 +1003,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
       case 'devolvido': return { label: 'Quarentena/Devolvido', color: 'bg-purple-50 text-purple-700 border-purple-200', icon: <Undo2 className="w-3 h-3" /> };
       case 'cancelado': return { label: 'Cancelado', color: 'bg-red-50 text-red-700 border-red-200', icon: <X className="w-3 h-3" /> };
       case 'reproducao': return { label: 'Necessário Refazer', color: 'bg-orange-50 text-orange-700 border-orange-200 animate-pulse', icon: <AlertCircle className="w-3 h-3" /> };
-      default: return { label: status, color: 'bg-slate-100 text-slate-500', icon: <AlertCircle className="w-3 h-3" /> };
+      default: return { label: status, color: 'bg-slate-100 text-slate-500 dark:text-slate-400', icon: <AlertCircle className="w-3 h-3" /> };
     }
   };
 
@@ -1046,16 +1046,16 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-8 py-6 shrink-0">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50 dark:bg-slate-800 dark:bg-slate-950">
+      <header className="bg-white dark:bg-slate-900 dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 dark:border-slate-800 px-8 py-6 shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="bg-blue-50 p-2 rounded-lg">
               <ShoppingBag className="w-6 h-6 text-[#202eac]" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-slate-800">Vendas e Pedidos</h1>
-              <p className="text-sm text-slate-500">Gestão comercial, logística e recebimentos</p>
+              <h1 className="text-2xl font-bold text-slate-800 dark:text-slate-100">Vendas e Pedidos</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">Gestão comercial, logística e recebimentos</p>
             </div>
           </div>
 
@@ -1071,74 +1071,74 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
         </div>
       </header>
 
-      <main className="flex-1 overflow-auto p-8 bg-slate-50/50">
+      <main className="flex-1 overflow-auto p-8 bg-slate-50 dark:bg-slate-800/50">
         <div className="max-w-7xl mx-auto space-y-6">
           
           {/* KPI Dashboard */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <div 
               onClick={() => setStatusFilter('todos')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'todos' ? 'bg-[#202eac] border-[#202eac] text-white' : 'bg-white border-slate-200 hover:border-[#202eac]/30'}`}
+              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'todos' ? 'bg-[#202eac] border-[#202eac] text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-[#202eac]/30'}`}
             >
               <div className="flex justify-between items-start">
-                <div className={`p-2 rounded-lg ${statusFilter === 'todos' ? 'bg-white/20' : 'bg-blue-50 text-[#202eac]'}`}>
+                <div className={`p-2 rounded-lg ${statusFilter === 'todos' ? 'bg-white dark:bg-slate-900/20' : 'bg-blue-50 text-[#202eac]'}`}>
                   <ShoppingBag className="w-5 h-5" />
                 </div>
-                <span className={`text-2xl font-black ${statusFilter === 'todos' ? 'text-white' : 'text-slate-800'}`}>{stats.total}</span>
+                <span className={`text-2xl font-black ${statusFilter === 'todos' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{stats.total}</span>
               </div>
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'todos' ? 'text-blue-100' : 'text-slate-500'}`}>Total de Pedidos</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'todos' ? 'text-blue-100' : 'text-slate-500 dark:text-slate-400'}`}>Total de Pedidos</p>
             </div>
 
             <div 
               onClick={() => setStatusFilter('producao')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'producao' ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white border-slate-200 hover:border-amber-300'}`}
+              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'producao' ? 'bg-amber-500 border-amber-500 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-amber-300'}`}
             >
               <div className="flex justify-between items-start">
-                <div className={`p-2 rounded-lg ${statusFilter === 'producao' ? 'bg-white/20' : 'bg-amber-50 text-amber-600'}`}>
+                <div className={`p-2 rounded-lg ${statusFilter === 'producao' ? 'bg-white dark:bg-slate-900/20' : 'bg-amber-50 text-amber-600'}`}>
                   <PackageOpen className="w-5 h-5" />
                 </div>
-                <span className={`text-2xl font-black ${statusFilter === 'producao' ? 'text-white' : 'text-slate-800'}`}>{stats.waitingProduction}</span>
+                <span className={`text-2xl font-black ${statusFilter === 'producao' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{stats.waitingProduction}</span>
               </div>
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'producao' ? 'text-amber-50' : 'text-slate-500'}`}>Aguardando Produção</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'producao' ? 'text-amber-50' : 'text-slate-500 dark:text-slate-400'}`}>Aguardando Produção</p>
             </div>
 
             <div 
               onClick={() => setStatusFilter('reproducao')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'reproducao' ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white border-slate-200 hover:border-orange-300'}`}
+              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'reproducao' ? 'bg-orange-600 border-orange-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-orange-300'}`}
             >
               <div className="flex justify-between items-start">
-                <div className={`p-2 rounded-lg ${statusFilter === 'reproducao' ? 'bg-white/20' : 'bg-orange-50 text-orange-600'}`}>
+                <div className={`p-2 rounded-lg ${statusFilter === 'reproducao' ? 'bg-white dark:bg-slate-900/20' : 'bg-orange-50 text-orange-600'}`}>
                   <Undo2 className="w-5 h-5" />
                 </div>
-                <span className={`text-2xl font-black ${statusFilter === 'reproducao' ? 'text-white' : 'text-slate-800'}`}>{stats.needsReproduction}</span>
+                <span className={`text-2xl font-black ${statusFilter === 'reproducao' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{stats.needsReproduction}</span>
               </div>
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'reproducao' ? 'text-orange-50' : 'text-slate-500'}`}>Refazer (Qualidade)</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'reproducao' ? 'text-orange-50' : 'text-slate-500 dark:text-slate-400'}`}>Refazer (Qualidade)</p>
             </div>
 
             <div 
               onClick={() => setStatusFilter('separacao')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'separacao' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white border-slate-200 hover:border-blue-300'}`}
+              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'separacao' ? 'bg-blue-600 border-blue-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-blue-300'}`}
             >
               <div className="flex justify-between items-start">
-                <div className={`p-2 rounded-lg ${statusFilter === 'separacao' ? 'bg-white/20' : 'bg-blue-50 text-blue-600'}`}>
+                <div className={`p-2 rounded-lg ${statusFilter === 'separacao' ? 'bg-white dark:bg-slate-900/20' : 'bg-blue-50 text-blue-600'}`}>
                   <Package className="w-5 h-5" />
                 </div>
-                <span className={`text-2xl font-black ${statusFilter === 'separacao' ? 'text-white' : 'text-slate-800'}`}>{stats.waitingAction}</span>
+                <span className={`text-2xl font-black ${statusFilter === 'separacao' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{stats.waitingAction}</span>
               </div>
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'separacao' ? 'text-blue-50' : 'text-slate-500'}`}>Disponível p/ Separar</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'separacao' ? 'text-blue-50' : 'text-slate-500 dark:text-slate-400'}`}>Disponível p/ Separar</p>
             </div>
 
             <div 
               onClick={() => setStatusFilter('pendente_recebimento')}
-              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'pendente_recebimento' ? 'bg-cyan-600 border-cyan-600 text-white' : 'bg-white border-slate-200 hover:border-cyan-300'}`}
+              className={`p-5 rounded-2xl border transition-all cursor-pointer group shadow-sm flex flex-col justify-between min-h-[110px] ${statusFilter === 'pendente_recebimento' ? 'bg-cyan-600 border-cyan-600 text-white' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 hover:border-cyan-300'}`}
             >
               <div className="flex justify-between items-start">
-                <div className={`p-2 rounded-lg ${statusFilter === 'pendente_recebimento' ? 'bg-white/20' : 'bg-cyan-50 text-cyan-600'}`}>
+                <div className={`p-2 rounded-lg ${statusFilter === 'pendente_recebimento' ? 'bg-white dark:bg-slate-900/20' : 'bg-cyan-50 text-cyan-600'}`}>
                   <Clock className="w-5 h-5" />
                 </div>
-                <span className={`text-2xl font-black ${statusFilter === 'pendente_recebimento' ? 'text-white' : 'text-slate-800'}`}>{stats.pendingReceipt}</span>
+                <span className={`text-2xl font-black ${statusFilter === 'pendente_recebimento' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>{stats.pendingReceipt}</span>
               </div>
-              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'pendente_recebimento' ? 'text-cyan-50' : 'text-slate-500'}`}>Pendente Recebimento</p>
+              <p className={`text-[10px] font-bold uppercase tracking-wider ${statusFilter === 'pendente_recebimento' ? 'text-cyan-50' : 'text-slate-500 dark:text-slate-400'}`}>Pendente Recebimento</p>
             </div>
 
             <div 
@@ -1157,7 +1157,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
           </div>
 
           {/* Search and Filters */}
-          <div className="bg-white p-2 rounded-xl border border-slate-200 shadow-sm flex items-center gap-3">
+          <div className="bg-white dark:bg-slate-900 p-2 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-3">
             <div className="relative flex-1 flex items-center gap-3">
               <Search className="w-5 h-5 text-slate-400 ml-2" />
               <input
@@ -1171,13 +1171,13 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
             <div className="flex items-center gap-1 border-l border-slate-100 pl-3 mr-1">
               <button
                 onClick={() => setViewMode('grid')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-blue-50 text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-blue-50 text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800'}`}
               >
                 <LayoutGrid className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-blue-50 text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'}`}
+                className={`p-2 rounded-lg transition-all ${viewMode === 'list' ? 'bg-blue-50 text-[#202eac] shadow-sm' : 'text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800'}`}
               >
                 <List className="w-4 h-4" />
               </button>
@@ -1186,12 +1186,12 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
           {/* Empty State / List */}
           {filteredOrders.length === 0 ? (
-            <div className="bg-white rounded-3xl border border-slate-200 shadow-sm p-20 text-center">
-              <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm p-20 text-center">
+              <div className="w-20 h-20 bg-slate-50 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
                 <ShoppingBag className="w-10 h-10 text-slate-300" />
               </div>
-              <h3 className="text-xl font-bold text-slate-800 mb-2">Nenhum pedido encontrado</h3>
-              <p className="text-slate-500 mb-8 max-w-sm mx-auto">
+              <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Nenhum pedido encontrado</h3>
+              <p className="text-slate-500 dark:text-slate-400 mb-8 max-w-sm mx-auto">
                 {searchTerm || statusFilter !== 'todos' 
                   ? 'Não encontramos resultados para os filtros selecionados.' 
                   : 'Comece a vender agora mesmo criando seu primeiro pedido de venda.'}
@@ -1209,13 +1209,13 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
               {filteredOrders.map(order => (
                 <div 
                   key={order.id} 
-                  className="bg-white rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all p-5 flex flex-col group cursor-pointer hover:border-[#202eac]/30"
+                  className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition-all p-5 flex flex-col group cursor-pointer hover:border-[#202eac]/30"
                   onClick={() => handleOpenModal(order)}
                 >
                   <div className="flex justify-between items-start mb-4">
                     <div className="flex flex-col">
                       <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{order.number}</span>
-                      <h3 className="font-bold text-slate-800 truncate max-w-[180px]" title={order.client_name}>{order.client_name}</h3>
+                      <h3 className="font-bold text-slate-800 dark:text-slate-100 truncate max-w-[180px]" title={order.client_name}>{order.client_name}</h3>
                     </div>
                     <div className={`px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1.5 border ${getStatusConfig(order.status).color}`}>
                       {getStatusConfig(order.status).icon}
@@ -1225,12 +1225,12 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
                   <div className="space-y-2 mb-4">
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Valor Total:</span>
-                      <span className="font-bold text-slate-800">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.final_value)}</span>
+                      <span className="text-slate-500 dark:text-slate-400">Valor Total:</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-100">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.final_value)}</span>
                     </div>
                     <div className="flex items-center justify-between text-xs">
-                      <span className="text-slate-500">Entrega:</span>
-                      <span className="flex items-center gap-1 font-medium text-slate-600 capitalize">
+                      <span className="text-slate-500 dark:text-slate-400">Entrega:</span>
+                      <span className="flex items-center gap-1 font-medium text-slate-600 dark:text-slate-300 capitalize">
                         {order.delivery_method === 'entrega' ? <Truck className="w-3 h-3" /> : <MapPin className="w-3 h-3" />}
                         {order.delivery_method}
                       </span>
@@ -1240,7 +1240,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                   <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
                     <div className="flex flex-col">
                       <span className="text-[9px] text-slate-400 uppercase font-bold tracking-tight">Data do Pedido</span>
-                      <span className="text-xs font-semibold text-slate-600">{new Date(order.created_at).toLocaleDateString()}</span>
+                      <span className="text-xs font-semibold text-slate-600 dark:text-slate-300">{new Date(order.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-2">
                       {order.status !== 'recebido' && order.status !== 'cancelado' && (
@@ -1259,7 +1259,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
-                      <button className="p-2 bg-slate-50 text-slate-400 group-hover:bg-[#202eac] group-hover:text-white rounded-xl transition-all">
+                      <button className="p-2 bg-slate-50 dark:bg-slate-800 text-slate-400 group-hover:bg-[#202eac] group-hover:text-white rounded-xl transition-all">
                         <ChevronRight className="w-4 h-4" />
                       </button>
                     </div>
@@ -1268,11 +1268,11 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
               ))}
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="bg-slate-50/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    <tr className="bg-slate-50 dark:bg-slate-800/50 border-b border-slate-100 text-[10px] font-black text-slate-400 uppercase tracking-widest">
                       <th className="py-4 px-6">Pedido</th>
                       <th className="py-4 px-6">Cliente</th>
                       <th className="py-4 px-6">Data</th>
@@ -1289,19 +1289,19 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                         className="hover:bg-blue-50/20 transition-colors cursor-pointer group"
                       >
                         <td className="py-4 px-6">
-                          <span className="font-mono text-xs font-bold text-slate-500">{order.number}</span>
+                          <span className="font-mono text-xs font-bold text-slate-500 dark:text-slate-400">{order.number}</span>
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
                               <User className="w-4 h-4 text-[#202eac]" />
                             </div>
-                            <span className="font-bold text-slate-800 text-sm whitespace-nowrap">{order.client_name}</span>
+                            <span className="font-bold text-slate-800 dark:text-slate-100 text-sm whitespace-nowrap">{order.client_name}</span>
                           </div>
                         </td>
                         <td className="py-4 px-6">
                           <div className="flex flex-col">
-                            <span className="text-xs font-bold text-slate-700">{new Date(order.created_at).toLocaleDateString()}</span>
+                            <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{new Date(order.created_at).toLocaleDateString()}</span>
                             <span className="text-[10px] text-slate-400">{new Date(order.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                           </div>
                         </td>
@@ -1312,7 +1312,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                            </div>
                         </td>
                         <td className="py-4 px-6 text-right">
-                          <span className="font-black text-slate-800">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.final_value)}</span>
+                          <span className="font-black text-slate-800 dark:text-slate-100">{new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(order.final_value)}</span>
                         </td>
                         <td className="py-4 px-6 relative">
                           <div className={`inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold border ${getStatusConfig(order.status).color}`}>
@@ -1321,7 +1321,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                           </div>
 
                           {/* Action Buttons on Hover */}
-                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 bg-white/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200 shadow-xl z-10">
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-all scale-95 group-hover:scale-100 bg-white dark:bg-slate-900/80 backdrop-blur-md p-1.5 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-xl z-10">
                             {/* Traceability Shortcut */}
                             {(order.status === 'producao' || order.status === 'reproducao') && setActiveMenu && (
                               <button 
@@ -1375,7 +1375,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
                             <button 
                               onClick={(e) => { e.stopPropagation(); handleOpenModal(order); }}
-                              className="p-2 text-slate-600 hover:bg-slate-50 rounded-xl transition-all"
+                              className="p-2 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800 rounded-xl transition-all"
                               title="Editar"
                             >
                               <Edit2 className="w-4 h-4" />
@@ -1407,16 +1407,16 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
       {/* Modal de Pedido */}
       {isModalOpen && currentOrder && (
         <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[60] flex items-center justify-center p-4">
-          <div className="bg-white w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-4xl max-h-[90vh] rounded-3xl shadow-2xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95 duration-200">
             
             {/* Modal Header */}
-            <div className="px-8 py-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+            <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-white rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center">
+                <div className="w-12 h-12 bg-white dark:bg-slate-900 rounded-2xl shadow-sm border border-slate-100 flex items-center justify-center">
                   <ShoppingBag className="w-6 h-6 text-[#202eac]" />
                 </div>
                 <div>
-                  <h2 className="text-xl font-black text-slate-800 tracking-tight">{orders.find(o => o.id === currentOrder.id) ? 'Editar Pedido' : 'Novo Pedido de Venda'}</h2>
+                  <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">{orders.find(o => o.id === currentOrder.id) ? 'Editar Pedido' : 'Novo Pedido de Venda'}</h2>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs font-bold text-[#202eac] bg-blue-50 px-2 py-0.5 rounded-md uppercase tracking-wider">{currentOrder.number}</span>
                     <span className="text-xs text-slate-400 font-medium">• {new Date(currentOrder.created_at || '').toLocaleDateString()}</span>
@@ -1425,17 +1425,17 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 hover:bg-white hover:text-red-500 rounded-xl transition-all text-slate-400 border border-transparent hover:border-slate-100"
+                className="p-2 hover:bg-white dark:bg-slate-900 hover:text-red-500 rounded-xl transition-all text-slate-400 border border-transparent hover:border-slate-100"
               >
                 <X className="w-6 h-6" />
               </button>
             </div>
 
             {/* Tabs */}
-            <div className="flex border-b border-slate-100 bg-white sticky top-0 px-8">
+            <div className="flex border-b border-slate-100 bg-white dark:bg-slate-900 sticky top-0 px-8">
               <button 
                 onClick={() => setActiveTab('geral')}
-                className={`py-4 px-6 text-sm font-bold transition-all relative ${activeTab === 'geral' ? 'text-[#202eac]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`py-4 px-6 text-sm font-bold transition-all relative ${activeTab === 'geral' ? 'text-[#202eac]' : 'text-slate-400 hover:text-slate-600 dark:text-slate-300'}`}
               >
                 <div className="flex items-center gap-2">
                   <Users className="w-4 h-4" /> Dados do Cliente
@@ -1444,7 +1444,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
               </button>
               <button 
                 onClick={() => setActiveTab('itens')}
-                className={`py-4 px-6 text-sm font-bold transition-all relative ${activeTab === 'itens' ? 'text-[#202eac]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`py-4 px-6 text-sm font-bold transition-all relative ${activeTab === 'itens' ? 'text-[#202eac]' : 'text-slate-400 hover:text-slate-600 dark:text-slate-300'}`}
               >
                 <div className="flex items-center gap-2">
                   <Package className="w-4 h-4" /> Itens e Preços
@@ -1453,7 +1453,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
               </button>
               <button 
                 onClick={() => setActiveTab('logistica')}
-                className={`py-4 px-6 text-sm font-bold transition-all relative ${activeTab === 'logistica' ? 'text-[#202eac]' : 'text-slate-400 hover:text-slate-600'}`}
+                className={`py-4 px-6 text-sm font-bold transition-all relative ${activeTab === 'logistica' ? 'text-[#202eac]' : 'text-slate-400 hover:text-slate-600 dark:text-slate-300'}`}
               >
                 <div className="flex items-center gap-2">
                   <Truck className="w-4 h-4" /> Logística e Notas
@@ -1463,7 +1463,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
             </div>
 
             {/* Modal Content */}
-            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50/20">
+            <div className="flex-1 overflow-y-auto p-8 custom-scrollbar bg-slate-50 dark:bg-slate-800/20">
               {activeTab === 'geral' && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
                    {currentOrder.status !== 'rascunho' && (
@@ -1477,15 +1477,15 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                    )}
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Cliente do Pedido *</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Cliente do Pedido *</label>
                         <div className="relative group">
                           <button 
                             type="button"
                             disabled={!isEditable}
                             onClick={() => setIsClientSearchOpen(true)}
-                            className={`w-full h-12 bg-white border border-slate-200 rounded-2xl px-4 outline-none transition-all font-semibold shadow-sm flex items-center justify-between group ${isEditable ? 'hover:border-[#202eac]/50 focus:border-[#202eac] focus:ring-4 focus:ring-blue-50' : 'bg-slate-50 text-slate-400 cursor-not-allowed'}`}
+                            className={`w-full h-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl px-4 outline-none transition-all font-semibold shadow-sm flex items-center justify-between group ${isEditable ? 'hover:border-[#202eac]/50 focus:border-[#202eac] focus:ring-4 focus:ring-blue-50' : 'bg-slate-50 dark:bg-slate-800 text-slate-400 cursor-not-allowed'}`}
                           >
-                            <span className={currentOrder.client_name ? "text-slate-700" : "text-slate-400"}>
+                            <span className={currentOrder.client_name ? "text-slate-700 dark:text-slate-200" : "text-slate-400"}>
                               {currentOrder.client_name || 'Pesquisar cliente...'}
                             </span>
                             <Search className="w-4 h-4 text-slate-400 group-hover:text-[#202eac]" />
@@ -1493,7 +1493,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                         </div>
                       </div>
 
-                      <div className="md:col-span-2 p-5 bg-white border border-slate-100 rounded-[32px] shadow-sm flex flex-col gap-4">
+                      <div className="md:col-span-2 p-5 bg-white dark:bg-slate-900 border border-slate-100 rounded-[32px] shadow-sm flex flex-col gap-4">
                         <div className="flex items-center gap-3 text-[#202eac]">
                            <MapPin className="w-5 h-5" />
                            <h3 className="text-sm font-black uppercase tracking-widest">Endereço de Entrega</h3>
@@ -1503,18 +1503,18 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in slide-in-from-left-2">
                              <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Logradouro</span>
-                                <p className="text-sm font-bold text-slate-700">
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                   {clients.find(c => c.id === currentOrder.client_id)?.address || 'Não informado'}
                                   {clients.find(c => c.id === currentOrder.client_id)?.number ? `, ${clients.find(c => c.id === currentOrder.client_id)?.number}` : ''}
                                 </p>
                              </div>
                              <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Bairro</span>
-                                <p className="text-sm font-bold text-slate-700">{clients.find(c => c.id === currentOrder.client_id)?.neighborhood || 'Não informado'}</p>
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">{clients.find(c => c.id === currentOrder.client_id)?.neighborhood || 'Não informado'}</p>
                              </div>
                              <div className="space-y-1">
                                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Localidade</span>
-                                <p className="text-sm font-bold text-slate-700">
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-200">
                                   {clients.find(c => c.id === currentOrder.client_id)?.city || 'Cidade'} / {clients.find(c => c.id === currentOrder.client_id)?.state || 'UF'}
                                 </p>
                              </div>
@@ -1527,8 +1527,8 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tabela de Preços Aplicada</label>
-                        <div className="flex bg-white border border-slate-200 rounded-2xl p-1 shadow-sm">
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Tabela de Preços Aplicada</label>
+                        <div className="flex bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl p-1 shadow-sm">
                           {(['varejo', 'atacado', 'fardo'] as const).map((table) => (
                             <button
                               key={table}
@@ -1566,7 +1566,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                               className={`flex-1 py-2.5 px-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                                 currentOrder.price_table === table 
                                   ? 'bg-[#202eac] text-white shadow-md' 
-                                  : 'text-slate-400 hover:text-slate-600 hover:bg-slate-50'
+                                  : 'text-slate-400 hover:text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:bg-slate-800'
                               } ${!isEditable ? 'opacity-40 cursor-not-allowed' : 'cursor-pointer'}`}
                             >
                               {table}
@@ -1622,7 +1622,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                    </div>
 
                    <div className="p-6 bg-blue-50/30 rounded-3xl border border-blue-100/50 flex items-start gap-4">
-                      <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-blue-100">
+                      <div className="w-10 h-10 bg-white dark:bg-slate-900 rounded-xl flex items-center justify-center shadow-sm shrink-0 border border-blue-100">
                         <AlertCircle className="w-5 h-5 text-blue-600" />
                       </div>
                       <div className="space-y-1">
@@ -1636,10 +1636,10 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
               )}
               {activeTab === 'itens' && (
                 <div className="space-y-6 animate-in fade-in slide-in-from-bottom-2 duration-300">
-                  <div className="border border-slate-200 rounded-3xl overflow-hidden shadow-sm bg-white">
+                  <div className="border border-slate-200 dark:border-slate-700 rounded-3xl overflow-hidden shadow-sm bg-white dark:bg-slate-900">
                     <table className="w-full text-left border-collapse">
                       <thead>
-                        <tr className="bg-slate-50 border-b border-slate-200 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
+                        <tr className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">
                           <th className="py-4 px-6 text-left">Produto</th>
                           <th className="py-4 px-6 w-32">Qtd</th>
                           <th className="py-4 px-6 w-40">Vlr Unt.</th>
@@ -1649,10 +1649,10 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {(currentOrder.items || []).map((item, index) => (
-                           <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                           <tr key={item.id} className="hover:bg-slate-50 dark:bg-slate-800/50 transition-colors">
                               <td className="py-4 px-6">
                                 <div className="flex flex-col">
-                                  <span className="text-sm font-bold text-slate-800">{item.name}</span>
+                                  <span className="text-sm font-bold text-slate-800 dark:text-slate-100">{item.name}</span>
                                   <span className="text-[10px] text-slate-400 uppercase font-bold tracking-tight">CÓD: {item.finished_good_id.slice(0,8)}</span>
                                 </div>
                               </td>
@@ -1660,7 +1660,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                                 <input 
                                   type="number" 
                                   readOnly={!isEditable}
-                                  className={`w-full h-10 bg-slate-50 border border-slate-200 rounded-xl text-center outline-none transition-all font-bold text-slate-700 ${isEditable ? 'focus:border-[#202eac] focus:ring-2 focus:ring-blue-50' : 'opacity-60 cursor-not-allowed'}`}
+                                  className={`w-full h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-center outline-none transition-all font-bold text-slate-700 dark:text-slate-200 ${isEditable ? 'focus:border-[#202eac] focus:ring-2 focus:ring-blue-50' : 'opacity-60 cursor-not-allowed'}`}
                                   value={item.quantity}
                                   min="1"
                                   onChange={(e) => {
@@ -1685,7 +1685,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                                     type="number" 
                                     step="0.01"
                                     readOnly={!isEditable}
-                                    className={`w-full h-10 bg-slate-50 border border-slate-200 rounded-xl pl-8 pr-3 text-right outline-none transition-all font-bold text-slate-600 ${isEditable ? 'focus:border-[#202eac]' : 'opacity-60 cursor-not-allowed'}`}
+                                    className={`w-full h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-8 pr-3 text-right outline-none transition-all font-bold text-slate-600 dark:text-slate-300 ${isEditable ? 'focus:border-[#202eac]' : 'opacity-60 cursor-not-allowed'}`}
                                     value={item.unit_price}
                                     onChange={(e) => {
                                       const price = Number(e.target.value);
@@ -1703,7 +1703,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                                   />
                                 </div>
                               </td>
-                              <td className="py-4 px-6 text-right font-black text-slate-800 tracking-tighter">
+                              <td className="py-4 px-6 text-right font-black text-slate-800 dark:text-slate-100 tracking-tighter">
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(item.subtotal)}
                               </td>
                               <td className="py-4 px-4 text-center">
@@ -1724,7 +1724,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                         ))}
                         {(!currentOrder.items || currentOrder.items.length === 0) && (
                           <tr>
-                            <td colSpan={5} className="py-16 text-center text-slate-300 font-bold uppercase tracking-widest text-xs italic bg-slate-50/20">
+                            <td colSpan={5} className="py-16 text-center text-slate-300 font-bold uppercase tracking-widest text-xs italic bg-slate-50 dark:bg-slate-800/20">
                               <div className="flex flex-col items-center gap-3">
                                 <Package className="w-8 h-8 opacity-20" />
                                 Nenhum item no carrinho
@@ -1752,9 +1752,9 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                     </div>
 
                     <div className="flex-1 max-w-sm w-full space-y-3">
-                        <div className="flex items-center justify-between px-4 py-2 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="flex items-center justify-between px-4 py-2 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-100">
                            <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Total Bruto:</span>
-                           <span className="text-sm font-bold text-slate-500 font-mono italic">
+                           <span className="text-sm font-bold text-slate-500 dark:text-slate-400 font-mono italic">
                              {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(currentOrder.total_value || 0)}
                            </span>
                         </div>
@@ -1773,14 +1773,14 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                 <div className="space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-300">
                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                      <div className="space-y-4">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Método de Logística *</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Método de Logística *</label>
                         <div className="grid grid-cols-2 gap-3">
                            <button 
                              type="button"
                              onClick={() => setCurrentOrder(prev => ({ ...prev, delivery_method: 'entrega' }))}
-                             className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${currentOrder.delivery_method === 'entrega' ? 'bg-blue-50 border-[#202eac] text-[#202eac]' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                             className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${currentOrder.delivery_method === 'entrega' ? 'bg-blue-50 border-[#202eac] text-[#202eac]' : 'bg-white dark:bg-slate-900 border-slate-100 text-slate-400 hover:border-slate-200 dark:border-slate-700'}`}
                            >
-                             <div className={`p-3 rounded-2xl ${currentOrder.delivery_method === 'entrega' ? 'bg-[#202eac] text-white shadow-lg shadow-blue-200' : 'bg-slate-50'}`}>
+                             <div className={`p-3 rounded-2xl ${currentOrder.delivery_method === 'entrega' ? 'bg-[#202eac] text-white shadow-lg shadow-blue-200' : 'bg-slate-50 dark:bg-slate-800'}`}>
                                <Truck className="w-6 h-6" />
                              </div>
                              <span className="text-sm font-bold uppercase tracking-widest">Entrega</span>
@@ -1788,9 +1788,9 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                            <button 
                              type="button"
                              onClick={() => setCurrentOrder(prev => ({ ...prev, delivery_method: 'retirada' }))}
-                             className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${currentOrder.delivery_method === 'retirada' ? 'bg-indigo-50 border-indigo-700 text-indigo-700' : 'bg-white border-slate-100 text-slate-400 hover:border-slate-200'}`}
+                             className={`p-4 rounded-3xl border-2 transition-all flex flex-col items-center gap-3 ${currentOrder.delivery_method === 'retirada' ? 'bg-indigo-50 border-indigo-700 text-indigo-700' : 'bg-white dark:bg-slate-900 border-slate-100 text-slate-400 hover:border-slate-200 dark:border-slate-700'}`}
                            >
-                             <div className={`p-3 rounded-2xl ${currentOrder.delivery_method === 'retirada' ? 'bg-indigo-700 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50'}`}>
+                             <div className={`p-3 rounded-2xl ${currentOrder.delivery_method === 'retirada' ? 'bg-indigo-700 text-white shadow-lg shadow-indigo-200' : 'bg-slate-50 dark:bg-slate-800'}`}>
                                <MapPin className="w-6 h-6" />
                              </div>
                              <span className="text-sm font-bold uppercase tracking-widest">Retirada</span>
@@ -1799,12 +1799,12 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                      </div>
 
                      <div className="space-y-4">
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Previsão de Entrega / Retirada</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Previsão de Entrega / Retirada</label>
                         <div className="relative">
                           <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                           <input 
                             type="date" 
-                            className="w-full h-14 bg-white border border-slate-100 rounded-3xl pl-12 pr-6 outline-none focus:border-[#202eac] transition-all font-bold text-slate-700 uppercase shadow-sm"
+                            className="w-full h-14 bg-white dark:bg-slate-900 border border-slate-100 rounded-3xl pl-12 pr-6 outline-none focus:border-[#202eac] transition-all font-bold text-slate-700 dark:text-slate-200 uppercase shadow-sm"
                             value={currentOrder.expected_delivery_date || ''}
                             onChange={(e) => setCurrentOrder(prev => ({ ...prev, expected_delivery_date: e.target.value }))}
                           />
@@ -1815,10 +1815,10 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                    <div className="space-y-3">
                       <div className="flex items-center gap-2 mb-1">
                         <FileText className="w-4 h-4 text-slate-400" />
-                        <label className="text-xs font-bold text-slate-500 uppercase tracking-wider">Notas Comerciais e Logísticas</label>
+                        <label className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Notas Comerciais e Logísticas</label>
                       </div>
                       <textarea 
-                        className="w-full h-32 bg-white border border-slate-100 rounded-3xl p-6 outline-none focus:border-[#202eac] transition-all font-medium text-slate-700 custom-scrollbar uppercase text-xs shadow-sm"
+                        className="w-full h-32 bg-white dark:bg-slate-900 border border-slate-100 rounded-3xl p-6 outline-none focus:border-[#202eac] transition-all font-medium text-slate-700 dark:text-slate-200 custom-scrollbar uppercase text-xs shadow-sm"
                         placeholder="Ex: Deixar na portaria, cliente paga frete, etc..."
                         value={currentOrder.notes || ''}
                         onChange={(e) => setCurrentOrder(prev => ({ ...prev, notes: e.target.value }))}
@@ -1831,10 +1831,10 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
 
             {/* Modal Footer */}
-            <div className="px-8 py-6 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+            <div className="px-8 py-6 bg-slate-50 dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 flex items-center justify-between">
                <button 
                  onClick={() => setIsModalOpen(false)}
-                 className="px-6 py-3 bg-white border border-slate-200 text-slate-500 font-bold rounded-2xl hover:bg-slate-100 transition-all text-sm uppercase tracking-widest"
+                 className="px-6 py-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 font-bold rounded-2xl hover:bg-slate-100 transition-all text-sm uppercase tracking-widest"
                >
                  Cancelar
                </button>
@@ -1844,7 +1844,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                    <>
                     <button 
                       onClick={() => handleSaveOrder(currentOrder as SaleOrder)}
-                      className="px-8 py-3 bg-white border border-[#202eac]/30 text-[#202eac] font-bold rounded-2xl hover:bg-indigo-50 transition-all text-sm uppercase tracking-widest flex items-center gap-2"
+                      className="px-8 py-3 bg-white dark:bg-slate-900 border border-[#202eac]/30 text-[#202eac] font-bold rounded-2xl hover:bg-indigo-50 transition-all text-sm uppercase tracking-widest flex items-center gap-2"
                     >
                       <Save className="w-4 h-4" /> Salvar Rascunho
                     </button>
@@ -1900,34 +1900,34 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
         {/* Advanced Client Selection Modal */}
         {isClientSearchOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-[40px] shadow-2xl max-w-5xl w-full h-[85vh] overflow-hidden flex flex-col border border-white/20 animate-in zoom-in-95 duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl max-w-5xl w-full h-[85vh] overflow-hidden flex flex-col border border-white/20 animate-in zoom-in-95 duration-300">
               {/* Header */}
-              <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-[#202eac] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
                     <Users className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Selecionar Cliente</h2>
-                    <p className="text-sm text-slate-500 font-medium">Busca avançada por nome, documento e localização</p>
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Selecionar Cliente</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Busca avançada por nome, documento e localização</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setIsClientSearchOpen(false)}
-                  className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-red-500 rounded-2xl transition-all hover:rotate-90"
+                  className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 rounded-2xl transition-all hover:rotate-90"
                 >
                   <X className="w-6 h-6" />
                 </button>
               </div>
 
               {/* Filters Bar */}
-              <div className="p-8 bg-white border-b border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="p-8 bg-white dark:bg-slate-900 border-b border-slate-100 grid grid-cols-1 md:grid-cols-4 gap-4">
                 <div className="relative flex-1">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input 
                     type="text" 
                     placeholder="Nome ou CPF/CNPJ..."
-                    className="w-full h-12 bg-slate-50 rounded-2xl pl-12 pr-4 border border-transparent focus:border-[#202eac] focus:bg-white outline-none transition-all text-sm font-semibold"
+                    className="w-full h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl pl-12 pr-4 border border-transparent focus:border-[#202eac] focus:bg-white dark:bg-slate-900 outline-none transition-all text-sm font-semibold"
                     value={clientFilters.term}
                     onChange={e => setClientFilters(prev => ({ ...prev, term: e.target.value }))}
                   />
@@ -1935,19 +1935,19 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                 <input 
                   type="text" 
                   placeholder="Bairro..."
-                  className="h-12 bg-slate-50 rounded-2xl px-4 border border-transparent focus:border-[#202eac] focus:bg-white outline-none transition-all text-sm font-semibold"
+                  className="h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl px-4 border border-transparent focus:border-[#202eac] focus:bg-white dark:bg-slate-900 outline-none transition-all text-sm font-semibold"
                   value={clientFilters.bairro}
                   onChange={e => setClientFilters(prev => ({ ...prev, bairro: e.target.value }))}
                 />
                 <input 
                   type="text" 
                   placeholder="Cidade..."
-                  className="h-12 bg-slate-50 rounded-2xl px-4 border border-transparent focus:border-[#202eac] focus:bg-white outline-none transition-all text-sm font-semibold"
+                  className="h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl px-4 border border-transparent focus:border-[#202eac] focus:bg-white dark:bg-slate-900 outline-none transition-all text-sm font-semibold"
                   value={clientFilters.cidade}
                   onChange={e => setClientFilters(prev => ({ ...prev, cidade: e.target.value }))}
                 />
                 <select 
-                  className="h-12 bg-slate-50 rounded-2xl px-4 border border-transparent focus:border-[#202eac] focus:bg-white outline-none transition-all text-sm font-semibold"
+                  className="h-12 bg-slate-50 dark:bg-slate-800 rounded-2xl px-4 border border-transparent focus:border-[#202eac] focus:bg-white dark:bg-slate-900 outline-none transition-all text-sm font-semibold"
                   value={clientFilters.estado}
                   onChange={e => setClientFilters(prev => ({ ...prev, estado: e.target.value }))}
                 >
@@ -1961,7 +1961,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
               {/* Results Table */}
               <div className="flex-1 overflow-auto custom-scrollbar">
                 <table className="w-full text-left border-collapse">
-                  <thead className="sticky top-0 bg-slate-50/90 backdrop-blur-sm z-10 border-b border-slate-100">
+                  <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800/90 backdrop-blur-sm z-10 border-b border-slate-100">
                     <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                       <th className="py-5 px-10">Cliente</th>
                       <th className="py-5 px-6">Documento</th>
@@ -1975,17 +1975,17 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                       <tr key={client.id} className="hover:bg-blue-50/50 transition-all group">
                         <td className="py-5 px-10">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-[#202eac] font-black text-xs uppercase group-hover:bg-white transition-colors">
+                            <div className="w-10 h-10 bg-slate-100 rounded-xl flex items-center justify-center text-[#202eac] font-black text-xs uppercase group-hover:bg-white dark:bg-slate-900 transition-colors">
                               {client.name.substring(0,2)}
                             </div>
-                            <div className="font-bold text-slate-700 tracking-tight">{client.name}</div>
+                            <div className="font-bold text-slate-700 dark:text-slate-200 tracking-tight">{client.name}</div>
                           </div>
                         </td>
-                        <td className="py-5 px-6 text-xs font-bold text-slate-500 font-mono tracking-tighter">
+                        <td className="py-5 px-6 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono tracking-tighter">
                           {client.cnpj_cpf || '---'}
                         </td>
                         <td className="py-5 px-6">
-                          <div className="text-[11px] font-bold text-slate-600 leading-tight">
+                          <div className="text-[11px] font-bold text-slate-600 dark:text-slate-300 leading-tight">
                             {client.neighborhood || 'Bairro ñ inf.'}<br/>
                             <span className="text-[10px] text-slate-400 font-medium uppercase">{client.city || 'Cidade'} / {client.state || 'UF'}</span>
                           </div>
@@ -2003,7 +2003,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                         <td className="py-5 px-10 text-right">
                           <button 
                             onClick={() => handleSelectClient(client)}
-                            className="px-6 py-2.5 bg-white border border-slate-200 text-[#202eac] text-[10px] font-black uppercase tracking-[0.15em] rounded-xl hover:bg-[#202eac] hover:text-white hover:border-[#202eac] transition-all shadow-sm active:scale-95"
+                            className="px-6 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-[#202eac] text-[10px] font-black uppercase tracking-[0.15em] rounded-xl hover:bg-[#202eac] hover:text-white hover:border-[#202eac] transition-all shadow-sm active:scale-95"
                           >
                             Selecionar
                           </button>
@@ -2030,21 +2030,21 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
         {/* Advanced Product Selection Modal */}
         {isProductSearchOpen && (
           <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md flex items-center justify-center z-[100] p-4 animate-in fade-in duration-300">
-            <div className="bg-white rounded-[40px] shadow-2xl max-w-6xl w-full h-[90vh] overflow-hidden flex flex-col border border-white/20 animate-in zoom-in-95 duration-300">
+            <div className="bg-white dark:bg-slate-900 rounded-[40px] shadow-2xl max-w-6xl w-full h-[90vh] overflow-hidden flex flex-col border border-white/20 animate-in zoom-in-95 duration-300">
               {/* Header */}
-              <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
+              <div className="px-10 py-8 border-b border-slate-100 flex justify-between items-center bg-slate-50 dark:bg-slate-800/50">
                 <div className="flex items-center gap-4">
                   <div className="w-14 h-14 bg-[#202eac] rounded-2xl flex items-center justify-center shadow-lg shadow-blue-200">
                     <PackageOpen className="w-7 h-7 text-white" />
                   </div>
                   <div>
-                    <h2 className="text-2xl font-black text-slate-800 tracking-tight">Catálogo Comercial</h2>
-                    <p className="text-sm text-slate-500 font-medium">Produtos precificados disponíveis para venda</p>
+                    <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Catálogo Comercial</h2>
+                    <p className="text-sm text-slate-500 dark:text-slate-400 font-medium">Produtos precificados disponíveis para venda</p>
                   </div>
                 </div>
                 <button 
                   onClick={() => setIsProductSearchOpen(false)}
-                  className="w-12 h-12 flex items-center justify-center bg-white border border-slate-200 text-slate-400 hover:text-red-500 rounded-2xl transition-all hover:rotate-90"
+                  className="w-12 h-12 flex items-center justify-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-400 hover:text-red-500 rounded-2xl transition-all hover:rotate-90"
                 >
                   <X className="w-6 h-6" />
                 </button>
@@ -2052,13 +2052,13 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
               <div className="flex flex-1 overflow-hidden">
                 {/* Sidebar Filters */}
-                <div className="w-72 border-r border-slate-100 bg-slate-50/30 p-8 space-y-8 flex flex-col">
+                <div className="w-72 border-r border-slate-100 bg-slate-50 dark:bg-slate-800/30 p-8 space-y-8 flex flex-col">
                   <div className="space-y-4">
                     <label className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] px-2">Categorias</label>
                     <div className="space-y-1.5">
                       <button 
                         onClick={() => setProductFilters(prev => ({ ...prev, categoryId: 'all' }))}
-                        className={`w-full px-4 py-3 rounded-2xl text-xs font-bold transition-all text-left flex justify-between items-center ${productFilters.categoryId === 'all' ? 'bg-[#202eac] text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
+                        className={`w-full px-4 py-3 rounded-2xl text-xs font-bold transition-all text-left flex justify-between items-center ${productFilters.categoryId === 'all' ? 'bg-[#202eac] text-white shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100'}`}
                       >
                         Todos
                         <ChevronRight className={`w-3 h-3 ${productFilters.categoryId === 'all' ? 'opacity-100' : 'opacity-0'}`} />
@@ -2067,7 +2067,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                         <button 
                           key={cat.id}
                           onClick={() => setProductFilters(prev => ({ ...prev, categoryId: cat.id }))}
-                          className={`w-full px-4 py-3 rounded-2xl text-xs font-bold transition-all text-left flex justify-between items-center ${productFilters.categoryId === cat.id ? 'bg-[#202eac] text-white shadow-lg' : 'text-slate-500 hover:bg-slate-100'}`}
+                          className={`w-full px-4 py-3 rounded-2xl text-xs font-bold transition-all text-left flex justify-between items-center ${productFilters.categoryId === cat.id ? 'bg-[#202eac] text-white shadow-lg' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100'}`}
                         >
                           {cat.name}
                           <ChevronRight className={`w-3 h-3 ${productFilters.categoryId === cat.id ? 'opacity-100' : 'opacity-0'}`} />
@@ -2083,7 +2083,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                         <button 
                           key={vol}
                           onClick={() => setProductFilters(prev => ({ ...prev, volume: vol }))}
-                          className={`py-2.5 rounded-xl text-[10px] font-black transition-all ${productFilters.volume === vol ? 'bg-[#202eac] text-white ring-2 ring-blue-100' : 'bg-white border border-slate-200 text-slate-500 hover:border-[#202eac]'}`}
+                          className={`py-2.5 rounded-xl text-[10px] font-black transition-all ${productFilters.volume === vol ? 'bg-[#202eac] text-white ring-2 ring-blue-100' : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:border-[#202eac]'}`}
                         >
                           {vol === 'all' ? 'TODOS' : vol + 'L'}
                         </button>
@@ -2093,13 +2093,13 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                 </div>
 
                 {/* Grid content */}
-                <div className="flex-1 overflow-auto p-10 custom-scrollbar bg-white">
+                <div className="flex-1 overflow-auto p-10 custom-scrollbar bg-white dark:bg-slate-900">
                   <div className="mb-10 relative">
                     <Search className="absolute left-6 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-300" />
                     <input 
                       type="text" 
                       placeholder="Pesquisar por nome do produto..."
-                      className="w-full h-16 bg-slate-50 border border-slate-100 rounded-[30px] pl-16 pr-8 outline-none focus:border-[#202eac] focus:bg-white transition-all text-lg font-bold text-slate-800 placeholder:text-slate-300 shadow-sm"
+                      className="w-full h-16 bg-slate-50 dark:bg-slate-800 border border-slate-100 rounded-[30px] pl-16 pr-8 outline-none focus:border-[#202eac] focus:bg-white dark:bg-slate-900 transition-all text-lg font-bold text-slate-800 dark:text-slate-100 placeholder:text-slate-300 shadow-sm"
                       value={productFilters.term}
                       onChange={e => setProductFilters(prev => ({ ...prev, term: e.target.value }))}
                     />
@@ -2109,7 +2109,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                     {filteredProductsForSelection.map(product => (
                       <div 
                         key={product.id}
-                        className={`group p-6 rounded-[35px] border transition-all flex flex-col gap-4 text-left relative overflow-hidden bg-white ${modalSelections[product.id] ? 'border-[#202eac] ring-1 ring-[#202eac]/10 shadow-xl' : 'border-slate-100 hover:border-[#202eac] hover:shadow-2xl hover:shadow-indigo-500/10'}`}
+                        className={`group p-6 rounded-[35px] border transition-all flex flex-col gap-4 text-left relative overflow-hidden bg-white dark:bg-slate-900 ${modalSelections[product.id] ? 'border-[#202eac] ring-1 ring-[#202eac]/10 shadow-xl' : 'border-slate-100 hover:border-[#202eac] hover:shadow-2xl hover:shadow-indigo-500/10'}`}
                       >
                         {/* Status Badge e Ações rápidas */}
                         <div className="absolute top-0 right-0 p-3 flex gap-2">
@@ -2120,7 +2120,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                            ) : (
                              <button 
                                onClick={() => handleSelectProduct(product)}
-                               className="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center text-slate-300 hover:bg-[#202eac] hover:text-white transition-all active:scale-95"
+                               className="w-10 h-10 bg-slate-50 dark:bg-slate-800 rounded-xl flex items-center justify-center text-slate-300 hover:bg-[#202eac] hover:text-white transition-all active:scale-95"
                              >
                                <Plus className="w-5 h-5" />
                              </button>
@@ -2131,11 +2131,11 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                           <div className="text-[10px] font-black text-[#202eac] uppercase tracking-widest bg-blue-50 w-fit px-2 py-0.5 rounded-md">
                             {categories.find(c => c.id === product.group_id)?.name || 'Sem Categoria'}
                           </div>
-                          <h4 className="text-base font-black text-slate-800 tracking-tight leading-tight group-hover:text-[#202eac] transition-colors">{product.name}</h4>
+                          <h4 className="text-base font-black text-slate-800 dark:text-slate-100 tracking-tight leading-tight group-hover:text-[#202eac] transition-colors">{product.name}</h4>
                         </div>
 
                         <div className="flex items-center gap-3">
-                          <div className="bg-slate-100 px-3 py-1.5 rounded-xl text-xs font-black text-slate-600">
+                          <div className="bg-slate-100 px-3 py-1.5 rounded-xl text-xs font-black text-slate-600 dark:text-slate-300">
                             {product.capacity}L
                           </div>
                           <div className={`px-3 py-1.5 rounded-xl text-[10px] font-black uppercase ${product.stock_quantity > 0 ? 'bg-emerald-50 text-emerald-600' : 'bg-amber-50 text-amber-600'}`}>
@@ -2146,7 +2146,7 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                         <div className="mt-auto pt-4 border-t border-slate-50 flex items-end justify-between">
                            <div className="space-y-0.5">
                               <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Preço Unid ({currentOrder?.price_table})</span>
-                              <div className="text-xl font-black text-slate-800 tracking-tighter">
+                              <div className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tighter">
                                 {new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(
                                   currentOrder?.price_table === 'atacado' ? (product.pricing?.atacadoPrice || 0) : 
                                   currentOrder?.price_table === 'fardo' ? (product.pricing?.fardoPrice || 0) : 
@@ -2160,14 +2160,14 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
                              <div className="flex items-center gap-1.5 bg-slate-100 p-1 rounded-2xl animate-in slide-in-from-right-4 duration-300">
                                <button 
                                  onClick={() => handleUpdateModalQuantity(product.id, -1)}
-                                 className="w-8 h-8 rounded-xl bg-white text-slate-400 hover:text-red-500 flex items-center justify-center transition-all active:scale-90"
+                                 className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 text-slate-400 hover:text-red-500 flex items-center justify-center transition-all active:scale-90"
                                >
                                  <Minus className="w-4 h-4" />
                                </button>
-                               <span className="w-8 text-center text-sm font-black text-slate-800">{modalSelections[product.id]}</span>
+                               <span className="w-8 text-center text-sm font-black text-slate-800 dark:text-slate-100">{modalSelections[product.id]}</span>
                                <button 
                                  onClick={() => handleUpdateModalQuantity(product.id, 1)}
-                                 className="w-8 h-8 rounded-xl bg-white text-slate-400 hover:text-[#202eac] flex items-center justify-center transition-all active:scale-90"
+                                 className="w-8 h-8 rounded-xl bg-white dark:bg-slate-900 text-slate-400 hover:text-[#202eac] flex items-center justify-center transition-all active:scale-90"
                                >
                                  <Plus className="w-4 h-4" />
                                </button>
@@ -2195,13 +2195,13 @@ export function Vendas({ setActiveMenu }: { setActiveMenu?: (menu: string) => vo
 
               {/* Barra de Resumo Inferior (Footer do Modal) */}
               {Object.keys(modalSelections).length > 0 && (
-                <div className="px-10 py-6 border-t border-slate-100 bg-white shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.1)] flex items-center justify-between animate-in slide-in-from-bottom-10 duration-500">
+                <div className="px-10 py-6 border-t border-slate-100 bg-white dark:bg-slate-900 shadow-[0_-20px_50px_-20px_rgba(0,0,0,0.1)] flex items-center justify-between animate-in slide-in-from-bottom-10 duration-500">
                    <div className="flex items-center gap-8">
                       <div className="flex -space-x-3 overflow-hidden">
                         {Object.keys(modalSelections).slice(0, 5).map(id => {
                           const p = sellableCatalog.find(prod => prod.id === id);
                           return (
-                            <div key={id} className="w-12 h-12 rounded-2xl bg-white border-4 border-white shadow-lg flex items-center justify-center text-[10px] font-black text-[#202eac]">
+                            <div key={id} className="w-12 h-12 rounded-2xl bg-white dark:bg-slate-900 border-4 border-white shadow-lg flex items-center justify-center text-[10px] font-black text-[#202eac]">
                               {p?.capacity}L
                             </div>
                           );

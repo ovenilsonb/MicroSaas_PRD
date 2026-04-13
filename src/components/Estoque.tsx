@@ -273,14 +273,14 @@ export default function Estoque() {
   });
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-slate-50 overflow-hidden">
-      <header className="bg-white border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
+    <div className="flex-1 flex flex-col h-full bg-slate-50 dark:bg-slate-950 overflow-hidden">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 px-8 py-5 flex items-center justify-between shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
             <Archive className="w-6 h-6 text-[#202eac]" />
             Movimentação de Estoque
           </h1>
-          <p className="text-sm text-slate-500 mt-1">
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
             {activeTab === 'finished' ? 'Controle de produtos acabados prontos para venda' : 'Rastreabilidade total de insumos e matérias-primas'}
           </p>
         </div>
@@ -294,7 +294,7 @@ export default function Estoque() {
       </header>
 
       {/* TABS */}
-      <div className="bg-white px-8 pt-6 pb-0 border-b border-slate-200 shrink-0">
+      <div className="bg-white dark:bg-slate-900 px-8 pt-6 pb-0 border-b border-slate-200 shrink-0">
         <div className="flex items-center gap-6">
           <button
             onClick={() => setActiveTab('finished')}
@@ -327,12 +327,12 @@ export default function Estoque() {
           <>
             {/* KPI Row FG */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 shrink-0">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de Tipos Produzidos</div>
                 <div className="text-3xl font-black text-slate-800">{finishedGoods.length}</div>
                 <div className="text-[10px] text-slate-400 mt-1">Variações em estoque</div>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Unidades Disponíveis</div>
                 <div className="text-3xl font-black text-slate-800">
                   {finishedGoods.reduce((acc, fg) => acc + (fg.stock_quantity || 0), 0).toLocaleString()}
@@ -341,7 +341,7 @@ export default function Estoque() {
                   <TrendingUp className="w-3 h-3 text-emerald-500" /> Prontos para expedição
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Entradas de Lote (Histórico)</div>
                 <div className="text-3xl font-black text-slate-800">
                   {fgLogs.filter(l => l.type === 'in').length}
@@ -355,7 +355,7 @@ export default function Estoque() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0">
               {/* Finished Goods View (Cards/List) */}
               <div className="lg:col-span-8 flex flex-col">
-                 <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+                 <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
                   <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                     <h2 className="font-bold text-slate-800 flex items-center gap-2">
                       <Box className="w-5 h-5 text-[#202eac]" /> Catálogo em Estoque
@@ -367,7 +367,7 @@ export default function Estoque() {
                         placeholder="Buscar produto acabado..."
                         value={searchTermFG}
                         onChange={e => setSearchTermFG(e.target.value)}
-                        className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#202eac]/10"
+                        className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#202eac]/10"
                       />
                     </div>
                   </div>
@@ -382,7 +382,7 @@ export default function Estoque() {
                     ) : (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {filteredFG.map(fg => (
-                          <div key={fg.id} className="relative group p-4 border border-slate-200 rounded-xl hover:shadow-md transition-all bg-white hover:border-[#202eac]/30">
+                          <div key={fg.id} className="relative group p-4 border border-slate-200 rounded-xl hover:shadow-md transition-all bg-white dark:bg-slate-900 hover:border-[#202eac]/30">
                             <div className="flex items-start justify-between mb-3">
                               <div className="pr-4">
                                 <h3 className="font-bold text-slate-800 text-sm leading-tight">{fg.name}</h3>
@@ -399,7 +399,7 @@ export default function Estoque() {
                               <div className="flex flex-col gap-2 absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-all">
                                 <button 
                                   onClick={() => handleAdjustFgStock(fg.id)}
-                                  className="p-1.5 text-slate-400 hover:text-[#202eac] hover:bg-slate-50 rounded-lg shadow-sm border border-transparent hover:border-slate-100"
+                                  className="p-1.5 text-slate-400 hover:text-[#202eac] hover:bg-slate-50 dark:bg-slate-950 rounded-lg shadow-sm border border-transparent hover:border-slate-100"
                                   title="Ajuste Manual"
                                 >
                                   <Pencil className="w-3.5 h-3.5" />
@@ -446,10 +446,10 @@ export default function Estoque() {
 
               {/* Finished Goods Logs */}
               <div className="lg:col-span-4 flex flex-col">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
-                  <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50 dark:bg-slate-950 flex items-center justify-between">
                     <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                      <History className="w-5 h-5 text-slate-500" /> Movimentação (PA)
+                      <History className="w-5 h-5 text-slate-500 dark:text-slate-400" /> Movimentação (PA)
                     </h2>
                   </div>
                   <div className="flex-1 overflow-auto p-4 space-y-4">
@@ -457,7 +457,7 @@ export default function Estoque() {
                       <div className="text-center py-12 text-slate-400 text-sm italic">Nenhum registro</div>
                     ) : (
                       fgLogs.map(log => (
-                        <div key={log.id} className="group relative flex gap-3 p-3 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
+                        <div key={log.id} className="group relative flex gap-3 p-3 rounded-xl hover:bg-slate-50 dark:bg-slate-950 transition-all border border-transparent hover:border-slate-100">
                           <div className={`mt-0.5 w-7 h-7 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${log.type === 'in' ? 'bg-emerald-50 text-emerald-600' :
                             log.type === 'out' ? 'bg-red-50 text-red-600' : 'bg-blue-50 text-blue-600'
                             }`}>
@@ -475,7 +475,7 @@ export default function Estoque() {
                                 {log.type === 'in' ? '+' : '-'}{log.quantity} un.
                               </span>
                             </div>
-                            {log.notes && <p className="text-[10px] text-slate-500 leading-relaxed italic">"{log.notes}"</p>}
+                            {log.notes && <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-relaxed italic">"{log.notes}"</p>}
                           </div>
                         </div>
                       ))
@@ -494,19 +494,19 @@ export default function Estoque() {
           <>
             {/* KPI Row Raw */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 shrink-0">
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Total de Itens</div>
                 <div className="text-3xl font-black text-slate-800">{stats.length}</div>
                 <div className="text-[10px] text-slate-400 mt-1">Insumos cadastrados</div>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-red-500">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm border-l-4 border-l-red-500">
                 <div className="text-[10px] font-black text-red-500 uppercase tracking-widest mb-1">Abaixo do Mínimo</div>
                 <div className="text-3xl font-black text-slate-800">{stats.filter(s => s.estoque_atual < s.estoque_minimo).length}</div>
                 <div className="text-[10px] text-red-400 mt-1 flex items-center gap-1">
                   <AlertTriangle className="w-3 h-3" /> Requer compra urgente
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">Entradas (Mês)</div>
                 <div className="text-3xl font-black text-slate-800">
                   {currentMonthLogs.filter(l => l.type === 'in').length}
@@ -515,7 +515,7 @@ export default function Estoque() {
                   <TrendingUp className="w-3 h-3 text-emerald-500" /> Reposição de estoque
                 </div>
               </div>
-              <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+              <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 shadow-sm">
                 <div className="text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1">Saídas p/ OFs (Mês)</div>
                 <div className="text-3xl font-black text-slate-800">
                   {currentMonthLogs.filter(l => l.type === 'out').length}
@@ -529,7 +529,7 @@ export default function Estoque() {
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 flex-1 min-h-0">
               {/* Inventory Levels */}
               <div className="lg:col-span-7 flex flex-col">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
                   <div className="p-5 border-b border-slate-100 flex items-center justify-between">
                     <h2 className="font-bold text-slate-800 flex items-center gap-2">
                       <Box className="w-5 h-5 text-[#202eac]" /> Status Geral de Insumos
@@ -541,14 +541,14 @@ export default function Estoque() {
                         placeholder="Buscar insumo..."
                         value={searchTermRaw}
                         onChange={e => setSearchTermRaw(e.target.value)}
-                        className="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#202eac]/10"
+                        className="pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 rounded-xl text-xs outline-none focus:ring-2 focus:ring-[#202eac]/10"
                       />
                     </div>
                   </div>
 
                   <div className="flex-1 overflow-auto">
                     <table className="w-full text-left border-collapse">
-                      <thead className="sticky top-0 bg-white border-b border-slate-100 z-10">
+                      <thead className="sticky top-0 bg-white dark:bg-slate-900 border-b border-slate-100 z-10">
                         <tr className="text-[10px] font-black text-slate-400 uppercase tracking-widest">
                           <th className="py-4 px-6">Insumo</th>
                           <th className="py-4 px-6 text-center">Unid.</th>
@@ -559,9 +559,9 @@ export default function Estoque() {
                       </thead>
                       <tbody className="divide-y divide-slate-100">
                         {filteredStats.map(item => (
-                          <tr key={item.id} className="hover:bg-slate-50/50 transition-colors">
+                          <tr key={item.id} className="hover:bg-slate-50 dark:bg-slate-950/50 transition-colors">
                             <td className="py-3 px-6 font-bold text-slate-700 text-sm">{item.nome}</td>
-                            <td className="py-3 px-6 text-center text-xs text-slate-500">{item.unidade_medida}</td>
+                            <td className="py-3 px-6 text-center text-xs text-slate-500 dark:text-slate-400">{item.unidade_medida}</td>
                             <td className="py-3 px-6 text-right font-black text-slate-800 text-sm tracking-tight">{item.estoque_atual.toLocaleString()}</td>
                             <td className="py-3 px-6 text-right text-xs text-slate-400">{item.estoque_minimo.toLocaleString()}</td>
                             <td className="py-3 px-6">
@@ -585,10 +585,10 @@ export default function Estoque() {
 
               {/* Activity Feed */}
               <div className="lg:col-span-5 flex flex-col">
-                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
-                  <div className="p-5 border-b border-slate-100 bg-slate-50 flex items-center justify-between">
+                <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full overflow-hidden">
+                  <div className="p-5 border-b border-slate-100 bg-slate-50 dark:bg-slate-950 flex items-center justify-between">
                     <h2 className="font-bold text-slate-800 flex items-center gap-2">
-                      <History className="w-5 h-5 text-slate-500" /> Log de Atividades
+                      <History className="w-5 h-5 text-slate-500 dark:text-slate-400" /> Log de Atividades
                     </h2>
                     <Filter className="w-4 h-4 text-slate-400 cursor-pointer" />
                   </div>
@@ -598,9 +598,9 @@ export default function Estoque() {
                       <div className="text-center py-12 text-slate-400 text-sm italic">Nenhuma movimentação registrada</div>
                     ) : (
                       logs.map(log => (
-                        <div key={log.id} className="group relative flex gap-4 p-4 rounded-xl hover:bg-slate-50 transition-all border border-transparent hover:border-slate-100">
+                        <div key={log.id} className="group relative flex gap-4 p-4 rounded-xl hover:bg-slate-50 dark:bg-slate-950 transition-all border border-transparent hover:border-slate-100">
                           <div className={`mt-1 w-8 h-8 rounded-lg flex items-center justify-center shrink-0 shadow-sm ${log.type === 'in' ? 'bg-emerald-50 text-emerald-600' :
-                            log.type === 'out' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'
+                            log.type === 'out' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500 dark:text-slate-400'
                             }`}>
                             {log.type === 'in' ? <ArrowDownLeft className="w-4 h-4" /> :
                               log.type === 'out' ? <ArrowUpRight className="w-4 h-4" /> : <ClipboardList className="w-4 h-4" />}
@@ -618,7 +618,7 @@ export default function Estoque() {
                               <span className="text-slate-300">•</span>
                               <span className="text-slate-400 uppercase text-[9px]">{log.type === 'in' ? 'ENTRADA' : log.type === 'out' ? 'PRODUÇÃO' : 'AJUSTE'}</span>
                             </div>
-                            {log.notes && <p className="text-[11px] text-slate-500 leading-relaxed italic">"{log.notes}"</p>}
+                            {log.notes && <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed italic">"{log.notes}"</p>}
                           </div>
                         </div>
                       ))

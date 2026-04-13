@@ -25,7 +25,7 @@ export function Skeleton({
 
   return (
     <div
-      className={`bg-slate-200 ${variantStyles[variant]} ${baseStyles} ${className}`}
+      className={`bg-slate-200 dark:bg-slate-700 ${variantStyles[variant]} ${baseStyles} ${className}`}
       style={{
         width: width || '100%',
         height: height || '100%'
@@ -36,10 +36,10 @@ export function Skeleton({
 
 export function TableSkeleton({ rows = 5 }: { rows?: number }) {
   return (
-    <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
-      <div className="divide-y divide-slate-100">
+    <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
+      <div className="divide-y divide-slate-100 dark:divide-slate-800">
         {/* Header */}
-        <div className="bg-slate-50 border-b border-slate-200">
+        <div className="bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-4 p-4">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <Skeleton key={i} height={20} width={i === 2 ? 120 : 60} />
@@ -49,7 +49,7 @@ export function TableSkeleton({ rows = 5 }: { rows?: number }) {
         
         {/* Rows */}
         {Array.from({ length: rows }).map((_, idx) => (
-          <div key={idx} className="flex items-center gap-4 p-4 border-b border-slate-100 last:border-0">
+          <div key={idx} className="flex items-center gap-4 p-4 border-b border-slate-100 dark:border-slate-800 last:border-0">
             {[1, 2, 3, 4, 5, 6, 7, 8].map((i) => (
               <Skeleton key={i} height={20} width={i === 2 ? 100 : 50} />
             ))}
@@ -64,7 +64,7 @@ export function CardSkeleton({ count = 4 }: { count?: number }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {Array.from({ length: count }).map((_, idx) => (
-        <div key={idx} className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm flex items-center gap-4">
+        <div key={idx} className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center gap-4">
           <Skeleton variant="circular" width={48} height={48} />
           <div className="flex-1">
             <Skeleton height={12} width="60%" className="mb-2" />

@@ -11,9 +11,9 @@ interface FormulaCardProps {
 }
 
 const statusColors = {
-  draft: { bg: 'bg-amber-100', text: 'text-amber-700' },
-  active: { bg: 'bg-emerald-100', text: 'text-emerald-700' },
-  archived: { bg: 'bg-slate-100', text: 'text-slate-500' },
+  draft: { bg: 'bg-amber-100 dark:bg-amber-900/30', text: 'text-amber-700 dark:text-amber-400' },
+  active: { bg: 'bg-emerald-100 dark:bg-emerald-900/30', text: 'text-emerald-700 dark:text-emerald-400' },
+  archived: { bg: 'bg-slate-100 dark:bg-slate-800', text: 'text-slate-500 dark:text-slate-400' },
 };
 
 export default function FormulaCard({ formula, onClick, onEdit, onDuplicate, onDelete }: FormulaCardProps) {
@@ -32,9 +32,9 @@ export default function FormulaCard({ formula, onClick, onEdit, onDuplicate, onD
   const custoPorLitro = formula.base_volume > 0 ? custoBase / formula.base_volume : 0;
 
   return (
-    <div 
+    <div
       onClick={onClick}
-      className="bg-white rounded-2xl border border-slate-200 p-6 hover:shadow-lg hover:border-blue-300 transition-all group cursor-pointer"
+      className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 hover:shadow-lg hover:border-blue-300 dark:hover:border-blue-800 transition-all group cursor-pointer"
     >
       <div className="flex items-start justify-between mb-4">
         <div className={`px-3 py-1 rounded-full text-xs font-bold ${colors.bg} ${colors.text}`}>
@@ -46,9 +46,9 @@ export default function FormulaCard({ formula, onClick, onEdit, onDuplicate, onD
               e.stopPropagation();
               onClick();
             }}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
           >
-            <MoreVertical className="w-4 h-4 text-slate-400" />
+            <MoreVertical className="w-4 h-4 text-slate-400 dark:text-slate-500" />
           </button>
         </div>
       </div>
