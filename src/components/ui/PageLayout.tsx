@@ -46,7 +46,7 @@ export function PageHeader({ title, subtitle, icon, color = 'indigo', actions, c
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">
+            <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">
               {title}
             </h1>
             {subtitle && (
@@ -72,7 +72,7 @@ interface PageContentProps {
 
 export function PageContent({ children, className = '' }: PageContentProps) {
   return (
-    <div className={`flex-1 overflow-auto p-8 bg-slate-50 ${className}`}>
+    <div className={`flex-1 overflow-auto p-6 md:p-8 bg-slate-50 ${className}`}>
       <div className="max-w-7xl mx-auto">
         {children}
       </div>
@@ -161,8 +161,8 @@ export function ActionButton({
   onChange
 }: ActionButtonProps) {
   const variantClasses = {
-    primary: 'bg-indigo-600 hover:bg-indigo-700 text-white shadow-sm',
-    secondary: 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm',
+    primary: 'bg-primary hover:bg-primary-dark text-white shadow-sm shadow-primary/20',
+    secondary: 'bg-white border border-slate-200/80 text-slate-700 hover:bg-slate-50 hover:border-slate-300 shadow-sm',
     ghost: 'bg-transparent text-slate-600 hover:bg-slate-100',
     danger: 'bg-red-600 hover:bg-red-700 text-white shadow-sm',
   };
@@ -186,7 +186,7 @@ export function ActionButton({
     </>
   );
 
-  const className = `inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed ${variantClasses[variant]} ${sizeClasses[size]}`;
+  const className = `inline-flex items-center justify-center rounded-xl font-medium transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed active:scale-[0.98] ${variantClasses[variant]} ${sizeClasses[size]}`;
 
   if (as === 'label') {
     return (

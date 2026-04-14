@@ -85,7 +85,7 @@ interface TabsProps {
 
 export function Tabs({ tabs, activeTab, onChange }: TabsProps) {
   return (
-    <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-xl border border-slate-200">
+    <div className="flex items-center gap-1 bg-slate-50/80 p-1 rounded-xl border border-slate-200/60">
       {tabs.map(tab => (
         <button
           key={tab.id}
@@ -254,7 +254,7 @@ interface BulkActionsBarProps {
 
 export function BulkActionsBar({ selectedCount, onClear, actions }: BulkActionsBarProps) {
   return (
-    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-4">
+    <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-slate-900/90 backdrop-blur-md text-white px-6 py-3 rounded-full shadow-xl flex items-center gap-4 z-50 animate-in slide-in-from-bottom-4">
       <span className="font-bold text-sm">{selectedCount} selecionado(s)</span>
       <div className="h-5 w-px bg-slate-700" />
       {actions.map((action, idx) => (
@@ -587,7 +587,7 @@ export function PageHeaderV2({
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-slate-900 tracking-tight">{title}</h1>
+            <h1 className="text-3xl font-semibold text-slate-900 tracking-tight">{title}</h1>
             {subtitle && <p className="text-sm text-slate-500 mt-0.5 font-medium">{subtitle}</p>}
           </div>
         </div>
@@ -633,7 +633,7 @@ interface PageContentV2Props {
 
 export function PageContentV2({ children, className = '' }: PageContentV2Props) {
   return (
-    <div className={`flex-1 overflow-auto p-8 bg-slate-50 ${className}`}>
+    <div className={`flex-1 overflow-auto p-6 md:p-8 bg-slate-50 ${className}`}>
       <div className="max-w-7xl mx-auto">
         {children}
       </div>

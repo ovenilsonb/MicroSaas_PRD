@@ -78,12 +78,12 @@ export function DataTable<T>({
       <div className="overflow-x-auto">
         <table className="w-full">
           <thead>
-            <tr className="bg-slate-50 border-b border-slate-200">
+            <tr className="bg-slate-50/50 border-b border-slate-200/60">
               {columns.map((column) => (
                 <th
                   key={column.key}
                   className={`
-                    px-6 py-4 text-xs font-bold text-slate-500 uppercase tracking-wider
+                    px-6 py-4 text-[11px] font-semibold text-slate-500 uppercase tracking-wider
                     ${column.sortable ? 'cursor-pointer hover:bg-slate-100 transition-colors' : ''}
                     ${alignClasses[column.align || 'left']}
                     ${column.width || ''}
@@ -99,13 +99,13 @@ export function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-slate-100">
+          <tbody className="divide-y divide-slate-100/60">
             {data.map((item, index) => (
               <tr
                 key={keyExtractor(item)}
                 onClick={() => onRowClick?.(item)}
                 className={`
-                  hover:bg-slate-50 transition-colors
+                  hover:bg-slate-50/60 transition-colors
                   ${onRowClick ? 'cursor-pointer' : ''}
                 `}
               >
