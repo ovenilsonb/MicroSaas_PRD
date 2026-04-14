@@ -119,10 +119,19 @@ export function useDashboardData(): UseDashboardDataReturn {
         comprasPendentes = purchases.filter((p: any) => p.status === 'enviado' || p.status === 'rascunho').length;
         ocAtrasadas = purchases.filter((p: any) => p.status === 'enviado' && p.expected_date && new Date(p.expected_date) < today).length;
 
-        activity = [
-          ...formulas.map((f: any) => ({ type: 'formula' as const, name: f.name, date: new Date(f.created_at), id: f.id })),
-          ...insumos.map((i: any) => ({ type: 'insumo' as const, name: i.name, date: new Date(i.created_at) }))
-        ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+        const recentFormulas = formulas
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 5)
+          .map((f: any) => ({ type: 'formula' as const, name: f.name, date: new Date(f.created_at), id: f.id }));
+        
+        const recentInsumos = insumos
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
+          .slice(0, 5)
+          .map((i: any) => ({ type: 'insumo' as const, name: i.name, date: new Date(i.created_at) }));
+
+        activity = [...recentFormulas, ...recentInsumos]
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .slice(0, 5);
       } else {
         const localIngs = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
         const localForms = JSON.parse(localStorage.getItem('local_formulas') || '[]');
@@ -151,7 +160,6 @@ export function useDashboardData(): UseDashboardDataReturn {
         totalClientes = localClientes.length;
         totalFornecedores = localFornecedores.length;
 
-        // Vendas
         faturamentoMes = localSales.reduce((acc: number, s: any) => {
           const date = new Date(s.created_at);
           if (s.status === 'recebido' && date.getMonth() === currentMonth && date.getFullYear() === currentYear) {
@@ -161,20 +169,22 @@ export function useDashboardData(): UseDashboardDataReturn {
         }, 0);
         pedidosPendentes = localSales.filter((s: any) => s.status !== 'recebido' && s.status !== 'cancelado').length;
 
-        // Compras
         comprasPendentes = localPurchases.filter((p: any) => p.status === 'enviado' || p.status === 'rascunho').length;
         ocAtrasadas = localPurchases.filter((p: any) => p.status === 'enviado' && p.expected_date && new Date(p.expected_date) < today).length;
 
-        activity = [
-          ...localForms.map((f: any) => {
-            const date = f.created_at ? new Date(f.created_at) : new Date();
-            return { type: 'formula' as const, name: f.name || 'Sem Nome', date: isNaN(date.getTime()) ? new Date() : date, id: f.id };
-          }),
-          ...localIngs.map((i: any) => {
-            const date = i.created_at ? new Date(i.created_at) : new Date();
-            return { type: 'insumo' as const, name: i.name || 'Sem Nome', date: isNaN(date.getTime()) ? new Date() : date };
-          })
-        ].sort((a, b) => b.date.getTime() - a.date.getTime()).slice(0, 5);
+        const recentForms = localForms
+          .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+          .slice(0, 5)
+          .map((f: any) => ({ type: 'formula' as const, name: f.name || 'Sem Nome', date: new Date(f.created_at || Date.now()), id: f.id }));
+
+        const recentIngs = localIngs
+          .sort((a: any, b: any) => new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime())
+          .slice(0, 5)
+          .map((i: any) => ({ type: 'insumo' as const, name: i.name || 'Sem Nome', date: new Date(i.created_at || Date.now()) }));
+
+        activity = [...recentForms, ...recentIngs]
+          .sort((a, b) => b.date.getTime() - a.date.getTime())
+          .slice(0, 5);
       }
 
       setRecentActivity(activity);

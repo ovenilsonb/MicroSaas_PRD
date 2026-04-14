@@ -97,7 +97,7 @@ export default function App() {
       />
 
       <main className="flex-1 flex flex-col h-screen overflow-hidden bg-slate-50">
-        {activeMenu !== 'insumos' && activeMenu !== 'formulas' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && activeMenu !== 'configuracoes' && (() => {
+        {activeMenu !== 'dashboard' && activeMenu !== 'insumos' && activeMenu !== 'formulas' && activeMenu !== 'proporcao' && activeMenu !== 'precificacao' && activeMenu !== 'configuracoes' && (() => {
           const hc = getModuleConfig(activeMenu);
           return (
             <Header

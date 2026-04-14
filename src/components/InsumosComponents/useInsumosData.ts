@@ -42,6 +42,8 @@ interface UseInsumosDataReturn {
   addStockMovement: (movement: Omit<StockMovement, 'id' | 'balance_after'>) => Promise<boolean>;
   getStockMovements: (ingredientId: string, startDate?: string, endDate?: string) => Promise<StockMovement[]>;
   exportStockMovements: (movements: StockMovement[]) => void;
+  duplicateIngredient: (ingredient: Ingredient) => Promise<boolean>;
+  importIngredients: (data: any[]) => Promise<{ success: boolean; count: number; error?: string }>;
 }
 
 export function useInsumosData(): UseInsumosDataReturn {
@@ -354,6 +356,93 @@ export function useInsumosData(): UseInsumosDataReturn {
     URL.revokeObjectURL(url);
   }, []);
 
+  const duplicateIngredient = useCallback(async (ing: Ingredient): Promise<boolean> => {
+    try {
+      let variantsToCopy: Variant[] = [];
+      if (ing.tem_variantes) {
+        variantsToCopy = await getIngredientVariants(ing.id);
+      }
+      
+      const newPayload: Partial<Ingredient> = {
+        name: `${ing.name || ''} (Cópia)`,
+        codigo: ing.codigo ? `${ing.codigo}-COPY` : '',
+        apelido: ing.apelido || '',
+        unit: ing.unit || 'L',
+        cost_per_unit: ing.cost_per_unit || 0,
+        fornecedor: ing.fornecedor || '',
+        validade_indeterminada: ing.validade_indeterminada ?? true,
+        expiry_date: ing.expiry_date || '',
+        estoque_atual: 0,
+        estoque_minimo: ing.estoque_minimo || 0,
+        produto_quimico: ing.produto_quimico ?? true,
+        tem_variantes: ing.tem_variantes ?? false,
+        peso_especifico: ing.peso_especifico || '',
+        ph: ing.ph || '',
+        temperatura: ing.temperatura || '',
+        viscosidade: ing.viscosidade || '',
+        solubilidade: ing.solubilidade || '',
+        risco: ing.risco || '',
+        variants: variantsToCopy.map(v => ({ 
+          name: v.name, 
+          codigo: v.codigo, 
+          cost_per_unit: v.cost_per_unit,
+          supplier_id: v.supplier_id,
+          estoque_atual: 0,
+          estoque_minimo: v.estoque_minimo
+        }))
+      };
+      
+      return await saveIngredient(newPayload);
+    } catch (err) {
+      console.error('[useInsumosData] Error duplicating ingredient:', err);
+      return false;
+    }
+  }, [getIngredientVariants, saveIngredient]);
+
+  const importIngredients = useCallback(async (data: any[]): Promise<{ success: boolean; count: number; error?: string }> => {
+    try {
+      if (!Array.isArray(data)) throw new Error('Formato de dados inválido.');
+      
+      if (mode === 'supabase') {
+        for (const item of data) {
+          const { error } = await supabase.from('ingredients').upsert({ ...item, variants: undefined });
+          if (error) throw error;
+          if (item.variants && Array.isArray(item.variants)) {
+            for (const variant of item.variants) {
+              await supabase.from('ingredient_variants').upsert({ ...variant, ingredient_id: item.id });
+            }
+          }
+        }
+      } else {
+        const localData = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
+        const newData = [...localData];
+        
+        data.forEach((item: any) => {
+          if (!item.id || !item.name) return;
+          const sanitizedItem = {
+            ...item,
+            estoque_atual: parseFloat(item.estoque_atual) || 0,
+            estoque_minimo: parseFloat(item.estoque_minimo) || 0,
+            cost_per_unit: typeof item.cost_per_unit === 'string' 
+              ? parseFloat(item.cost_per_unit.replace(',', '.')) || 0 
+              : parseFloat(item.cost_per_unit) || 0,
+            variants: Array.isArray(item.variants) ? item.variants : []
+          };
+          const index = newData.findIndex(i => i.id === sanitizedItem.id);
+          if (index >= 0) newData[index] = sanitizedItem;
+          else newData.push(sanitizedItem);
+        });
+        localStorage.setItem('local_ingredients', JSON.stringify(newData));
+      }
+      
+      await fetchIngredients();
+      return { success: true, count: data.length };
+    } catch (err: any) {
+      console.error('[useInsumosData] Error importing ingredients:', err);
+      return { success: false, count: 0, error: err.message };
+    }
+  }, [mode, fetchIngredients]);
+
   useEffect(() => {
     fetchIngredients();
   }, [mode, fetchIngredients]);
@@ -370,5 +459,7 @@ export function useInsumosData(): UseInsumosDataReturn {
     addStockMovement,
     getStockMovements,
     exportStockMovements,
+    duplicateIngredient,
+    importIngredients,
   };
 }

@@ -1,7 +1,7 @@
 import React from 'react';
-import { 
-  Beaker, Package, ShieldCheck, AlertTriangle, Factory, 
-  BadgeDollarSign, ShoppingBag, CreditCard 
+import {
+  Beaker, Package, ShieldCheck, AlertTriangle, Factory,
+  BadgeDollarSign, ShoppingBag, CreditCard
 } from 'lucide-react';
 import { DashboardStats } from '../types/dashboard';
 
@@ -15,7 +15,7 @@ export interface DashboardCardDefinition {
 }
 
 export function useDashboardCards(stats: DashboardStats) {
-  const allCards: DashboardCardDefinition[] = [
+  const allCards: DashboardCardDefinition[] = React.useMemo(() => [
     // ─── COMERCIAL & VENDAS ───────────────────────────────────
     {
       id: 'kpi-faturamento',
@@ -87,7 +87,7 @@ export function useDashboardCards(stats: DashboardStats) {
       color: 'purple',
       module: 'suprimentos',
     },
-  ];
+  ], [stats]);
 
   return { allCards };
 }

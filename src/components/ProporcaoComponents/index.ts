@@ -1,6 +1,14 @@
 export * from './types';
-export { useProporcaoData, useSimulation, useCalculation } from './useProporcaoData';
+export * from './ProporcaoUtils';
+export * from './useProporcaoData';
+export * from './useSimulation';
+export * from './useCalculation';
+export * from './useProporcaoFilters';
+export * from './useProporcaoUI';
 export { default as ProporcaoCard } from './ProporcaoCard';
 export { default as ProporcaoSummary } from './ProporcaoSummary';
 export { default as MemorialComposicao } from './MemorialComposicao';
 export { default as AssemblySuggestions } from './AssemblySuggestions';
+export { default as ProporcaoGallery } from './ProporcaoGallery';
+export { default as ProporcaoCalculatorHeader } from './ProporcaoCalculatorHeader';
+export { default as ProporcaoCalculatorSidebar } from './ProporcaoCalculatorSidebar';

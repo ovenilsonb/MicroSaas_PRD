@@ -58,6 +58,8 @@ export interface Formula {
   ph_max?: string;
   viscosity_min?: string;
   viscosity_max?: string;
+  packaging_variant_id?: string;
+  label_variant_id?: string;
 }
 
 export type ViewMode = 'grid' | 'list' | 'editor';

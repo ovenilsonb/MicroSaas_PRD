@@ -1,3 +1,5 @@
+import { Formula as BaseFormula, FormulaIngredient as BaseFormulaIngredient } from './FormulaTypes';
+
 export interface Ingredient {
   id: string;
   name: string;
@@ -24,6 +26,11 @@ export interface Formula {
   yield_amount: number;
   yield_unit: string;
   status: string;
+  group_id?: string;
+  groups?: { name: string };
+  categories?: { name: string };
+  packaging_variant_id?: string;
+  label_variant_id?: string;
   formula_ingredients: FormulaIngredient[];
 }
 
@@ -47,21 +54,11 @@ export interface PricingEntry {
   varejoDisabled?: boolean;
   atacadoDisabled?: boolean;
   fardoDisabled?: boolean;
+  updatedAt?: string;
 }
 
-export interface PriceCalculation {
-  custoUnitario: number;
-  custoEmbalagem: number;
-  custoTotal: number;
-  markup: number;
-  margem: number;
-  lucro: number;
-  custoFixo: number;
-  precoVarejo: number;
-  precoAtacado: number;
-  precoFardo: number;
-  precoCusto: number;
-  precoLucro: number;
+export interface ColumnConfig {
+  id: string;
+  label: string;
+  visible: boolean;
 }
-
-export type ViewMode = 'grid' | 'list';

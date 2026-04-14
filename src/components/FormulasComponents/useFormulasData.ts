@@ -9,12 +9,14 @@ interface UseFormulasDataReturn {
   groups: Group[];
   allIngredients: Ingredient[];
   isLoading: boolean;
+  packagingVariants: any[];
   fetchData: () => Promise<void>;
   saveFormula: (formula: Partial<Formula>, ingredients: FormulaIngredient[]) => Promise<boolean>;
   deleteFormula: (id: string) => Promise<boolean>;
   duplicateFormula: (formula: Formula) => Promise<boolean>;
   saveGroup: (name: string, existingId?: string) => Promise<boolean>;
   deleteGroup: (id: string) => Promise<boolean>;
+  importData: (data: any) => Promise<boolean>;
 }
 
 export function useFormulasData(): UseFormulasDataReturn {
@@ -22,6 +24,7 @@ export function useFormulasData(): UseFormulasDataReturn {
   const [formulas, setFormulas] = useState<Formula[]>([]);
   const [groups, setGroups] = useState<Group[]>([]);
   const [allIngredients, setAllIngredients] = useState<Ingredient[]>([]);
+  const [packagingVariants, setPackagingVariants] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchGroups = useCallback(async () => {
@@ -63,6 +66,26 @@ export function useFormulasData(): UseFormulasDataReturn {
 
         const { data: ingData } = await supabase.from('ingredients').select('*, variants:ingredient_variants(*)').order('name');
         if (ingData) setAllIngredients(ingData);
+
+        // Load packaging variants
+        const { data: variantData } = await supabase
+          .from('ingredient_variants')
+          .select(`
+            *,
+            ingredients (name, unit, produto_quimico)
+          `)
+          .order('name');
+        
+        if (variantData) {
+          const formatted = variantData.map(v => ({
+            id: v.id,
+            name: `${v.ingredients.name} (${v.name})`,
+            cost_per_unit: v.cost_per_unit,
+            unit: v.ingredients.unit,
+            ingredient_id: v.ingredient_id
+          }));
+          setPackagingVariants(formatted);
+        }
       } else {
         const localFormulas = JSON.parse(localStorage.getItem('local_formulas') || '[]');
         setFormulas(localFormulas);
@@ -72,6 +95,22 @@ export function useFormulasData(): UseFormulasDataReturn {
 
         const localIngredients = JSON.parse(localStorage.getItem('local_ingredients') || '[]');
         setAllIngredients(localIngredients);
+
+        const variants: any[] = [];
+        localIngredients.forEach((ing: any) => {
+          if (ing.variants) {
+            ing.variants.forEach((v: any) => {
+              variants.push({
+                id: v.id,
+                name: `${ing.name} (${v.name})`,
+                cost_per_unit: v.cost_per_unit,
+                unit: ing.unit,
+                ingredient_id: ing.id
+              });
+            });
+          }
+        });
+        setPackagingVariants(variants);
       }
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -250,6 +289,50 @@ export function useFormulasData(): UseFormulasDataReturn {
     }
   }, [mode, fetchGroups]);
 
+  const importData = useCallback(async (data: any): Promise<boolean> => {
+    try {
+      if (!data.formulas) throw new Error('Formato de arquivo inválido');
+
+      if (mode === 'supabase') {
+        // Import groups
+        if (data.groups) {
+          for (const group of data.groups) {
+            await supabase.from('groups').upsert({ id: group.id, name: group.name });
+          }
+        }
+
+        // Import formulas
+        for (const f of data.formulas) {
+          const { formula_ingredients, categories, groups: g, ...formulaData } = f;
+          await supabase.from('formulas').upsert(formulaData);
+
+          if (formula_ingredients) {
+            await supabase.from('formula_ingredients').delete().eq('formula_id', f.id);
+            for (const fi of formula_ingredients) {
+              await supabase.from('formula_ingredients').insert({
+                id: fi.id || generateId(),
+                formula_id: f.id,
+                ingredient_id: fi.ingredient_id,
+                variant_id: fi.variant_id,
+                quantity: fi.quantity
+              });
+            }
+          }
+        }
+      } else {
+        if (data.formulas) localStorage.setItem('local_formulas', JSON.stringify(data.formulas));
+        if (data.groups) localStorage.setItem('local_groups', JSON.stringify(data.groups));
+        if (data.ingredients) localStorage.setItem('local_ingredients', JSON.stringify(data.ingredients));
+      }
+
+      await fetchData();
+      return true;
+    } catch (error) {
+      console.error('Error importing data:', error);
+      return false;
+    }
+  }, [mode, fetchData]);
+
   useEffect(() => {
     fetchData();
   }, [mode, fetchData]);
@@ -258,6 +341,7 @@ export function useFormulasData(): UseFormulasDataReturn {
     formulas,
     groups,
     allIngredients,
+    packagingVariants,
     isLoading,
     fetchData,
     saveFormula,
@@ -265,5 +349,6 @@ export function useFormulasData(): UseFormulasDataReturn {
     duplicateFormula,
     saveGroup,
     deleteGroup,
+    importData,
   };
 }

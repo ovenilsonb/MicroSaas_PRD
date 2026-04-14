@@ -1,3 +1,13 @@
 export * from './types';
+export * from './formulaUtils';
 export { useFormulasData } from './useFormulasData';
+export { useFormulaFilters } from './useFormulaFilters';
+export { useFormulaEditor } from './useFormulaEditor';
 export { default as FormulaCard } from './FormulaCard';
+export { FormulaStats } from './FormulaStats';
+export { FormulaFiltersBar } from './FormulaFiltersBar';
+export { FormulaTable } from './FormulaTable';
+export { FormulaEditorGeneral } from './FormulaEditorGeneral';
+export { FormulaEditorProduction } from './FormulaEditorProduction';
+export { FormulaCompositionSection } from './FormulaCompositionSection';
+export { CategoryManagerModal } from './CategoryManagerModal';
