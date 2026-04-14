@@ -35,17 +35,17 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(({
         <input
           ref={ref}
           className={`
-            w-full rounded-xl text-sm font-medium transition-all duration-200 outline-none
+            w-full rounded-xl text-sm font-medium transition-all duration-200 outline-none border border-transparent
             ${leftIcon ? 'pl-10' : 'pl-4'} 
             ${rightIcon ? 'pr-10' : 'pr-4'}
             py-2.5 
             ${variant === 'filled' 
               ? 'bg-slate-100 border-transparent focus:bg-white' 
-              : 'bg-white border-slate-200'
+              : 'bg-slate-50/50 ring-1 ring-slate-200/60'
             }
             ${error 
               ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-              : 'focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+              : 'focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20'
             }
             ${className}
           `}
@@ -92,11 +92,11 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(({
       <textarea
         ref={ref}
         className={`
-          w-full rounded-xl text-sm font-medium transition-all duration-200 outline-none
-          px-4 py-2.5 bg-white border-slate-200
+          w-full rounded-xl text-sm font-medium transition-all duration-200 outline-none border border-transparent
+          px-4 py-2.5 bg-slate-50/50 ring-1 ring-slate-200/60
           ${error 
             ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-            : 'focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+            : 'focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20'
           }
           ${className}
         `}
@@ -137,11 +137,11 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(({
       <select
         ref={ref}
         className={`
-          w-full rounded-xl text-sm font-medium transition-all duration-200 outline-none
-          px-4 py-2.5 bg-white border-slate-200
+          w-full rounded-xl text-sm font-medium transition-all duration-200 outline-none border border-transparent
+          px-4 py-2.5 bg-slate-50/50 ring-1 ring-slate-200/60
           ${error 
             ? 'border-red-500 focus:border-red-500 focus:ring-2 focus:ring-red-500/20' 
-            : 'focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20'
+            : 'focus:bg-white focus:border-primary focus:ring-2 focus:ring-primary/20'
           }
           ${className}
         `}
@@ -205,15 +205,15 @@ export function Toggle({ enabled, onChange, label, disabled }: ToggleProps) {
         disabled={disabled}
         onClick={() => !disabled && onChange(!enabled)}
         className={`
-          relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200
-          ${enabled ? 'bg-indigo-600' : 'bg-slate-200'}
+          relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-300
+          ${enabled ? 'bg-primary' : 'bg-slate-200'}
           ${disabled ? 'cursor-not-allowed' : 'cursor-pointer'}
         `}
       >
         <span
           className={`
-            inline-block h-4 w-4 transform rounded-full bg-white shadow-sm transition-transform duration-200
-            ${enabled ? 'translate-x-6' : 'translate-x-1'}
+            inline-block h-5 w-5 transform rounded-full bg-white shadow-md transition-transform duration-300
+            ${enabled ? 'translate-x-5' : 'translate-x-0.5'}
           `}
         />
       </button>

@@ -4,10 +4,10 @@
   --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 
-  /* Primary Colors - Brand */
-  --color-primary: #202eac;
-  --color-primary-light: #4b5ce8;
-  --color-primary-dark: #141e7a;
+  /* Primary Colors - Brand (Deep Indigo) */
+  --color-primary: #4338ca;
+  --color-primary-light: #6366f1;
+  --color-primary-dark: #3730a3;
   --color-primary-50: #eef2ff;
   --color-primary-100: #e0e7ff;
   --color-primary-200: #c7d2fe;
@@ -30,12 +30,12 @@
   --color-red: #dc2626;
   --color-red-light: #ef4444;
 
-  /* Neutral Colors */
-  --color-slate-50: #f8fafc;
-  --color-slate-100: #f1f5f9;
-  --color-slate-200: #e2e8f0;
-  --color-slate-300: #cbd5e1;
-  --color-slate-400: #94a3b8;
+  /* Neutral Colors - Softened slightly */
+  --color-slate-50: #fbfcfd;
+  --color-slate-100: #f4f7fa;
+  --color-slate-200: #e5eaf0;
+  --color-slate-300: #d1d9e2;
+  --color-slate-400: #9ba7b6;
   --color-slate-500: #64748b;
   --color-slate-600: #475569;
   --color-slate-700: #334155;
@@ -60,17 +60,17 @@
 
 
 :root {
-  /* Shadows */
-  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
-  --shadow-2xl: 0 25px 50px -12px rgb(0 0 0 / 0.25);
+  /* Shadows - Diffused variants */
+  --shadow-sm: 0 4px 20px -2px rgb(0 0 0 / 0.03);
+  --shadow-md: 0 8px 30px -4px rgb(0 0 0 / 0.04);
+  --shadow-lg: 0 12px 40px -6px rgb(0 0 0 / 0.05);
+  --shadow-xl: 0 20px 50px -8px rgb(0 0 0 / 0.06);
+  --shadow-2xl: 0 30px 60px -12px rgb(0 0 0 / 0.08);
 
-  /* Border Radius */
-  --radius-sm: 4px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
+  /* Border Radius - Modern curves */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
   --radius-xl: 16px;
   --radius-2xl: 24px;
 
@@ -110,10 +110,10 @@
   font-family: var(--font-mono);
 }
 
-/* Custom Scrollbar */
+/* Custom Scrollbar - Sleeker profile */
 .custom-scrollbar::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 4px;
+  height: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-track {
@@ -121,12 +121,12 @@
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: var(--color-slate-300);
-  border-radius: 3px;
+  background: var(--color-slate-200);
+  border-radius: 4px;
 }
 
 .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-  background: var(--color-slate-400);
+  background: var(--color-slate-300);
 }
 
 /* RTL Support for Sidebar */
